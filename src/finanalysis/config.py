@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     """Application settings"""
 
     # LLM Configuration
-    openai_api_key: str
+    openai_api_key: str = "test-key"  # Default for testing
     openai_base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
     llm_model: str = "qwen3.5-flash"
     llm_temperature: float = 0.1
