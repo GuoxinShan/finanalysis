@@ -116,7 +116,8 @@ class Pipeline:
                 doc_manifest=doc_manifest,
                 page_manifests=page_manifests,
                 table_rows=table_rows,
-                output_dir=output
+                output_dir=output,
+                text_blocks=[b.model_dump() for b in text_blocks]
             )
 
             if stop_at_stage == 4:

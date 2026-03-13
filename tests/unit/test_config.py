@@ -4,7 +4,8 @@ from src.finanalysis.config import Settings
 def test_settings_defaults():
     settings = Settings(
         openai_api_key="test-key",
-        openai_base_url="https://api.example.com/v1"
+        openai_base_url="https://api.example.com/v1",
+        llm_model="qwen3.5-flash"  # Explicit to avoid .env override
     )
 
     assert settings.openai_api_key == "test-key"

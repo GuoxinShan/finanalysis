@@ -52,9 +52,10 @@ Only extract metrics with high confidence (>0.7). Skip headers, labels, or uncle
         doc_manifest: DocumentManifest,
         page_manifests: List[PageManifest],
         table_rows: List[TableRow],
-        output_dir: Path
+        output_dir: Path,
+        text_blocks: Optional[List] = None
     ) -> List[MetricCandidate]:
-        """Extract financial metrics from table rows
+        """Extract financial metrics from table rows and text blocks
 
         Args:
             pdf_path: Path to PDF file
@@ -62,19 +63,16 @@ Only extract metrics with high confidence (>0.7). Skip headers, labels, or uncle
             page_manifests: List of page manifests
             table_rows: List of table rows from Stage 3
             output_dir: Output directory for results
+            text_blocks: Optional list of text blocks from Stage 2
 
         Returns:
             List of MetricCandidate objects
         """
         logger.info(f"Stage 4: Extracting metrics from {len(table_rows)} table rows")
 
-        if not table_rows:
-            logger.warning("No table rows to process")
-            return []
-
         # Extract metrics using LLM
         try:
-            metrics = self._extract_metrics_from_tables(table_rows)
+            metrics = self._extract_metrics_from_tables(table_rows, text_blocks or [])
 
             # Update manifest
             doc_manifest.metric_candidate_count = len(metrics)
@@ -95,23 +93,55 @@ Only extract metrics with high confidence (>0.7). Skip headers, labels, or uncle
             # Return empty list on error
             return []
 
-    def _extract_metrics_from_tables(self, table_rows: List[TableRow]) -> List[MetricCandidate]:
-        """Extract metrics from table rows using LLM
+    def _extract_metrics_from_tables(self, table_rows: List[TableRow], text_blocks: List = []) -> List[MetricCandidate]:
+        """Extract metrics from table rows and text blocks using LLM
 
         Args:
             table_rows: List of table rows
+            text_blocks: List of text blocks
 
         Returns:
             List of MetricCandidate objects
         """
-        # Format table rows for LLM
-        rows_text = self._format_rows_for_llm(table_rows)
+        # Build content for LLM - prioritize text blocks with financial keywords
+        financial_keywords = ["revenue", "profit", "income", "earnings", "cash flow", "eps"]
+        relevant_text_blocks = [
+            b for b in text_blocks
+            if any(kw in b.get("text", "").lower() for kw in financial_keywords)
+        ] if text_blocks else []
+
+        # Format content
+        content_parts = []
+        if relevant_text_blocks:
+            content_parts.append("TEXT BLOCKS:")
+            for idx, block in enumerate(relevant_text_blocks[:10]):  # limit to 10
+                content_parts.append(f"Block {idx} (page {block.get('page_number')}): {block.get('text', '')[:300]}")
+
+        if table_rows:
+            content_parts.append("\nTABLE ROWS:")
+            for idx, row in enumerate(table_rows):
+                cells_text = " | ".join(row.cells)
+                content_parts.append(f"Row {idx} (page {row.page_number}): {cells_text}")
+
+        if not content_parts:
+            return []
+
+        content = "\n".join(content_parts)
 
         # Create prompt
-        prompt = f"""Analyze the following table rows from a financial report and extract key financial metrics.
+        prompt = f"""Analyze the following content from a financial report and extract key financial metrics.
 
-Table Rows:
-{rows_text}
+{content}
+
+IMPORTANT: For each metric, you MUST use the exact "metric_type" values listed below. Do NOT use "name" or other field names.
+
+Valid metric_type values (use these EXACTLY):
+- "revenue"
+- "gross_profit"
+- "operating_income"
+- "net_income"
+- "eps"
+- "operating_cash_flow"
 
 Extract all relevant financial metrics. Respond with a JSON object containing a "metrics" array.
 
@@ -121,7 +151,7 @@ Example format:
     {{
       "metric_type": "revenue",
       "value": 1000000.0,
-      "currency": "USD",
+      "currency": "MYR",
       "period": "2023",
       "confidence": 0.95,
       "reasoning": "Revenue row clearly labeled"
