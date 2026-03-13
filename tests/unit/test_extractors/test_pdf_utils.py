@@ -31,6 +31,10 @@ def test_classify_page_table():
         def bbox_area(self):
             return 400000  # Large area
 
+        @property
+        def bbox(self):
+            return (50, 100, 550, 700)  # (x0, y0, x1, y1)
+
     class MockPage:
         def extract_text(self):
             return ""
