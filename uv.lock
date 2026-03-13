@@ -447,6 +447,7 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "camelot-py" },
+    { name = "click" },
     { name = "openai" },
     { name = "pdfplumber" },
     { name = "pydantic" },
@@ -459,6 +460,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "camelot-py", extras = ["cv"], specifier = ">=1.0.9" },
+    { name = "click", specifier = ">=8.3.1" },
     { name = "openai", specifier = ">=2.26.0" },
     { name = "pdfplumber", specifier = ">=0.11.9" },
     { name = "pydantic", specifier = ">=2.12.5" },
