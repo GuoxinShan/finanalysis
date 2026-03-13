@@ -37,9 +37,15 @@ def classify_page(page) -> str:
 
     # Calculate table coverage
     if has_tables:
-        table_area = sum(t.bbox_area for t in tables)
+        # Calculate table area using bbox
+        table_area = 0
+        for table in tables:
+            if table.bbox:
+                x0, y0, x1, y1 = table.bbox
+                table_area += (x1 - x0) * (y1 - y0)
+
         page_area = page.width * page.height
-        table_ratio = table_area / page_area
+        table_ratio = table_area / page_area if page_area > 0 else 0
 
         if table_ratio > 0.5:
             return "table"
