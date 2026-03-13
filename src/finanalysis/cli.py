@@ -109,5 +109,49 @@ def search(output_dir: str, query: str, top_k: int, source: str):
         click.echo()
 
 
+@cli.command()
+@click.argument('output_dirs', nargs=-1, required=True)
+@click.option('--metric', '-m', default=None, help='Specific metric type to compare (e.g. revenue)')
+def compare(output_dirs: tuple, metric: str):
+    """Compare metrics across multiple parsed PDF output directories.
+
+    Pass directories as: output/2023 output/2024 output/2025
+    Labels are inferred from directory names.
+    """
+    from .compare import MetricComparer
+
+    labeled = {Path(d).name: Path(d) for d in output_dirs}
+    comparer = MetricComparer(output_dirs=labeled)
+
+    if metric:
+        rows = comparer.compare(metric_type=metric)
+        if not rows:
+            click.echo(f"No data found for metric: {metric}")
+            return
+        _print_comparison_table(metric, rows)
+    else:
+        all_results = comparer.compare_all()
+        if not all_results:
+            click.echo("No metrics found in provided directories.")
+            return
+        for mt, rows in all_results.items():
+            if rows:
+                _print_comparison_table(mt, rows)
+                click.echo()
+
+
+def _print_comparison_table(metric_type: str, rows: list):
+    """Print a comparison table for a metric"""
+    click.echo(f"\n{metric_type.upper().replace('_', ' ')}:")
+    click.echo(f"  {'Year':<8} {'Value':>15} {'Currency':<8} {'YoY %':>8}  {'Conf':>6}")
+    click.echo(f"  {'-'*8} {'-'*15} {'-'*8} {'-'*8}  {'-'*6}")
+    for row in rows:
+        value = f"{row['value']:,.0f}" if row['value'] is not None else "N/A"
+        currency = row.get('currency') or ''
+        yoy = f"{row['yoy_growth']:+.1f}%" if row.get('yoy_growth') is not None else "—"
+        conf = f"{row['confidence']:.0%}" if row.get('confidence') is not None else "N/A"
+        click.echo(f"  {row['label']:<8} {value:>15} {currency:<8} {yoy:>8}  {conf:>6}")
+
+
 if __name__ == '__main__':
     cli()
