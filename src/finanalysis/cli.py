@@ -82,5 +82,32 @@ def parse(pdf_path: str, out: str, force: bool, stage: int):
         logging.exception("Pipeline failed")
         raise click.Abort()
 
+@cli.command()
+@click.argument('output_dir', type=click.Path(exists=True))
+@click.argument('query')
+@click.option('--top-k', '-k', default=10, help='Number of results to return')
+@click.option('--source', type=click.Choice(['all', 'text', 'table']), default='all', help='Source to search')
+def search(output_dir: str, query: str, top_k: int, source: str):
+    """Search extracted chunks from a parsed PDF output directory"""
+    from .retrieval import ChunkRetriever
+
+    retriever = ChunkRetriever(output_dir=Path(output_dir))
+    results = retriever.search(query=query, top_k=top_k)
+
+    # Filter by source if specified
+    if source != 'all':
+        results = [r for r in results if r['source'] == source]
+
+    if not results:
+        click.echo(f"No results found for: {query}")
+        return
+
+    click.echo(f"\nFound {len(results)} results for '{query}':\n")
+    for i, r in enumerate(results, 1):
+        click.echo(f"[{i}] Page {r['page_number']} ({r['source']}) — score: {r['score']:.2f}")
+        click.echo(f"    {r['text'][:200]}")
+        click.echo()
+
+
 if __name__ == '__main__':
     cli()
