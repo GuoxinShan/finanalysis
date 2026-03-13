@@ -39,8 +39,8 @@ def extract_text_blocks(page: Page, page_number: int) -> List[TextBlock]:
         if not block_lines:
             continue
 
-        # Combine all text in block
-        text = " ".join(" ".join(line) for line in block_lines)
+        # Combine all text in block - extract 'text' field from each word dict
+        text = " ".join(" ".join(word["text"] for word in line) for line in block_lines)
 
         # Skip very short blocks
         if len(text) < 20:
