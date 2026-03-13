@@ -1,5 +1,7 @@
 # src/finanalysis/stages/stage1_preprocess.py
+import hashlib
 import json
+import logging
 import os
 from pathlib import Path
 from datetime import datetime
@@ -9,6 +11,8 @@ from ..models import DocumentManifest, PageManifest
 from ..extractors.pdf_utils import open_pdf, classify_page, get_page_dimensions
 from ..cache import CacheManager
 from ..config import Settings
+
+logger = logging.getLogger(__name__)
 
 
 class Stage1Preprocessor:
@@ -22,13 +26,14 @@ class Stage1Preprocessor:
         self, pdf_path: str, output_dir: Path
     ) -> Tuple[DocumentManifest, List[PageManifest]]:
         """Process PDF and generate manifests"""
+        logger.info(f"Stage 1: Preprocessing {pdf_path}")
 
         # Compute hash
         pdf_hash = self.cache_mgr.compute_pdf_hash(pdf_path)
 
         # Check cache
         if self.settings.cache_enabled and self.cache_mgr.is_cached(pdf_hash, stage=1):
-            # Load from cache
+            logger.info(f"Loading Stage 1 results from cache for {pdf_hash}")
             cached = self.cache_mgr.load_cache(pdf_hash, stage=1)
             doc_manifest = DocumentManifest(**cached["document_manifest"])
             page_manifests = [PageManifest(**p) for p in cached["page_manifests"]]
@@ -40,29 +45,33 @@ class Stage1Preprocessor:
 
         with open_pdf(pdf_path) as pdf:
             total_pages = len(pdf.pages)
+            logger.info(f"Processing {total_pages} pages")
 
             for page_num, page in enumerate(pdf.pages, start=1):
-                # Compute page content hash (simplified)
-                text = page.extract_text() or ""
-                import hashlib
+                try:
+                    # Compute page content hash
+                    text = page.extract_text() or ""
+                    content_hash = hashlib.md5(text.encode()).hexdigest()
 
-                content_hash = hashlib.md5(text.encode()).hexdigest()
+                    # Classify page
+                    page_type = classify_page(page)
 
-                # Classify page
-                page_type = classify_page(page)
+                    # Get dimensions
+                    width, height = get_page_dimensions(page)
 
-                # Get dimensions
-                width, height = get_page_dimensions(page)
+                    # Create page manifest
+                    page_manifest = PageManifest(
+                        page_number=page_num,
+                        page_type=page_type,
+                        width=width,
+                        height=height,
+                        content_hash=content_hash,
+                    )
+                    page_manifests.append(page_manifest)
 
-                # Create page manifest
-                page_manifest = PageManifest(
-                    page_number=page_num,
-                    page_type=page_type,
-                    width=width,
-                    height=height,
-                    content_hash=content_hash,
-                )
-                page_manifests.append(page_manifest)
+                except Exception as e:
+                    logger.warning(f"Failed to process page {page_num}: {e}, skipping")
+                    continue
 
         # Count page types
         page_types = {}

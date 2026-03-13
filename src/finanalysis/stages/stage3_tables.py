@@ -58,15 +58,20 @@ class Stage3TableExtractor:
                 if page_manifest.page_type not in ["table", "mixed"]:
                     continue
 
-                # Extract tables from page
-                page = pdf.pages[page_num - 1]  # 0-indexed
-                table_rows = extract_tables_with_fallback(page=page, page_number=page_num)
+                try:
+                    # Extract tables from page
+                    page = pdf.pages[page_num - 1]  # 0-indexed
+                    table_rows = extract_tables_with_fallback(page=page, page_number=page_num)
 
-                # Update page manifest
-                page_manifest.table_extracted = True
-                page_manifest.table_row_ids = [r.id for r in table_rows]
+                    # Update page manifest
+                    page_manifest.table_extracted = True
+                    page_manifest.table_row_ids = [r.id for r in table_rows]
 
-                all_table_rows.extend(table_rows)
+                    all_table_rows.extend(table_rows)
+
+                except Exception as e:
+                    logger.warning(f"Failed to extract tables from page {page_num}: {e}, skipping")
+                    continue
 
         # Update document manifest
         doc_manifest.table_row_count = len(all_table_rows)
