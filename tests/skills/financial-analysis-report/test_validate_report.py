@@ -69,3 +69,99 @@ def test_find_expected_value():
 
     # Test not found case
     assert find_expected_value('Nonexistent Metric', fs_index) is None
+
+
+def test_values_match():
+    """Test values_match helper with tolerance."""
+    values_match = validate_report.values_match
+
+    # Test exact match
+    assert values_match(100.0, 100.0, tolerance_pct=0.01)
+
+    # Test within tolerance (1%)
+    assert values_match(101.0, 100.0, tolerance_pct=0.01)
+    assert values_match(99.0, 100.0, tolerance_pct=0.01)
+
+    # Test outside tolerance
+    assert not values_match(102.0, 100.0, tolerance_pct=0.01)
+    assert not values_match(98.0, 100.0, tolerance_pct=0.01)
+
+    # Test zero case
+    assert values_match(0.0, 0.0, tolerance_pct=0.01)
+    assert not values_match(1.0, 0.0, tolerance_pct=0.01)
+
+
+def test_validate_data_accuracy_correct_values():
+    """Test validation with correct values (should return no issues)."""
+    validate_data_accuracy = validate_report.validate_data_accuracy
+
+    # Report with correct values (in RM millions)
+    # fs_index values are in RM'000, so 3252000 becomes 3252.0 million
+    report = """
+| Metric | FY2024 | FY2023 | YoY |
+|---|---:|---:|---:|
+| Revenue | 3,252 | 2,057 | +58.1% |
+| PBT | 276 | 189 | +45.9% |
+"""
+
+    fs_index = {
+        'line_items': {
+            'revenue': {'group_current': 3252000.0, 'group_prior': 2057000.0},
+            'pbt': {'group_current': 276000.0, 'group_prior': 189000.0},
+        }
+    }
+
+    issues = validate_data_accuracy(report, fs_index)
+
+    # Should return no issues (values match within tolerance)
+    assert len(issues) == 0
+
+
+def test_validate_data_accuracy_wrong_values():
+    """Test validation with wrong values (should return issues)."""
+    validate_data_accuracy = validate_report.validate_data_accuracy
+
+    # Report with WRONG values
+    report = """
+| Metric | FY2024 | FY2023 | YoY |
+|---|---:|---:|---:|
+| Revenue | 4,000 | 2,500 | +60.0% |
+"""
+
+    fs_index = {
+        'line_items': {
+            'revenue': {'group_current': 3252000.0, 'group_prior': 2057000.0},
+        }
+    }
+
+    issues = validate_data_accuracy(report, fs_index)
+
+    # Should return issues for wrong revenue
+    assert len(issues) >= 1
+
+    # Check issue contains expected information
+    line_num, description, suggestion = issues[0]
+    assert 'Revenue' in description or 'revenue' in description.lower()
+    assert '3252' in suggestion or '3252.0' in suggestion  # Expected value mentioned
+
+
+def test_validate_data_accuracy_skip_unknown_metrics():
+    """Test that metrics not in fs_index are skipped."""
+    validate_data_accuracy = validate_report.validate_data_accuracy
+
+    report = """
+| Metric | FY2024 | FY2023 | YoY |
+|---|---:|---:|---:|
+| Custom Metric | 1,000 | 800 | +25.0% |
+"""
+
+    fs_index = {
+        'line_items': {
+            'revenue': {'group_current': 3252000.0},
+        }
+    }
+
+    issues = validate_data_accuracy(report, fs_index)
+
+    # Should return no issues (metric not in fs_index, so skipped)
+    assert len(issues) == 0

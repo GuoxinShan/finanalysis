@@ -109,6 +109,75 @@ def find_expected_value(metric_name: str, fs_index: dict) -> Optional[float]:
 
     return None  # Not found
 
+
+def values_match(reported: float, expected: float, tolerance_pct: float = 0.01) -> bool:
+    """Check if values match within tolerance.
+
+    Args:
+        reported: Value from report
+        expected: Expected value from source data
+        tolerance_pct: Tolerance as decimal (0.01 = 1%)
+
+    Returns:
+        True if values match within tolerance
+    """
+    if expected == 0:
+        return reported == 0
+    return abs(reported - expected) / abs(expected) <= tolerance_pct
+
+
+def validate_data_accuracy(content: str, fs_index: dict) -> List[Tuple[int, str, str]]:
+    """Check numbers in report match source data.
+
+    Args:
+        content: Full report markdown content
+        fs_index: Loaded fs_index.json
+
+    Returns:
+        List of (line_num, issue_description, suggestion) tuples
+    """
+    issues = []
+
+    # Extract all numbers from report
+    extracted = extract_numbers_from_markdown(content)
+
+    # Group by metric (may have current/prior pairs)
+    metrics_found = {}
+    for num in extracted:
+        metric_key = num.context.lower().strip()
+        if metric_key not in metrics_found:
+            metrics_found[metric_key] = []
+        metrics_found[metric_key].append(num)
+
+    # Validate each metric
+    for metric_key, numbers in metrics_found.items():
+        # Find expected value
+        expected = find_expected_value(numbers[0].context, fs_index)
+
+        if expected is None:
+            continue  # Skip metrics we can't validate
+
+        # Adjust for units: fs_index is in RM'000, report typically in RM million
+        expected_in_millions = expected / 1000
+
+        # Check if any extracted value matches expected (within 1% tolerance)
+        matches = False
+        for num in numbers:
+            if values_match(num.value, expected_in_millions, tolerance_pct=0.01):
+                matches = True
+                break
+
+        if not matches:
+            # Report mismatch
+            found_values = [n.value for n in numbers]
+            issues.append((
+                numbers[0].line_num,
+                f"Incorrect value for '{numbers[0].context}'",
+                f"Expected: {expected_in_millions:.2f}, Found: {found_values}"
+            ))
+
+    return issues
+
 # Aggressive language patterns to flag
 AGGRESSIVE_WORDS = {
     "explosive": "strong growth",
