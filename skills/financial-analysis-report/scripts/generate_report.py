@@ -276,12 +276,6 @@ def main():
         help="Skip data bundle generation (use if data_bundles.json already exists)"
     )
 
-    parser.add_argument(
-        "--skip-workers",
-        action="store_true",
-        help="Skip worker spawning (use if worker outputs already exist)"
-    )
-
     args = parser.parse_args()
 
     print("=" * 80)
@@ -342,38 +336,54 @@ def main():
         data_bundles_path = os.path.join(args.workspace, 'data_bundles.json')
 
     # Step 4: Prepare worker workspace
-    if not args.skip_workers:
-        print("\n[Step 4/5] Preparing worker workspace...")
-        print("-" * 80)
-
-        spawn_workers(data_bundles_path, args.workspace)
-    else:
-        print("\n[Step 4/5] Skipping worker spawning (using existing)")
-        print("-" * 80)
-
-    # Step 5: Assemble final report
-    print("\n[Step 5/5] Assembling final report...")
+    print("\n[Step 4/4] Preparing worker workspace...")
     print("-" * 80)
 
+    # Prepare workspace (create dir, copy data bundles if needed)
+    os.makedirs(args.workspace, exist_ok=True)
+    dest_path = os.path.join(args.workspace, 'data_bundles.json')
+    if os.path.abspath(data_bundles_path) != os.path.abspath(dest_path):
+        shutil.copy(data_bundles_path, dest_path)
+
+    print(f"✓ Worker workspace prepared at {args.workspace}")
+    print(f"  Data bundles: {dest_path}")
+    print(f"  Worker outputs will be written to: {args.workspace}/worker_N_sections.md")
+
+    # Print final summary
     output_path = f"{args.company}-{period}-revised.md"
-    assemble_final_report(
-        args.workspace,
-        output_path,
-        args.company,
-        period
-    )
 
     print("\n" + "=" * 80)
-    print("✅ Report generation complete!")
+    print("✅ PHASE 1 COMPLETE - WORKSPACE PREPARED")
     print("=" * 80)
-    print(f"\n📄 Final Report: {output_path}")
+    print(f"\n📄 Ready to generate: {output_path}")
     print(f"📊 Data Bundles: {data_bundles_path}")
     print(f"🔍 Workspace: {args.workspace}")
-    print("\n💡 Next steps:")
-    print("   1. Review the generated report")
-    print("   2. Run workers if not already done (see SKILL.md for instructions)")
-    print("   3. Edit and refine as needed")
+
+    print("\n💡 NEXT STEPS:")
+    print("   1. Spawn 6 parallel workers (see instructions below)")
+    print("   2. After workers complete, run:")
+    print(f"      python scripts/assemble_report.py \\")
+    print(f"        --workspace {args.workspace} \\")
+    print(f"        --output {output_path} \\")
+    print(f"        --company {args.company} \\")
+    print(f"        --period {period}")
+
+    print("\n" + "=" * 80)
+    print("WORKER SPAWN INSTRUCTIONS")
     print("=" * 80)
+    print("\nSpawn 6 parallel workers using the Agent tool:")
+    print("\nfor i in {1,2,3,4,5,6}; do")
+    print("  Agent(")
+    print("    subagent_type='general-purpose',")
+    print("    description=f'Worker {i}: Financial analysis sections',")
+    print("    prompt=f\"\"\"")
+    print(f"Read references/worker_{{i}}_*.md for instructions.")
+    print(f"Read {args.workspace}/data_bundles.json and extract worker_{{i}} data.")
+    print(f"Write markdown sections to {args.workspace}/worker_{{i}}_sections.md")
+    print('    """')
+    print("  )")
+    print("done")
+    print("\n" + "=" * 80)
 
 
 if __name__ == "__main__":
