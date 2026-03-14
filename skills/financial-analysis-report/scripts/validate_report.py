@@ -78,6 +78,37 @@ METRIC_ALIASES = {
     'total_equity': ['total equity', "shareholders' equity", 'total shareholders\' funds'],
 }
 
+
+def find_expected_value(metric_name: str, fs_index: dict) -> Optional[float]:
+    """Find expected value from fs_index.json using fuzzy matching.
+
+    Args:
+        metric_name: Name as it appears in report (e.g., "Revenue", "Total Revenue")
+        fs_index: Loaded fs_index.json structure
+
+    Returns:
+        Expected value (group_current) or None if not found
+    """
+    # Normalize metric name
+    normalized = metric_name.lower().strip()
+
+    # Try exact match first
+    for alias_key, aliases in METRIC_ALIASES.items():
+        if normalized in [a.lower() for a in aliases]:
+            # Found match, look in fs_index
+            if alias_key in fs_index.get('line_items', {}):
+                return fs_index['line_items'][alias_key].get('group_current')
+
+    # Try fuzzy match (simple: allow partial matches)
+    for alias_key, aliases in METRIC_ALIASES.items():
+        for alias in aliases:
+            # Check if normalized contains alias or vice versa
+            if alias.lower() in normalized or normalized in alias.lower():
+                if alias_key in fs_index.get('line_items', {}):
+                    return fs_index['line_items'][alias_key].get('group_current')
+
+    return None  # Not found
+
 # Aggressive language patterns to flag
 AGGRESSIVE_WORDS = {
     "explosive": "strong growth",

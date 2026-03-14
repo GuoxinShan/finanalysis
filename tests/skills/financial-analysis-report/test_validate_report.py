@@ -43,3 +43,29 @@ def test_extract_numbers_from_tables():
     values = [n.value for n in revenue_values]
     assert 3252.0 in values
     assert 2057.0 in values
+
+
+def test_find_expected_value():
+    """Test finding expected value from fs_index.json."""
+    find_expected_value = validate_report.find_expected_value
+
+    # Mock fs_index structure
+    fs_index = {
+        'line_items': {
+            'revenue': {'group_current': 3252.0, 'group_prior': 2057.0},
+            'pbt': {'group_current': 276.0, 'group_prior': 189.0},
+            'total_assets': {'group_current': 5000.0, 'group_prior': 4500.0},
+        }
+    }
+
+    # Test exact match
+    assert find_expected_value('revenue', fs_index) == 3252.0
+
+    # Test alias match (Total Revenue -> revenue)
+    assert find_expected_value('Total Revenue', fs_index) == 3252.0
+
+    # Test PBT match
+    assert find_expected_value('PBT', fs_index) == 276.0
+
+    # Test not found case
+    assert find_expected_value('Nonexistent Metric', fs_index) is None
