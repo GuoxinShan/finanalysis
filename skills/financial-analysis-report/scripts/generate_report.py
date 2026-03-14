@@ -164,11 +164,13 @@ def spawn_workers(data_bundles_path: str, workspace_dir: str) -> None:
     """
     os.makedirs(workspace_dir, exist_ok=True)
 
-    # Copy data bundles to workspace
-    shutil.copy(data_bundles_path, os.path.join(workspace_dir, 'data_bundles.json'))
+    # Copy data bundles to workspace (if not already there)
+    dest_path = os.path.join(workspace_dir, 'data_bundles.json')
+    if os.path.abspath(data_bundles_path) != os.path.abspath(dest_path):
+        shutil.copy(data_bundles_path, dest_path)
 
     print(f"✓ Worker workspace prepared at {workspace_dir}")
-    print(f"  Data bundles: {os.path.join(workspace_dir, 'data_bundles.json')}")
+    print(f"  Data bundles: {dest_path}")
     print(f"  Worker outputs will be written to: {workspace_dir}/worker_N_sections.md")
 
     # Note: Actual worker spawning would be done by the skill coordinator
