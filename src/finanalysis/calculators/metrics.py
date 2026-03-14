@@ -18,6 +18,10 @@ class FinancialMetrics(BaseModel):
     pbt_margin: Optional[float] = None
     pat_margin: Optional[float] = None
     attributable_margin: Optional[float] = None
+    operating_margin: Optional[float] = None
+    selling_cost_ratio: Optional[float] = None
+    admin_cost_ratio: Optional[float] = None
+    finance_cost_ratio: Optional[float] = None
     roe: Optional[float] = None  # Return on Equity
     roa: Optional[float] = None  # Return on Assets
 
@@ -35,6 +39,8 @@ class FinancialMetrics(BaseModel):
     pat_yoy_growth: Optional[float] = None
     total_assets_yoy_growth: Optional[float] = None
     equity_yoy_growth: Optional[float] = None
+    ocf_yoy_growth: Optional[float] = None
+    fcf_yoy_growth: Optional[float] = None
 
     # Cash Flow Quality
     ocf_to_revenue: Optional[float] = None  # percentage
@@ -84,6 +90,23 @@ class MetricsCalculator:
                 metrics['pat_margin'] = round((pat / revenue) * 100, 2)
             if attributable:
                 metrics['attributable_margin'] = round((attributable / revenue) * 100, 2)
+
+            # Operating margin
+            operating_profit = self._get_value('profit from operations')
+            if operating_profit:
+                metrics['operating_margin'] = round((operating_profit / revenue) * 100, 2)
+
+            # Expense ratios
+            selling_exp = self._get_value('selling and marketing expenses')
+            admin_exp = self._get_value('administration expenses')
+            finance_cost = self._get_value('finance costs')
+
+            if selling_exp:
+                metrics['selling_cost_ratio'] = round((selling_exp / revenue) * 100, 2)
+            if admin_exp:
+                metrics['admin_cost_ratio'] = round((admin_exp / revenue) * 100, 2)
+            if finance_cost:
+                metrics['finance_cost_ratio'] = round((finance_cost / revenue) * 100, 2)
 
         # ROE and ROA require average balance
         equity = self._get_value('total equity')
@@ -163,6 +186,24 @@ class MetricsCalculator:
             if current and prior and prior > 0:
                 growth = ((current - prior) / prior) * 100
                 metrics[metric_name] = round(growth, 2)
+
+        # OCF growth
+        ocf_current = self._get_value('net cash from operating activities')
+        ocf_prior = self._get_value('net cash from operating activities', use_prior_index=True)
+
+        if ocf_current and ocf_prior and ocf_prior != 0:
+            metrics['ocf_yoy_growth'] = round(((ocf_current - ocf_prior) / abs(ocf_prior)) * 100, 2)
+
+        # FCF growth
+        investing_cf_current = self._get_value('net cash used in investing activities')
+        investing_cf_prior = self._get_value('net cash used in investing activities', use_prior_index=True)
+
+        if ocf_current and investing_cf_current:
+            fcf_current = ocf_current - abs(investing_cf_current)
+            if ocf_prior and investing_cf_prior:
+                fcf_prior = ocf_prior - abs(investing_cf_prior)
+                if fcf_prior != 0:
+                    metrics['fcf_yoy_growth'] = round(((fcf_current - fcf_prior) / abs(fcf_prior)) * 100, 2)
 
         return metrics
 
