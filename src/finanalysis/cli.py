@@ -129,6 +129,29 @@ def register(dirs: tuple, registry: str):
         click.echo(f"  {c}: {reg.years(c)}")
 
 
+@cli.command('list')
+@click.option('--registry', '-r', default='output/registry.json', help='Registry file path')
+def list_registry(registry: str):
+    """List all companies and years in the registry."""
+    from .report_index import ReportIndex
+
+    reg = ReportIndex.load(registry)
+    if not reg.companies():
+        click.echo(f"Registry is empty or not found at {registry}")
+        click.echo("Run: finanalysis register <output_dirs>")
+        return
+
+    click.echo(f"\nRegistry: {registry}")
+    for company in reg.companies():
+        years = reg.years(company)
+        for year in years:
+            idx = reg.get_index(company, year)
+            fy = idx.fiscal_year_end if idx else "?"
+            items = len(idx.line_items) if idx else 0
+            currency = idx.currency if idx else "?"
+            click.echo(f"  {company:<12} FY{year}  {fy}  {items:>3} items  {currency}")
+
+
 @cli.command()
 @click.argument('label')
 @click.option('--company', '-c', required=True, help='Company name or stock code (e.g. CHINHIN)')
@@ -210,11 +233,23 @@ def compare(output_dirs: tuple, metric: str):
     """Compare metrics across multiple parsed PDF output directories.
 
     Pass directories as: output/2023 output/2024 output/2025
-    Labels are inferred from directory names.
+    Labels use FY year from fs_index if available, else directory name.
     """
     from .compare import MetricComparer
+    from .fs_index import FSIndex
 
-    labeled = {Path(d).name: Path(d) for d in output_dirs}
+    # Build labels: prefer FY year from fs_index
+    labeled = {}
+    for d in output_dirs:
+        p = Path(d)
+        fs_path = p / "fs_index.json"
+        label = p.name
+        if fs_path.exists():
+            idx = FSIndex.load(fs_path)
+            if idx.fiscal_year_end:
+                label = f"FY{idx.fiscal_year_end[:4]}"
+        labeled[label] = p
+
     comparer = MetricComparer(output_dirs=labeled)
 
     if metric:
