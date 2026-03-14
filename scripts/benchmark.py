@@ -90,15 +90,18 @@ def load_indexes(output_dirs: list[Path]) -> dict[str, FSIndex]:
             print(f"  WARNING: {fs_path} has no line items, skipping")
             continue
 
-        # Detect year from directory name or fs_index content
-        year_match = re.search(r'(20\d{2})', out_dir.name)
-        if not year_match:
-            # Try parent dir
-            year_match = re.search(r'(20\d{2})', str(out_dir))
-        if year_match:
-            year = year_match.group(1)
+        # Use fiscal_year_end from fs_index, fall back to directory name
+        year = None
+        if idx.fiscal_year_end:
+            year = idx.fiscal_year_end[:4]  # "2024-12-31" -> "2024"
+        else:
+            year_match = re.search(r'(20\d{2})', out_dir.name) or re.search(r'(20\d{2})', str(out_dir))
+            if year_match:
+                year = year_match.group(1)
+
+        if year:
             indexes[year] = idx
-            print(f"  Loaded {fs_path}: {len(idx.line_items)} line items, year={year}, currency={idx.currency}")
+            print(f"  Loaded {fs_path}: {len(idx.line_items)} items, year={year}, fy_end={idx.fiscal_year_end}, currency={idx.currency}")
         else:
             print(f"  WARNING: cannot detect year from {out_dir}, skipping")
 
