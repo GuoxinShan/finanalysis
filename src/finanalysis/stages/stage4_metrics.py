@@ -25,19 +25,12 @@ class Stage4MetricExtractor:
         # Initialize LLM client with system prompt
         system_prompt = """You are a financial analyst expert at extracting key metrics from financial tables.
 
-Given table row data, identify and extract financial metrics such as:
-- Revenue
-- Gross Profit
-- Operating Income
-- Net Income
-- Earnings Per Share (EPS)
-- Operating Cash Flow
+Given financial report content, identify and extract ALL financial metrics you can find.
 
 For each metric found, provide:
-- metric_type: One of "revenue", "gross_profit", "operating_income", "net_income", "eps", "operating_cash_flow"
-- value: Numeric value (float)
-- unit: Unit if applicable (e.g., "millions", "thousands")
-- currency: Currency code if mentioned (e.g., "USD", "CNY")
+- metric_type: The metric type string (see valid values below)
+- value: Numeric value (float, in RM'000 unless stated otherwise)
+- currency: Currency code if mentioned (e.g., "MYR", "USD")
 - period: Time period if mentioned (e.g., "2023", "Q4 2023")
 - confidence: Confidence score between 0.0 and 1.0
 - reasoning: Brief explanation of your extraction
@@ -136,14 +129,18 @@ Only extract metrics with high confidence (>0.7). Skip headers, labels, or uncle
 IMPORTANT: For each metric, you MUST use the exact "metric_type" values listed below. Do NOT use "name" or other field names.
 
 Valid metric_type values (use these EXACTLY):
-- "revenue"
-- "gross_profit"
-- "operating_income"
-- "net_income"
-- "eps"
-- "operating_cash_flow"
+Income statement: "revenue", "cost_of_sales", "gross_profit", "other_income", "finance_income",
+  "administrative_expenses", "operating_income", "finance_costs", "profit_before_tax",
+  "taxation", "net_income", "eps"
+Balance sheet: "total_assets", "non_current_assets", "current_assets", "total_equity",
+  "total_liabilities", "property_plant_equipment", "right_of_use_assets", "investment_properties",
+  "intangible_assets", "investment_in_associates", "inventories", "contract_assets",
+  "trade_receivables", "cash_and_bank_balances", "share_capital", "bank_borrowings", "trade_payables"
+Cash flow: "operating_cash_flow", "investing_cash_flow", "financing_cash_flow",
+  "net_change_in_cash", "cash_end_of_period", "interest_paid", "tax_paid",
+  "drawdown_of_loans", "repayment_of_loans"
 
-Extract all relevant financial metrics. Respond with a JSON object containing a "metrics" array.
+Extract ALL financial metrics you can find. Respond with a JSON object containing a "metrics" array.
 
 Example format:
 {{

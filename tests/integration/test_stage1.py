@@ -17,12 +17,12 @@ def test_stage1_process():
 
         # Use real test PDF
         doc_manifest, page_manifests = stage1.process(
-            pdf_path="testdata/CHINHIN-2023-12-31.pdf",
+            pdf_path="testdata/CHINHIN_Annual_Report_2024.pdf",
             output_dir=output_dir
         )
 
         # Verify document manifest
-        assert doc_manifest.pdf_path == "testdata/CHINHIN-2023-12-31.pdf"
+        assert doc_manifest.pdf_path == "testdata/CHINHIN_Annual_Report_2024.pdf"
         assert doc_manifest.total_pages > 0
         assert len(doc_manifest.pdf_hash) == 64  # SHA256 hex length
 

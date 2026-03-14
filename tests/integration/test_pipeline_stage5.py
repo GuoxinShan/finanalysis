@@ -26,7 +26,7 @@ def settings():
 @pytest.fixture
 def test_pdf_path():
     """Path to test PDF"""
-    return "testdata/CHINHIN-2023-12-31.pdf"
+    return "testdata/CHINHIN_Annual_Report_2024.pdf"
 
 
 @patch('src.finanalysis.stages.stage4_metrics.LLMClient')

@@ -22,7 +22,7 @@ def settings():
 def test_pdf(tmp_path):
     """Create a minimal test PDF path"""
     # We'll use the real test PDF
-    return "testdata/CHINHIN-2023-12-31.pdf"
+    return "testdata/CHINHIN_Annual_Report_2024.pdf"
 
 
 def test_pipeline_initialization(settings):

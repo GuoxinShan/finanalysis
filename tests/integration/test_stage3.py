@@ -19,14 +19,14 @@ def test_stage3_process():
         # Run Stage 1
         stage1 = Stage1Preprocessor(settings=settings)
         doc_manifest, page_manifests = stage1.process(
-            pdf_path="testdata/CHINHIN-2023-12-31.pdf",
+            pdf_path="testdata/CHINHIN_Annual_Report_2024.pdf",
             output_dir=output_dir
         )
 
         # Run Stage 2
         stage2 = Stage2TextExtractor(settings=settings)
         text_blocks, updated_page_manifests = stage2.process(
-            pdf_path="testdata/CHINHIN-2023-12-31.pdf",
+            pdf_path="testdata/CHINHIN_Annual_Report_2024.pdf",
             doc_manifest=doc_manifest,
             page_manifests=page_manifests,
             output_dir=output_dir
@@ -35,7 +35,7 @@ def test_stage3_process():
         # Run Stage 3
         stage3 = Stage3TableExtractor(settings=settings)
         table_rows, final_page_manifests = stage3.process(
-            pdf_path="testdata/CHINHIN-2023-12-31.pdf",
+            pdf_path="testdata/CHINHIN_Annual_Report_2024.pdf",
             doc_manifest=doc_manifest,
             page_manifests=updated_page_manifests,
             output_dir=output_dir

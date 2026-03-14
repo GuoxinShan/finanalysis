@@ -18,14 +18,14 @@ def test_stage2_process():
         # Run Stage 1 first
         stage1 = Stage1Preprocessor(settings=settings)
         doc_manifest, page_manifests = stage1.process(
-            pdf_path="testdata/CHINHIN-2023-12-31.pdf",
+            pdf_path="testdata/CHINHIN_Annual_Report_2024.pdf",
             output_dir=output_dir
         )
 
         # Run Stage 2
         stage2 = Stage2TextExtractor(settings=settings)
         text_blocks, updated_page_manifests = stage2.process(
-            pdf_path="testdata/CHINHIN-2023-12-31.pdf",
+            pdf_path="testdata/CHINHIN_Annual_Report_2024.pdf",
             doc_manifest=doc_manifest,
             page_manifests=page_manifests,
             output_dir=output_dir

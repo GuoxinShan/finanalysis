@@ -28,7 +28,7 @@ def settings():
 @pytest.fixture
 def test_pdf():
     """Path to test PDF"""
-    return "testdata/CHINHIN-2023-12-31.pdf"
+    return "testdata/CHINHIN_Annual_Report_2024.pdf"
 
 
 @patch('src.finanalysis.stages.stage4_metrics.LLMClient')
@@ -198,7 +198,7 @@ def test_e2e_pipeline_handles_empty_pdf(mock_llm_client_class, settings, tmp_pat
     """E2E Test: Verify pipeline handles empty/minimal PDF gracefully"""
     # Use a PDF path - but this will fail if the file doesn't exist
     # So we'll skip this test if the file doesn't exist
-    test_pdf = "testdata/CHINHIN-2023-12-31.pdf"
+    test_pdf = "testdata/CHINHIN_Annual_Report_2024.pdf"
 
     if not Path(test_pdf).exists():
         pytest.skip("Test PDF not available")

@@ -9,6 +9,7 @@ from .stages.stage2_text import Stage2TextExtractor
 from .stages.stage3_tables import Stage3TableExtractor
 from .stages.stage4_metrics import Stage4MetricExtractor
 from .stages.stage5_aggregate import Stage5Aggregator
+from .fs_index import FSIndex
 
 logger = logging.getLogger(__name__)
 
@@ -108,7 +109,7 @@ class Pipeline:
                 logger.info("Stopping at Stage 3 (testing mode)")
                 return {"status": "stopped", "stage": 3}
 
-            # Stage 4: Metric extraction
+            # Stage 4: Metric extraction (LLM-based + structured FSIndex)
             logger.info("Stage 4: Metric extraction")
             stage4 = Stage4MetricExtractor(settings=self.settings)
             metrics = stage4.process(
@@ -119,6 +120,12 @@ class Pipeline:
                 output_dir=output,
                 text_blocks=[b.model_dump() for b in text_blocks]
             )
+
+            # Structured extraction via FSIndex (no LLM, direct parsing)
+            logger.info("Stage 4b: Structured financial statement extraction")
+            fs_index = FSIndex.from_pdf(Path(pdf_path))
+            if fs_index.line_items:
+                fs_index.save(output / "fs_index.json")
 
             if stop_at_stage == 4:
                 logger.info("Stopping at Stage 4 (testing mode)")
@@ -137,6 +144,10 @@ class Pipeline:
                 output_dir=output
             )
 
+            # Append FSIndex metrics after Stage 5 (which overwrites the file)
+            if fs_index.line_items:
+                self._write_fs_metrics(fs_index, output)
+
             logger.info("Pipeline complete!")
             return summary
 
@@ -148,3 +159,35 @@ class Pipeline:
             # Restore cache setting if it was overridden
             if force:
                 self.settings.cache_enabled = original_cache
+
+    @staticmethod
+    def _write_fs_metrics(fs_index: FSIndex, output_dir: Path):
+        """Write FSIndex line items to metric_candidates.jsonl (append)."""
+        import json
+        path = output_dir / "metric_candidates.jsonl"
+        with open(path, "a") as f:
+            for key, entry in fs_index.line_items.items():
+                # Skip section-qualified duplicates (keep only unqualified)
+                if "(" in key:
+                    continue
+                for entity in ["group", "company"]:
+                    for period_label, period_key in [("current", "current"), ("prior", "prior")]:
+                        col = f"{entity}_{period_key}"
+                        val = entry.get(col)
+                        if val is None:
+                            continue
+                        record = {
+                            "id": f"fs-{key}-{entity}-{period_label}",
+                            "metric_type": key,
+                            "value": abs(val),
+                            "currency": "MYR",
+                            "period": period_label,
+                            "source_table_row_id": f"fs-page-{entry.get('page', 0)}",
+                            "source_text": entry.get("label", key),
+                            "confidence": 1.0,
+                            "entity": entity,
+                            "statement": entry.get("statement", ""),
+                            "section": entry.get("section", ""),
+                        }
+                        f.write(json.dumps(record) + "\n")
+        logger.info(f"Appended FSIndex metrics to {path}")

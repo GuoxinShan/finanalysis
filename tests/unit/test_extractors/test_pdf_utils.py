@@ -3,12 +3,12 @@ from src.finanalysis.extractors.pdf_utils import open_pdf, get_page_count, get_p
 
 def test_open_pdf():
     # Use one of the real PDFs
-    with open_pdf("testdata/CHINHIN-2023-12-31.pdf") as pdf:
+    with open_pdf("testdata/CHINHIN_Annual_Report_2024.pdf") as pdf:
         assert pdf is not None
         assert len(pdf.pages) > 0
 
 def test_get_page_count():
-    count = get_page_count("testdata/CHINHIN-2023-12-31.pdf")
+    count = get_page_count("testdata/CHINHIN_Annual_Report_2024.pdf")
     assert count > 0
 
 def test_classify_page_native_text():
