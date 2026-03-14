@@ -255,9 +255,81 @@ def validate_tone(content: str) -> List[Tuple[int, str, str]]:
     return issues
 
 
+def validate_report(report_path: Path, fs_index_path: Path, metrics_path: Optional[Path] = None) -> Dict:
+    """Run all validation checks with DATA ACCURACY as priority."""
+    # Load data sources
+    if not fs_index_path.exists():
+        raise FileNotFoundError(f"fs_index.json not found: {fs_index_path}")
+
+    content = report_path.read_text(encoding='utf-8')
+    fs_index = json.loads(fs_index_path.read_text())
+
+    # Run validations in PRIORITY ORDER
+    critical_issues = []
+    critical_issues.extend(validate_data_accuracy(content, fs_index))
+    critical_issues.extend(validate_calculations(content))
+
+    formatting_issues = []
+    formatting_issues.extend(validate_tone(content))
+
+    total_critical = len(critical_issues)
+    total_formatting = len(formatting_issues)
+
+    return {
+        'path': str(report_path),
+        'total_critical': total_critical,
+        'total_formatting': total_formatting,
+        'critical_issues': critical_issues,
+        'formatting_issues': formatting_issues,
+        'issues_by_category': {
+            'data_accuracy': critical_issues,
+            'tone': formatting_issues,
+        },
+        'passed': total_critical == 0,  # Fail on data issues only
+    }
+
+
+def print_report(results: Dict):
+    """Print validation results."""
+    print(f"\n{'='*70}")
+    print(f"VALIDATION REPORT: {results['path']}")
+    print(f"{'='*70}\n")
+
+    if results['passed'] and results['total_formatting'] == 0:
+        print("✅ PASSED - No issues found!\n")
+        return
+
+    # CRITICAL: Data Accuracy Issues
+    if results['total_critical'] > 0:
+        print(f"❌ CRITICAL - {results['total_critical']} DATA ACCURACY ISSUE(S):\n")
+        print("These MUST be fixed before delivery:\n")
+        print("-" * 70)
+
+        for line_num, problem, detail in results['critical_issues']:
+            if line_num > 0:
+                print(f"Line {line_num:4d}: {problem}")
+            else:
+                print(f"         {problem}")
+            print(f"         → {detail}\n")
+
+    # Formatting Issues
+    if results['total_formatting'] > 0:
+        print(f"\n⚠️  FORMATTING - {results['total_formatting']} issue(s):\n")
+        print("-" * 70)
+
+        for line_num, problem, detail in results['formatting_issues']:
+            print(f"  {problem}")
+            print(f"  → {detail}\n")
+
+    if results['passed']:
+        print("\n✅ Data accuracy verified. Formatting issues can be addressed.\n")
+
+
 def main():
     """Main entry point."""
-    parser = argparse.ArgumentParser(description='Validate financial analysis report')
+    parser = argparse.ArgumentParser(
+        description='Validate financial analysis report (DATA ACCURACY priority)'
+    )
     parser.add_argument('report', type=Path, help='Path to report markdown file')
     parser.add_argument('--data', type=Path, required=True,
                        help='Path to fs_index.json (source data)')
@@ -274,9 +346,11 @@ def main():
         print(f"Error: Data file not found: {args.data}")
         sys.exit(1)
 
-    # TODO: Implement validation
-    print("Validation not yet implemented")
-    sys.exit(0)
+    results = validate_report(args.report, args.data, args.metrics)
+    print_report(results)
+
+    # Exit with error code if critical issues found
+    sys.exit(0 if results['passed'] else 1)
 
 
 if __name__ == '__main__':

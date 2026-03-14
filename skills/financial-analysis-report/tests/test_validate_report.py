@@ -51,3 +51,35 @@ def test_validate_tone():
     assert len(issues) == 2
     assert any('explosive' in issue[1] for issue in issues)
     assert any('collapsed' in issue[1] for issue in issues)
+
+
+def test_full_validation(tmp_path):
+    """Test complete validation workflow."""
+    from validate_report import validate_report
+
+    # Create test files
+    report = tmp_path / "test_report.md"
+    report.write_text("""
+| Revenue | 3,252 | 2,057 | +58.1% |
+Revenue showed explosive growth.
+""")
+
+    fs_index = tmp_path / "fs_index.json"
+    fs_index.write_text(json.dumps({
+        'line_items': {
+            'revenue': {
+                'group_current': 3252347,
+                'group_prior': 2057210
+            }
+        }
+    }))
+
+    # Run validation
+    result = validate_report(report, fs_index)
+
+    # Should have 0 CRITICAL issues (data is correct)
+    assert result['total_critical'] == 0
+
+    # Should have 1 FORMATTING issue (aggressive language)
+    assert result['total_formatting'] == 1
+    assert result['passed'] is True  # Formatting issues don't block
