@@ -235,6 +235,26 @@ AGGRESSIVE_WORDS = {
 }
 
 
+def validate_tone(content: str) -> List[Tuple[int, str, str]]:
+    """Check for aggressive language in report.
+
+    Returns FORMATTING issues (not CRITICAL) - these don't block delivery.
+    """
+    issues = []
+    lines = content.split('\n')
+
+    for line_num, line in enumerate(lines, 1):
+        for word, replacement in AGGRESSIVE_WORDS.items():
+            if re.search(rf'\b{word}\b', line, re.IGNORECASE):
+                issues.append((
+                    line_num,
+                    f"Aggressive language: '{word}'",
+                    f"Consider: '{replacement}'"
+                ))
+
+    return issues
+
+
 def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(description='Validate financial analysis report')

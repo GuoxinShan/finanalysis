@@ -32,3 +32,22 @@ def test_validate_yoy_calculations():
     # Should catch wrong YoY%
     assert len(issues) == 1
     assert '58.1' in issues[0][2]  # Suggestion shows correct value
+
+
+def test_validate_tone():
+    """Test detecting aggressive language."""
+    from validate_report import validate_tone
+
+    # Professional language
+    good_report = "Revenue showed strong growth of 58% YoY."
+    issues = validate_tone(good_report)
+    assert len(issues) == 0
+
+    # Aggressive language
+    bad_report = "Revenue showed explosive growth of 58% YoY, while margins collapsed."
+    issues = validate_tone(bad_report)
+
+    # Should find 2 issues: 'explosive' and 'collapsed'
+    assert len(issues) == 2
+    assert any('explosive' in issue[1] for issue in issues)
+    assert any('collapsed' in issue[1] for issue in issues)
