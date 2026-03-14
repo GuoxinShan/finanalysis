@@ -178,6 +178,49 @@ def validate_data_accuracy(content: str, fs_index: dict) -> List[Tuple[int, str,
 
     return issues
 
+def validate_calculations(content: str) -> List[Tuple[int, str, str]]:
+    """Verify YoY % calculations are correct.
+
+    Looks for patterns like: | Metric | Current | Prior | +X.Y% |
+    """
+    issues = []
+
+    # Pattern to match: | Metric | Current | Prior | +X.Y% |
+    yoy_pattern = r'\|\s*([^|]+)\s*\|\s*([\d,]+(?:\.\d+)?)\s*\|\s*([\d,]+(?:\.\d+)?)\s*\|\s*\+?([\d.]+)%'
+
+    for match in re.finditer(yoy_pattern, content):
+        metric_name = match.group(1).strip()
+
+        # Skip separator rows
+        if metric_name.startswith('---') or not metric_name:
+            continue
+
+        try:
+            current = float(match.group(2).replace(',', ''))
+            prior = float(match.group(3).replace(',', ''))
+            reported_yoy = float(match.group(4))
+
+            # Skip if prior is zero (division by zero)
+            if prior == 0:
+                continue
+
+            # Calculate expected YoY
+            expected_yoy = ((current - prior) / prior) * 100
+
+            # Check if reported matches calculated (within 0.2% for rounding)
+            if abs(reported_yoy - expected_yoy) > 0.2:
+                line_num = content[:match.start()].count('\n') + 1
+                issues.append((
+                    line_num,
+                    f"Incorrect YoY calculation for '{metric_name}'",
+                    f"Reported: {reported_yoy:.1f}%, Calculated: {expected_yoy:.1f}%"
+                ))
+        except (ValueError, ZeroDivisionError):
+            continue
+
+    return issues
+
+
 # Aggressive language patterns to flag
 AGGRESSIVE_WORDS = {
     "explosive": "strong growth",
