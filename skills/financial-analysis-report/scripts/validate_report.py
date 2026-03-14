@@ -29,6 +29,45 @@ class ExtractedNumber:
     line_num: int  # Line number in report
 
 
+def extract_numbers_from_markdown(content: str) -> List[ExtractedNumber]:
+    """Extract all numbers from markdown report with context.
+
+    Focuses on table cells with format: | Metric | Value1 | Value2 | ...
+    """
+    extracted = []
+    lines = content.split('\n')
+
+    # Pattern to match table cells: | Metric | Value1 | Value2 | ...
+    # Captures metric name and all numeric values in the row
+    table_row_pattern = r'\|\s*([^|]+)\s*\|\s*([\d,]+(?:\.\d+)?)\s*\|\s*([\d,]+(?:\.\d+)?)\s*\|'
+
+    for match in re.finditer(table_row_pattern, content):
+        metric_name = match.group(1).strip()
+
+        # Skip separator rows and headers
+        if metric_name.startswith('---') or metric_name.lower() in ['metric', 'indicator']:
+            continue
+
+        # Extract current and prior year values
+        for group_idx in [2, 3]:  # Groups 2 and 3 are the numeric columns
+            value_str = match.group(group_idx).replace(',', '')
+            try:
+                value = float(value_str)
+
+                # Calculate line number
+                line_num = content[:match.start()].count('\n') + 1
+
+                extracted.append(ExtractedNumber(
+                    value=value,
+                    context=metric_name,
+                    line_num=line_num
+                ))
+            except ValueError:
+                continue
+
+    return extracted
+
+
 # Map common metric names to fs_index.json field names
 METRIC_ALIASES = {
     'revenue': ['revenue', 'total revenue', 'sales', 'turnover'],
