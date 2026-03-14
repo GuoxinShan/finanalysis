@@ -203,7 +203,8 @@ def query_series(label: str, company: str, dirs: tuple, registry: str, entity: s
         click.echo(f"  {row['year']:<6} {val}")
 
 
-
+@cli.command()
+@click.argument('output_dirs', nargs=-1, required=True)
 @click.option('--metric', '-m', default=None, help='Specific metric type to compare (e.g. revenue)')
 def compare(output_dirs: tuple, metric: str):
     """Compare metrics across multiple parsed PDF output directories.
