@@ -110,7 +110,68 @@ def search(output_dir: str, query: str, top_k: int, source: str):
 
 
 @cli.command()
-@click.argument('output_dirs', nargs=-1, required=True)
+@click.argument('label')
+@click.option('--company', '-c', required=True, help='Company name or stock code (e.g. CHINHIN)')
+@click.option('--year', '-y', type=int, required=True, help='Fiscal year (e.g. 2024)')
+@click.option('--dirs', '-d', multiple=True, required=True, help='Pipeline output directories')
+def query(label: str, company: str, year: int, dirs: tuple):
+    """Query a financial metric by company and year.
+
+    Example: finanalysis query revenue -c CHINHIN -y 2024 -d output/annual_2023 -d output/annual_2024
+    """
+    from .report_index import ReportIndex
+
+    registry = ReportIndex()
+    for d in dirs:
+        registry.add(d)
+
+    if company.upper() not in registry.companies():
+        click.echo(f"Company '{company}' not found. Available: {registry.companies()}", err=True)
+        raise click.Abort()
+
+    result = registry.query(label, company=company, year=year)
+    if result is None:
+        click.echo(f"No data found for '{label}' ({company} FY{year})")
+        return
+
+    click.echo(f"\n{label.upper()} — {company} FY{year} ({result['currency']})")
+    if result['group'] is not None:
+        click.echo(f"  Group:   {result['group']:>15,.0f}")
+    if result['company'] is not None:
+        click.echo(f"  Company: {result['company']:>15,.0f}")
+
+
+@cli.command('query-series')
+@click.argument('label')
+@click.option('--company', '-c', required=True, help='Company name or stock code')
+@click.option('--dirs', '-d', multiple=True, required=True, help='Pipeline output directories')
+@click.option('--entity', '-e', default='group', type=click.Choice(['group', 'company']), help='Entity level')
+def query_series(label: str, company: str, dirs: tuple, entity: str):
+    """Query a metric across all available years for a company.
+
+    Example: finanalysis query-series revenue -c CHINHIN -d output/annual_2023 -d output/annual_2024
+    """
+    from .report_index import ReportIndex
+
+    registry = ReportIndex()
+    for d in dirs:
+        registry.add(d)
+
+    series = registry.query_series(label, company=company, entity=entity)
+    if not series:
+        click.echo(f"No data found for '{label}' ({company})")
+        return
+
+    currency = series[0]['currency'] if series else ''
+    click.echo(f"\n{label.upper()} — {company} ({entity}) [{currency}]")
+    click.echo(f"  {'Year':<6} {'Value':>15}")
+    click.echo(f"  {'-'*6} {'-'*15}")
+    for row in series:
+        val = f"{row['value']:>15,.0f}" if row['value'] is not None else f"{'N/A':>15}"
+        click.echo(f"  {row['year']:<6} {val}")
+
+
+
 @click.option('--metric', '-m', default=None, help='Specific metric type to compare (e.g. revenue)')
 def compare(output_dirs: tuple, metric: str):
     """Compare metrics across multiple parsed PDF output directories.
