@@ -147,14 +147,30 @@ class Pipeline:
     @staticmethod
     def _write_fs_metrics(fs_index: FSIndex, output_dir: Path):
         """Write FSIndex line items to metric_candidates.jsonl."""
+        from datetime import date
+
+        # Derive absolute year labels from fiscal_year_end
+        # e.g. fiscal_year_end="2024-12-31" -> current_year="FY2024", prior_year="FY2023"
+        current_year = None
+        prior_year = None
+        if fs_index.fiscal_year_end:
+            try:
+                fy = date.fromisoformat(fs_index.fiscal_year_end)
+                current_year = f"FY{fy.year}"
+                prior_year = f"FY{fy.year - 1}"
+            except ValueError:
+                pass
+
         path = output_dir / "metric_candidates.jsonl"
         with open(path, "w") as f:
             for key, entry in fs_index.line_items.items():
-                # Skip section-qualified duplicates (keep only unqualified)
                 if "(" in key:
                     continue
                 for entity in ["group", "company"]:
-                    for period_label, period_key in [("current", "current"), ("prior", "prior")]:
+                    for period_label, period_key, year_label in [
+                        ("current", "current", current_year),
+                        ("prior", "prior", prior_year),
+                    ]:
                         col = f"{entity}_{period_key}"
                         val = entry.get(col)
                         if val is None:
@@ -164,7 +180,9 @@ class Pipeline:
                             "metric_type": key,
                             "value": abs(val),
                             "currency": fs_index.currency,
-                            "period": period_label,
+                            "period": year_label or period_label,
+                            "fiscal_year_end": fs_index.fiscal_year_end,
+                            "company_name": fs_index.company_name,
                             "source_table_row_id": f"fs-page-{entry.get('page', 0)}",
                             "source_text": entry.get("label", key),
                             "confidence": 1.0,

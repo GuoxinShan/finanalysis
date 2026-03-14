@@ -185,12 +185,73 @@ def _normalize(label: str) -> str:
     return label.strip()
 
 
+_MONTH_MAP = {
+    "january": 1, "february": 2, "march": 3, "april": 4,
+    "may": 5, "june": 6, "july": 7, "august": 8,
+    "september": 9, "october": 10, "november": 11, "december": 12,
+}
+
+
+def _detect_fiscal_year_end(text: str) -> Optional[str]:
+    """Extract fiscal year end date from FS page text.
+
+    Looks for patterns like:
+      'AS AT 31 DECEMBER 2024'
+      'FOR THE FINANCIAL YEAR ENDED 31 DECEMBER 2024'
+      'YEAR ENDED 31 MARCH 2024'
+
+    Returns ISO date string 'YYYY-MM-DD' or None.
+    """
+    m = re.search(
+        r'(?:AS AT|YEAR ENDED|FINANCIAL YEAR ENDED)\s+(\d{1,2})\s+([A-Z]+)\s+(\d{4})',
+        text, re.IGNORECASE
+    )
+    if m:
+        day, month_str, year = int(m.group(1)), m.group(2).lower(), int(m.group(3))
+        month = _MONTH_MAP.get(month_str)
+        if month:
+            return f"{year}-{month:02d}-{day:02d}"
+    return None
+
+
+def _detect_company_name(text: str) -> Optional[str]:
+    """Extract company name from FS page header text.
+
+    Looks for lines before the statement title that look like a company name:
+    - Title case or ALL CAPS
+    - Contains 'Berhad', 'Limited', 'Ltd', 'Inc', 'Corp', 'Holdings', 'Group'
+    - Or is a standalone ALL CAPS line in the first 10 lines
+    """
+    lines = text.splitlines()
+    for line in lines[:15]:
+        stripped = line.strip()
+        if not stripped or len(stripped) < 5:
+            continue
+        # Stop at statement headers
+        if any(kw in stripped.upper() for kw in [
+            "STATEMENT OF", "INCOME STATEMENT", "BALANCE SHEET",
+            "CASH FLOW", "NOTE", "RM'", "USD'", "SGD'"
+        ]):
+            break
+        # Match company name indicators
+        if re.search(
+            r'\b(Berhad|Bhd|Limited|Ltd\.?|Inc\.?|Corp\.?|Holdings?|Group|Pte|Plc)\b',
+            stripped, re.IGNORECASE
+        ):
+            # Clean up pipe-separated suffixes like "Chin Hin Group | Annual Report 2024"
+            name = re.split(r'\s*[|–—]\s*', stripped)[0].strip()
+            return name
+    return None
+
+
 class FSIndex:
     """Structured financial statement index built from PDF pages."""
 
     def __init__(self):
         self.line_items: dict[str, dict] = {}
-        self.currency: str = "USD"  # detected from PDF, default fallback
+        self.currency: str = "USD"
+        self.fiscal_year_end: Optional[str] = None   # ISO: 'YYYY-MM-DD'
+        self.company_name: Optional[str] = None
 
     @classmethod
     def from_pdf(cls, pdf_path: Path) -> "FSIndex":
@@ -248,11 +309,16 @@ class FSIndex:
                 found_fs = True
                 consecutive_miss = 0
 
-                # Detect currency from first FS page found
-                if not hasattr(index, '_currency_detected'):
-                    detected = _detect_currency(text)
-                    index.currency = detected
-                    index._currency_detected = True
+                # Detect metadata from first FS page found
+                if not hasattr(index, '_metadata_detected'):
+                    index.currency = _detect_currency(text)
+                    fy = _detect_fiscal_year_end(text)
+                    if fy:
+                        index.fiscal_year_end = fy
+                    cn = _detect_company_name(text)
+                    if cn:
+                        index.company_name = cn
+                    index._metadata_detected = True
 
                 stmt_type = _detect_statement_type(text.upper())
                 has_company = bool(re.search(r'\bCompany\b', text))
@@ -416,7 +482,12 @@ class FSIndex:
         return best_entry
 
     def save(self, path: Path):
-        data = {"currency": self.currency, "line_items": self.line_items}
+        data = {
+            "currency": self.currency,
+            "fiscal_year_end": self.fiscal_year_end,
+            "company_name": self.company_name,
+            "line_items": self.line_items,
+        }
         with open(path, 'w') as f:
             json.dump(data, f, indent=2, default=str)
 
@@ -425,10 +496,11 @@ class FSIndex:
         index = cls()
         with open(path) as f:
             data = json.load(f)
-        # Support both new format (with currency) and legacy format (bare dict)
         if isinstance(data, dict) and "line_items" in data:
             index.line_items = data["line_items"]
             index.currency = data.get("currency", "USD")
+            index.fiscal_year_end = data.get("fiscal_year_end")
+            index.company_name = data.get("company_name")
         else:
             index.line_items = data
         return index
