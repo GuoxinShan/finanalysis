@@ -25,7 +25,8 @@ class Pipeline:
         pdf_path: str,
         output_dir: Optional[str] = None,
         force: bool = False,
-        stop_at_stage: Optional[int] = None
+        stop_at_stage: Optional[int] = None,
+        company_name: Optional[str] = None,
     ) -> dict:
         """Run full PDF parsing pipeline
 
@@ -34,6 +35,7 @@ class Pipeline:
             output_dir: Output directory (default: settings.output_dir)
             force: Force reprocess, ignore cache
             stop_at_stage: Stop after this stage (1-5), for testing
+            company_name: Company name or stock code (e.g. "Chin Hin Group Berhad", "CHINHIN")
 
         Returns:
             Summary dict with processing results
@@ -103,7 +105,7 @@ class Pipeline:
 
             # Stage 4: Structured financial statement extraction (FSIndex, no LLM)
             logger.info("Stage 4: Structured financial statement extraction")
-            fs_index = FSIndex.from_pdf(Path(pdf_path))
+            fs_index = FSIndex.from_pdf(Path(pdf_path), company_name=company_name)
             if fs_index.line_items:
                 fs_index.save(output / "fs_index.json")
             doc_manifest.metric_candidate_count = len(fs_index.line_items)

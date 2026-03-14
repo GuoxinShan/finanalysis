@@ -214,36 +214,6 @@ def _detect_fiscal_year_end(text: str) -> Optional[str]:
     return None
 
 
-def _detect_company_name(text: str) -> Optional[str]:
-    """Extract company name from FS page header text.
-
-    Looks for lines before the statement title that look like a company name:
-    - Title case or ALL CAPS
-    - Contains 'Berhad', 'Limited', 'Ltd', 'Inc', 'Corp', 'Holdings', 'Group'
-    - Or is a standalone ALL CAPS line in the first 10 lines
-    """
-    lines = text.splitlines()
-    for line in lines[:15]:
-        stripped = line.strip()
-        if not stripped or len(stripped) < 5:
-            continue
-        # Stop at statement headers
-        if any(kw in stripped.upper() for kw in [
-            "STATEMENT OF", "INCOME STATEMENT", "BALANCE SHEET",
-            "CASH FLOW", "NOTE", "RM'", "USD'", "SGD'"
-        ]):
-            break
-        # Match company name indicators
-        if re.search(
-            r'\b(Berhad|Bhd|Limited|Ltd\.?|Inc\.?|Corp\.?|Holdings?|Group|Pte|Plc)\b',
-            stripped, re.IGNORECASE
-        ):
-            # Clean up pipe-separated suffixes like "Chin Hin Group | Annual Report 2024"
-            name = re.split(r'\s*[|–—]\s*', stripped)[0].strip()
-            return name
-    return None
-
-
 class FSIndex:
     """Structured financial statement index built from PDF pages."""
 
@@ -251,11 +221,18 @@ class FSIndex:
         self.line_items: dict[str, dict] = {}
         self.currency: str = "USD"
         self.fiscal_year_end: Optional[str] = None   # ISO: 'YYYY-MM-DD'
-        self.company_name: Optional[str] = None
+        self.company_name: Optional[str] = None      # Provided by caller
 
     @classmethod
-    def from_pdf(cls, pdf_path: Path) -> "FSIndex":
+    def from_pdf(cls, pdf_path: Path, company_name: Optional[str] = None) -> "FSIndex":
+        """Build FSIndex from a PDF file.
+
+        Args:
+            pdf_path: Path to the annual report PDF
+            company_name: Company name or stock code (e.g. "Chin Hin Group Berhad", "CHINHIN")
+        """
         index = cls()
+        index.company_name = company_name
         try:
             import pdfplumber
         except ImportError:
@@ -315,9 +292,6 @@ class FSIndex:
                     fy = _detect_fiscal_year_end(text)
                     if fy:
                         index.fiscal_year_end = fy
-                    cn = _detect_company_name(text)
-                    if cn:
-                        index.company_name = cn
                     index._metadata_detected = True
 
                 stmt_type = _detect_statement_type(text.upper())
