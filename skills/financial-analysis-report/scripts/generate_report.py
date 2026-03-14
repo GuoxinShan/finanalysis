@@ -73,7 +73,7 @@ def find_finanalysis_cli() -> List[str]:
     )
 
 
-def run_cli(command: List[str], description: str = "Run a CLI command and handle errors"""
+def run_cli(command: List[str], description: str = "Run a CLI command and handle errors"):
     print(f"Running: {' '.join(command)}")
 
     try:
@@ -93,7 +93,7 @@ def run_cli(command: List[str], description: str = "Run a CLI command and handle
         print(f"✓ {description} completed")
         return result
 
-    except FileNotFoundError as e:
+    except FileNotFoundError:
         print(f"❌ Command not found: {' '.join(command)}")
         raise
 
@@ -108,7 +108,7 @@ def parse_pdf(pdf_path: str, company_name: str, output_dir: str) -> str:
     # Run parse command
     cmd = cli + ['parse', pdf_path, '--company', company_name, '-o', output_dir]
 
-    result = run_cli(cmd, f"Parsing {pdf_path}")
+    run_cli(cmd, f"Parsing {pdf_path}")
 
     # Return path to fs_index.json
     return os.path.join(output_dir, 'fs_index.json')
@@ -123,7 +123,7 @@ def calculate_metrics(fs_index_path: str, prior_fs_index_path: Optional[str], ou
         cmd.extend(['--prior', prior_fs_index_path])
     cmd.extend(['--output', output_path])
 
-    result = run_cli(cmd, f"Calculating metrics for {fs_index_path}")
+    run_cli(cmd, f"Calculating metrics for {fs_index_path}")
 
     return output_path
 
@@ -145,7 +145,7 @@ def generate_data_bundles(fs_index_path: str, company_name: str, prior_fs_index_
         cmd.extend(['--prior', prior_fs_index_path])
     cmd.extend(['--output', output_path])
 
-    result = run_cli(cmd, f"Generating data bundles")
+    run_cli(cmd, f"Generating data bundles")
 
     return output_path
 
@@ -195,15 +195,15 @@ def assemble_final_report(workspace_dir: str, output_path: str, company_name: st
     worker_files = []
     for i in range(1, 7):
         if i == 6:
-                # Worker 6 has two parts
-                for part in ['part1', 'part2']:
-                    path = os.path.join(workspace_dir, f'worker_{i}_sections_{part}.md')
-                    if os.path.exists(path):
-                        worker_files.append(path)
-            else:
-                path = os.path.join(workspace_dir, f'worker_{i}_sections.md')
+            # Worker 6 has two parts
+            for part in ['part1', 'part2']:
+                path = os.path.join(workspace_dir, f'worker_{i}_sections_{part}.md')
                 if os.path.exists(path):
                     worker_files.append(path)
+        else:
+            path = os.path.join(workspace_dir, f'worker_{i}_sections.md')
+            if os.path.exists(path):
+                worker_files.append(path)
 
     if not worker_files:
         print(f"⚠️  No worker output files found in {workspace_dir}")
