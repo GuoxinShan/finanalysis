@@ -3,7 +3,22 @@ name = "finanalysis"
 version = "0.1.0"
 description = "Financial Report PDF Parsing and Analysis Pipeline"
 readme = "README.md"
+license = {text = "MIT"}
 requires-python = ">=3.11"
+authors = [
+    {name = "Your Name", email = "your.email@example.com"}
+]
+keywords = ["finance", "pdf", "parsing", "financial-analysis", "accounting", "annual-reports"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Financial and Insurance Industry",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Office/Business :: Financial :: Accounting",
+    "Topic :: Text Processing :: Markup",
+]
 dependencies = [
     "camelot-py[cv]>=1.0.9",
     "click>=8.3.1",
@@ -13,6 +28,12 @@ dependencies = [
     "pydantic-settings>=2.13.1",
     "pytesseract>=0.3.13",
 ]
+
+[project.urls]
+Homepage = "https://github.com/GuoxinShan/finanalysis"
+Documentation = "https://github.com/GuoxinShan/finanalysis#readme"
+Repository = "https://github.com/GuoxinShan/finanalysis"
+Issues = "https://github.com/GuoxinShan/finanalysis/issues"
 
 [project.scripts]
 finanalysis = "finanalysis.cli:cli"

@@ -13,7 +13,25 @@ A stage-based PDF parsing pipeline for financial reports. Extracts text, tables,
 
 ## Installation
 
+### For Users
+
 ```bash
+# Install from PyPI (after publishing)
+pip install finanalysis
+
+# Or install from GitHub
+pip install git+https://github.com/GuoxinShan/finanalysis.git
+```
+
+### For Developers
+
+```bash
+# Clone and install in editable mode
+git clone https://github.com/GuoxinShan/finanalysis.git
+cd finanalysis
+pip install -e .
+
+# Or use uv for development
 uv sync
 ```
 
@@ -170,3 +188,19 @@ See [docs/plans/2026-03-13-pdf-pipeline-design.md](docs/plans/2026-03-13-pdf-pip
 ## License
 
 MIT
+
+## For AI Agents
+
+This project includes a skill for AI agents to generate professional financial analysis reports:
+
+**Available Skill**: `financial-analysis-report`
+- Generates 18-section professional financial analysis reports
+- Uses parallel agent architecture for context efficiency
+- Location: `skills/financial-analysis-report/`
+
+**For Agents**: To use this skill, install the CLI first:
+```bash
+pip install git+https://github.com/GuoxinShan/finanalysis.git
+```
+
+Then parse financial reports and invoke the skill to generate comprehensive analysis reports.

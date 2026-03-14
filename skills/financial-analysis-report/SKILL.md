@@ -40,13 +40,41 @@ Coordinator Agent (you)
 ## Prerequisites
 
 Before starting, ensure you have:
-- **fs_index.json** from finanalysis skill (parsed annual/quarterly report)
+
+### 1. Install the finanalysis CLI
+
+**Option A: Install from GitHub (Recommended)**
+```bash
+pip install git+https://github.com/GuoxinShan/finanalysis.git
+```
+
+**Option B: Install from PyPI (if published)**
+```bash
+pip install finanalysis
+```
+
+**Option C: Install from source (for development)**
+```bash
+git clone https://github.com/GuoxinShan/finanalysis.git
+cd finanalysis
+pip install -e .
+```
+
+Verify installation:
+```bash
+finanalysis --version
+finanalysis --help
+```
+
+### 2. Prepare Financial Data
+
+- **fs_index.json** from finanalysis CLI (parsed annual/quarterly report)
 - **Prior year fs_index.json** for YoY comparison (optional but recommended)
 - Understanding of the company's business model
 
 If fs_index.json doesn't exist, parse the PDF first:
 ```bash
-python -m finanalysis.cli parse <report.pdf> --company <NAME> -o output/<NAME>/<YEAR>
+finanalysis parse <report.pdf> --company <NAME> -o output/<NAME>/<YEAR>
 ```
 
 ## Coordinator Workflow
