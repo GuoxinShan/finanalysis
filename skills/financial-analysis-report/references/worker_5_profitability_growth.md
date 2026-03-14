@@ -84,25 +84,66 @@ You will receive a JSON object with:
 Write **ONLY** the markdown content for Sections XII-XIII. Use this exact structure:
 
 ```markdown
-## Ⅻ. Profitability Analysis
+# ⅩⅡ. Profitability Analysis - [Descriptive Title]
 
-| Ratio | Current | Prior | 3-Year Avg | Industry |
-|-------|---------|--------|------------|----------|
-[Fill in from data bundle]
+**Table 1: Profitability Indicators**
+| Indicator | FY2024 | FY2023 | Change |
+|---|---:|---:|---:|
+| Gross margin | [%] | [%] | [+/-ppt] |
+| PBT margin | [%] | [%] | [+/-ppt] |
+| Net margin (PAT) | [%] | [%] | [+/-ppt] |
+| PATMI margin | [%] | [%] | [+/-ppt] |
+| Basic EPS (sen) | [Value] | [Value] | [+%] |
 
-### Profitability Assessment
+**Insights**
+1. [First insight on margin trajectory]
+2. [Second insight on profitability quality]
+3. [Third insight on per-share value creation]
+4. [Fourth insight on industry comparison]
 
-[Your insights here]
+**Table 2: Return Metrics**
+| Indicator | FY2024 | FY2023 | Interpretation |
+|---|---:|---:|---|
+| Approx. ROE | [%] | [%] | [Interpretation] |
+| Approx. ROA | [%] | [%] | [Interpretation] |
 
-## ⅩⅢ. Growth Capability Analysis
+**Insights**
+1. [First insight on return improvement]
+2. [Second insight on capital productivity]
+3. [Third insight on leverage vs. operational drivers]
 
-| Metric | YoY Growth | 3-Year CAGR | Trend |
-|--------|------------|-------------|-------|
-[Fill in from data bundle]
+**Conclusion**: [One paragraph on profitability trajectory]
 
-### Growth Sustainability
+# ⅩⅢ. Growth Capability Analysis - [Descriptive Title]
 
-[Your insights here]
+**Table 1: Growth Indicators**
+| Indicator | FY2024 | FY2023 | Observation |
+|---|---:|---:|---|
+| Revenue growth | [+%] | [+%] | [Context] |
+| Gross profit growth | [+%] | [+%] | [Context] |
+| PAT growth | [+%] | [+%] | [Context] |
+| PATMI growth | [+%] | [+%] | [Context] |
+| Total assets growth | [+%] | [+%] | [Context] |
+| Equity growth | [+%] | [+%] | [Context] |
+
+**Insights**
+1. [First insight on growth breadth]
+2. [Second insight on quality vs. scale]
+3. [Third insight on balance sheet expansion]
+4. [Fourth insight on sustainable growth capacity]
+
+**Table 2: Growth Support Indicators**
+| Support Indicator | FY2024 | FY2023 | Interpretation |
+|---|---:|---:|---|
+| Group capex | [Value] | [Value] | [Interpretation] |
+| Operating cash flow | [Value] | [Value] | [Interpretation] |
+
+**Insights**
+1. [First insight on reinvestment intensity]
+2. [Second insight on internal funding capacity]
+3. [Third insight on capex productivity]
+
+**Conclusion**: [One paragraph on growth sustainability]
 ```
 
 ## Quality Standards

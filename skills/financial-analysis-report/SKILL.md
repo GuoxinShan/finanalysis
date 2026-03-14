@@ -60,12 +60,115 @@ This single command:
 
 After workers complete their sections:
 ```bash
+# Assemble full report
 python scripts/assemble_report.py \
   --workspace workspace \
   --output CHINHIN-2024-revised.md \
   --company CHINHIN \
   --period FY2024
+
+# Generate executive summary
+python scripts/generate_summary.py \
+  --full-report CHINHIN-2024-revised.md \
+  --output CHINHIN-summary.md \
+  --company CHINHIN \
+  --period FY2024
 ```
+
+This produces two files:
+- **Full report**: `CHINHIN-2024-revised.md` (all 18 sections, ~8-12 pages)
+- **Summary report**: `CHINHIN-summary.md` (4 sections, ~2-3 pages)
+
+## Output Format
+
+### Full Report Structure (18 Sections)
+
+The full report uses Roman numerals (Ⅰ-ⅩⅧ) and follows this pattern:
+
+```
+# [Company] [Period] Financial Analysis Report
+
+Ⅰ. Company Profile
+Ⅱ. Analysis Purpose
+Ⅲ. Data Description
+Ⅳ. Core Conclusions - [Descriptive Title]
+Ⅴ. Core Financial Performance - [Descriptive Title]
+Ⅵ. Analysis of Changes in Core Business - [Descriptive Title]
+Ⅶ. Industry Change Analysis - [Descriptive Title]
+Ⅷ. Strategic Initiatives Analysis - [Descriptive Title]
+Ⅸ. Risk Scan - [Descriptive Title]
+Ⅹ. Analysis of Major Items in the Three Statements - [Descriptive Title]
+Ⅺ. Expense Analysis - [Descriptive Title]
+Ⅻ. Profitability Analysis - [Descriptive Title]
+ⅩⅢ. Growth Capability Analysis - [Descriptive Title]
+ⅩⅣ. Solvency Analysis - [Descriptive Title]
+ⅩⅤ. Operating Capability Analysis - [Descriptive Title]
+ⅩⅥ. Cash Flow Analysis - [Descriptive Title]
+ⅩⅦ. Asset Quality Analysis - [Descriptive Title]
+ⅩⅧ. Future Forecast - [Descriptive Title]
+```
+
+**Section format** (sample pattern):
+```markdown
+# [Roman Numeral]. [Section Title] - [Descriptive Subtitle]
+
+**Table N: [Table Title]**
+| Column | FY2024 | FY2023 | YoY | Comment |
+|---|---:|---:|---:|---|
+| [Item] | [Value] | [Value] | [+%] | [Note] |
+
+**Insights**
+1. [First key insight with evidence]
+2. [Second insight connecting data points]
+3. [Third insight on implications]
+
+**Conclusion**: [Summary paragraph]
+```
+
+### Summary Report Structure (4 Sections)
+
+The executive summary extracts key highlights:
+
+```
+# [Company] [Period] Financial Analysis Summary
+
+1. Key Conclusions
+   - Extracted from Section Ⅳ (Core Conclusions table)
+
+2. Data Parsing
+   - Core metrics from Section Ⅴ
+   - Profitability from Section Ⅻ
+   - Solvency from Section ⅩⅣ
+
+3. Trend Analysis
+   - Synthesized from Sections Ⅴ, Ⅻ, ⅩⅣ
+   - Revenue, margin, and solvency trajectories
+
+4. Risk Warning
+   - Extracted from Section Ⅸ (Risk Scan)
+   - Top risks and mitigants
+```
+
+## Summary Report Generation
+
+The summary report is **automatically generated** from the full report with 4 key sections:
+
+1. **Key Conclusions** - Extracted from Section Ⅳ (Core Conclusions)
+2. **Data Parsing** - Extracted from Section Ⅲ (Data Description) + Section Ⅴ (Core Performance table)
+3. **Trend Analysis** - Synthesized from Sections Ⅴ, Ⅻ, ⅩⅣ
+4. **Risk Warning** - Extracted from Section Ⅸ (Risk Scan)
+
+**Generation process**:
+```bash
+# After assembling full report, generate summary:
+python scripts/generate_summary.py \
+  --full-report CHINHIN-2024-revised.md \
+  --output CHINHIN-summary.md \
+  --company CHINHIN \
+  --period FY2024
+```
+
+The summary provides a 2-3 page executive overview suitable for quick stakeholder updates.
 
 ## Prerequisites
 

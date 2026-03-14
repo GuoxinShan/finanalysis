@@ -94,17 +94,17 @@ You will receive a JSON object with:
 Write **ONLY** the markdown content for Sections I-III. Use this exact structure:
 
 ```markdown
-## Ⅰ. Company Profile
+# Ⅰ. Company Profile
 
-[Your content here]
+[Your content here - 2-3 sentences describing the business]
 
-## Ⅱ. Analysis Purpose
+# Ⅱ. Analysis Purpose
 
-[Your content here]
+[Your content here - numbered list of 2-4 objectives]
 
-## Ⅲ. Data Description
+# Ⅲ. Data Description
 
-[Your content here]
+[Your content here - 1-2 sentences on currency, units, fiscal year]
 ```
 
 ## Quality Standards

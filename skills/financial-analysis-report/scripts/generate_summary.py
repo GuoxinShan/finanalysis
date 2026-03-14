@@ -1,0 +1,140 @@
+#!/usr/bin/env python3
+"""
+Generate executive summary report from full 18-section financial analysis report.
+
+Extracts and synthesizes:
+1. Key Conclusions (from Section Ⅳ)
+2. Data Parsing (from Sections Ⅲ + Ⅴ)
+3. Trend Analysis (from Sections Ⅴ, Ⅻ, ⅩⅣ)
+4. Risk Warning (from Section Ⅸ)
+"""
+
+import argparse
+import re
+from pathlib import Path
+
+
+def extract_section(content: str, section_num: str) -> str:
+    """Extract a specific section from the full report."""
+    # Match section headers with Roman numerals
+    pattern = rf"^# {section_num}\. .+?\n(.*?)(?=^# [ⅣⅤⅥⅦⅧⅨⅩⅪⅫ]{1,3}\. |$)"
+    match = re.search(pattern, content, re.MULTILINE | re.DOTALL)
+    return match.group(1).strip() if match else ""
+
+
+def extract_table(content: str, table_title: str) -> str:
+    """Extract a specific table by title."""
+    pattern = rf"\*\*Table \d+: {re.escape(table_title)}\*\*\n\|.*?\|(?:\n\|.*?\|)+"
+    match = re.search(pattern, content, re.MULTILINE)
+    return match.group(0) if match else ""
+
+
+def generate_summary(full_report: str, company: str, period: str) -> str:
+    """Generate executive summary from full report."""
+
+    # Extract Section Ⅳ - Core Conclusions
+    section_iv = extract_section(full_report, "Ⅳ")
+
+    # Extract Section Ⅲ - Data Description
+    section_iii = extract_section(full_report, "Ⅲ")
+
+    # Extract core performance table from Section Ⅴ
+    core_perf_table = extract_table(full_report, "Core Financial Performance")
+
+    # Extract profitability indicators from Section Ⅻ
+    profitability_table = extract_table(full_report, "Profitability Indicators")
+
+    # Extract solvency table from Section ⅩⅣ
+    solvency_table = extract_table(full_report, "Short-Term Solvency Indicators")
+
+    # Extract Section Ⅸ - Risk Scan
+    section_ix = extract_section(full_report, "Ⅸ")
+
+    # Build summary report
+    summary = f"""# {company} {period} Financial Analysis Summary
+
+## 1. Key Conclusions
+
+{section_iv}
+
+## 2. Data Parsing
+
+{section_iii}
+
+**Table 1: Core Financial Metrics**
+{core_perf_table}
+
+**Table 2: Profitability Metrics**
+{profitability_table}
+
+**Table 3: Solvency Indicators**
+{solvency_table}
+
+## 3. Trend Analysis
+
+Based on the financial metrics above, key trends include:
+- Revenue and profit growth trajectories
+- Margin expansion/compression patterns
+- Solvency and liquidity evolution
+- Working capital efficiency changes
+
+## 4. Risk Warning
+
+{section_ix}
+
+---
+
+*This executive summary was extracted from the full {company} {period} financial analysis report.*
+"""
+
+    return summary
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Generate executive summary from full financial analysis report"
+    )
+    parser.add_argument(
+        "--full-report",
+        required=True,
+        help="Path to full report markdown file"
+    )
+    parser.add_argument(
+        "--output",
+        required=True,
+        help="Output path for summary report"
+    )
+    parser.add_argument(
+        "--company",
+        required=True,
+        help="Company name"
+    )
+    parser.add_argument(
+        "--period",
+        required=True,
+        help="Period (e.g., FY2024)"
+    )
+
+    args = parser.parse_args()
+
+    # Read full report
+    full_report_path = Path(args.full_report)
+    if not full_report_path.exists():
+        raise FileNotFoundError(f"Full report not found: {full_report_path}")
+
+    full_report = full_report_path.read_text()
+
+    # Generate summary
+    summary = generate_summary(full_report, args.company, args.period)
+
+    # Write output
+    output_path = Path(args.output)
+    output_path.write_text(summary)
+
+    print(f"✓ Summary report generated: {output_path}")
+    print(f"  Company: {args.company}")
+    print(f"  Period: {args.period}")
+
+
+if __name__ == "__main__":
+    main()

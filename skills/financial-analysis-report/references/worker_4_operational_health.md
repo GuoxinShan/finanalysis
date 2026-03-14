@@ -91,25 +91,66 @@ You will receive a JSON object with:
 Write **ONLY** the markdown content for Sections XIV-XV. Use this exact structure:
 
 ```markdown
-## ⅩⅣ. Solvency Analysis
+# ⅩⅣ. Solvency Analysis - [Descriptive Title]
 
-**Short-Term Solvency**
-[Fill in from data bundle]
+**Short-Term Solvency Indicators**
+**Table 1: Short-Term Solvency Indicators**
+| Indicator | FY2024 | FY2023 | Trend |
+|---|---:|---:|---|
+| Current assets | [Value] | [Value] | [Increased/Decreased] |
+| Current liabilities | [Value] | [Value] | [Flat/Increased] |
+| Current ratio | [X.XXx] | [X.XXx] | [Improved/Declined] |
+| Cash & cash equivalents (end-year) | [Value] | [Value] | [Increased/Decreased] |
 
-**Long-Term Solvency**
-[Fill in from data bundle]
+**Insights**
+1. [First insight on liquidity buffer]
+2. [First insight on short-term obligations]
+3. [First insight on working capital quality]
 
-### Solvency Assessment
+**Long-Term Solvency Indicators**
+**Table 2: Long-Term Solvency Indicators**
+| Indicator | FY2024 | FY2023 | Trend |
+|---|---:|---:|---|
+| Debt/asset ratio | [%] | [%] | [Improved/Declined] |
+| Net debt | [Value] | [Value] | [Higher/Lower] |
+| Net debt/equity | [X.XXx] | [X.XXx] | [Improved/Declined] |
+| Gearing ratio | [%] | [%] | [Improved/Declined] |
 
-[Your insights here]
+**Insights**
+1. [First insight on leverage trajectory]
+2. [Second insight on debt sustainability]
+3. [Third insight on refinancing risk]
 
-## ⅩⅤ. Operational Capability Analysis
+**Conclusion**: [One paragraph on overall solvency profile]
 
-[Fill in from data bundle]
+# ⅩⅤ. Operating Capability Analysis - [Descriptive Title]
 
-### Working Capital Efficiency
+**Table 1: Operating Capability Proxies**
+| Indicator | FY2024 | FY2023 | Interpretation |
+|---|---:|---:|---|
+| Revenue / total assets | [X.XXx] | [X.XXx] | [Interpretation] |
+| PBT / revenue | [%] | [%] | [Interpretation] |
+| Segment capex / revenue | [%] | [%] | [Interpretation] |
+| Depreciation & amortisation | [Value] | [Value] | [Interpretation] |
 
-[Your insights here]
+**Insights**
+1. [First insight on asset productivity]
+2. [Second insight on profit extraction efficiency]
+3. [Third insight on reinvestment intensity]
+
+**Table 2: Working Capital Quality Signals**
+| Indicator | FY2024 | FY2023 | Interpretation |
+|---|---:|---:|---|
+| Receivables change (cash flow) | [Value] | [Value] | [Interpretation] |
+| Inventories change (cash flow) | [Value] | [Value] | [Interpretation] |
+| Payables change (cash flow) | [Value] | [Value] | [Interpretation] |
+
+**Insights**
+1. [First insight on collection efficiency]
+2. [Second insight on inventory management]
+3. [Third insight on supplier credit dynamics]
+
+**Conclusion**: [One paragraph on operational efficiency]
 ```
 
 ## Quality Standards

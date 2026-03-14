@@ -123,25 +123,75 @@ You will receive a JSON object with:
 Write **ONLY** the markdown content for Sections VI-VIII. Use this exact structure:
 
 ```markdown
-## Ⅵ. Analysis of Changes in Core Business
+# Ⅵ. Analysis of Changes in Core Business - [Descriptive Title]
 
-**Table 1: Segment Revenue**
-[Fill in from data bundle]
+**Table 1: External Revenue by Segment (RM million)**
+| Segment | FY2024 | FY2023 | YoY | Share of FY2024 Revenue |
+|---|---:|---:|---:|---:|
+| [Segment] | [Value] | [Value] | [+%] | [%] |
+| [Segment] | [Value] | [Value] | [+%] | [%] |
+| **Total** | **[Value]** | **[Value]** | **[+%]** | **100.00%** |
 
-**Table 2: Segment PBT**
-[Fill in from data bundle]
+**Insights**
+1. [First insight on segment performance]
+2. [Second insight on growth drivers]
+3. [Third insight on mix shifts]
 
-### Segment Analysis
+---
 
-[Your insights here]
+**Table 2: Segment Profit Before Tax (RM million)**
+| Segment | FY2024 | FY2023 | YoY |
+|---|---:|---:|---:|
+| [Segment] | [Value] | [Value] | [+%] |
+| **Total PBT** | **[Value]** | **[Value]** | **[+%]** |
 
-## Ⅶ. Industry Change Analysis
+**Insights**
+1. [First insight on profit contribution]
+2. [Second insight on margin changes]
+3. [Third insight on diversification quality]
 
-[Your analysis here]
+**Conclusion**: [One paragraph on business model evolution]
 
-## Ⅷ. Strategic Initiatives Analysis
+# Ⅶ. Industry Change Analysis - [Descriptive Title]
 
-[Your analysis here]
+**Table 1: Geographic Revenue Mix**
+| Region | FY2024 Revenue (RM million) | FY2023 Revenue (RM million) | YoY | FY2024 Share |
+|---|---:|---:|---:|---:|
+| [Region] | [Value] | [Value] | [+%] | [%] |
+| **Total** | **[Value]** | **[Value]** | **[+%]** | **100.00%** |
+
+**Insights**
+1. [First insight on geographic shifts]
+2. [Second insight on regional dynamics]
+3. [Third insight on concentration risks]
+
+**Table 2: External Industry and Macro Context (FY2024)**
+| External Context | Market Signal | Relevance to Company |
+|---|---|---|
+| [Context] | [Signal] | [Relevance] |
+
+**Insights**
+1. [First insight on external environment]
+2. [Second insight on supportive vs. headwind factors]
+3. [Third insight on forward-looking implications]
+
+**Conclusion**: [One paragraph on industry environment impact]
+
+# Ⅷ. Strategic Initiatives Analysis - [Descriptive Title]
+
+**Table 1: Strategic Initiatives Scorecard**
+| Strategic Axis | FY2024 Evidence | Assessment |
+|---|---|---|
+| [Axis 1] | [Evidence] | [Assessment] |
+| [Axis 2] | [Evidence] | [Assessment] |
+| [Axis 3] | [Evidence] | [Assessment] |
+
+**Insights**
+1. [First insight on strategy execution]
+2. [Second insight on capex deployment]
+3. [Third insight on balance between growth and discipline]
+
+**Conclusion**: [One paragraph on strategic effectiveness]
 ```
 
 ## Quality Standards

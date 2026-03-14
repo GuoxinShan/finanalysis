@@ -102,30 +102,42 @@ You receive a JSON object with metrics and margins:
 
 ## Output Format
 
-Write ONLY markdown for Sections IV-V:
+Write ONLY markdown for Sections IV-V. Use this exact structure:
 
 ```markdown
-## Ⅳ. Core Conclusions
+# Ⅳ. Core Conclusions - [Descriptive Title]
 
-- **[Insight]**: [Analysis] (1-2 sentences)
-... (3-5 bullets total)
+**Table 1: Core Conclusions Summary**
+| Core Judgment | Evidence | Interpretation |
+|---|---|---|
+| [Judgment 1] | [Evidence] | [What it means] |
+| [Judgment 2] | [Evidence] | [What it means] |
+| [Judgment 3] | [Evidence] | [What it means] |
+| [Judgment 4] | [Evidence] | [What it means] |
 
-## Ⅴ. Core Financial Performance
+**Insights**
+1. [First key insight explaining the evidence]
+2. [Second key insight connecting multiple judgments]
+3. [Third insight on implications]
 
-**Table 1: Key Performance Metrics**
+**Conclusion**: [One sentence summary of the core message]
 
-| Metric | Current | Prior | Change | YoY % |
-|--------|---------|--------|--------|-------|
-[Filled from data bundle]
+# Ⅴ. Core Financial Performance - [Descriptive Title]
 
-### Performance Analysis
+**Table 1: Core Financial Performance**
+| Indicator | FY2024 | FY2023 | YoY | Comment |
+|---|---:|---:|---:|---|
+| [Metric] | [Value] | [Value] | [+%] | [Brief note] |
+| [Metric] | [Value] | [Value] | [+%] | [Brief note] |
+| [Metric] | [Value] | [Value] | [+%] | [Brief note] |
 
-[Your analysis - explain WHY, not just WHAT]
+**Insights**
+1. [Insight connecting top-line to bottom-line]
+2. [Insight on margin trajectory]
+3. [Insight on quality of earnings]
+4. [Insight on shareholder value creation]
 
-**Key Findings**:
-- [Insight 1]
-- [Insight 2]
-- [Insight 3]
+**Conclusion**: [One paragraph summarizing performance quality]
 ```
 
 ## Quality Checklist

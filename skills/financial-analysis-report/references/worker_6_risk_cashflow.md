@@ -208,7 +208,184 @@ You receive a JSON object with:
 
 ## Output Format
 
-Write ONLY markdown for Sections IX, X, XI, XVI, XVII, XVIII in that order. Use proper section headers.
+Write ONLY markdown for Sections IX, X, XI, XVI, XVII, XVIII in that order. Use this exact structure:
+
+```markdown
+# Ⅸ. Risk Scan - [Descriptive Title]
+
+## Financial Risk Screening
+
+**Table 1: Financial Risk Screening**
+| Risk Category | FY2024 Disclosure Signal | Risk Implication |
+|---|---|---|
+| [Risk 1] | [Signal] | [Implication] |
+| [Risk 2] | [Signal] | [Implication] |
+
+**Insights**
+1. [First insight on most severe financial risks]
+2. [Second insight on liquidity and leverage]
+3. [Third insight on sensitivity factors]
+4. [Fourth insight on mitigation effectiveness]
+
+## Non-Financial / Operating Risk Screening
+
+**Table 2: Non-Financial and Operating Risk Screening**
+| Risk Category | FY2024 Disclosure Signal | Risk Implication |
+|---|---|---|
+| [Risk 1] | [Signal] | [Implication] |
+| [Risk 2] | [Signal] | [Implication] |
+
+**Insights**
+1. [First insight on operational risks]
+2. [Second insight on concentration and execution]
+3. [Third insight on regulatory factors]
+
+**Conclusion**: [One paragraph on overall risk profile]
+
+# Ⅹ. Analysis of Major Items in the Three Statements - [Descriptive Title]
+
+## Balance Sheet
+
+**Table 1: Balance Sheet Key Items**
+| Item | FY2024 | FY2023 | YoY | Analytical Point |
+|---|---:|---:|---:|---|
+| Total assets | [Value] | [Value] | [+%] | [Point] |
+| Total equity | [Value] | [Value] | [+%] | [Point] |
+| Total liabilities | [Value] | [Value] | [+%] | [Point] |
+
+**Insights**
+1. [First insight on balance sheet expansion]
+2. [Second insight on capital structure changes]
+3. [Third insight on asset composition shifts]
+
+## Income Statement
+
+**Table 2: Income Statement Key Items**
+| Item | FY2024 | FY2023 | YoY | Analytical Point |
+|---|---:|---:|---:|---|
+| Revenue | [Value] | [Value] | [+%] | [Point] |
+| Gross profit | [Value] | [Value] | [+%] | [Point] |
+| PBT | [Value] | [Value] | [+%] | [Point] |
+
+**Insights**
+1. [First insight on revenue quality]
+2. [Second insight on operating leverage]
+3. [Third insight on cost structure]
+
+## Cash Flow Statement
+
+**Table 3: Cash Flow Statement Key Items**
+| Item | FY2024 | FY2023 | YoY | Analytical Point |
+|---|---:|---:|---:|---|
+| Net cash from operating activities | [Value] | [Value] | [+%] | [Point] |
+| Net cash used in investing activities | [Value] | [Value] | [+%] | [Point] |
+| Net cash from/(used in) financing activities | [Value] | [Value] | n.m. | [Point] |
+
+**Insights**
+1. [First insight on cash generation quality]
+2. [Second insight on investment intensity]
+3. [Third insight on funding hierarchy]
+
+**Conclusion**: [One paragraph on overall statement quality]
+
+# ⅩⅠ. Expense Analysis - [Descriptive Title]
+
+**Table 1: Expense Structure and Cost Ratios**
+| Expense Indicator | FY2024 | FY2023 | YoY / Change |
+|---|---:|---:|---:|
+| [Expense item] | [Value] | [Value] | [+%] |
+| [Cost ratio] | [%] | [%] | [+ppt] |
+
+**Insights**
+1. [First insight on cost control effectiveness]
+2. [Second insight on finance cost burden]
+3. [Third insight on operating leverage potential]
+4. [Fourth insight on fixed vs. variable mix]
+
+**Conclusion**: [One paragraph on expense management quality]
+
+# ⅩⅥ. Cash Flow Analysis - [Descriptive Title]
+
+**Table 1: Cash Flow Indicators**
+| Indicator (RM million) | FY2024 | FY2023 | YoY |
+|---|---:|---:|---:|
+| Operating cash flow | [Value] | [Value] | [+%] |
+| Investing cash flow | [Value] | [Value] | [Direction] |
+| Financing cash flow | [Value] | [Value] | [Direction] |
+
+**Insights**
+1. [First insight on operating cash generation]
+2. [Second insight on investment funding]
+3. [Third insight on financing reliance]
+
+**Table 2: Cash Flow Quality Indicators**
+| Indicator | FY2024 | FY2023 | Interpretation |
+|---|---:|---:|---|
+| OCF / revenue | [%] | [%] | [Interpretation] |
+| FCF (OCF - PPE capex) | [Value] | [Value] | [Interpretation] |
+| Interest paid | [Value] | [Value] | [Interpretation] |
+
+**Insights**
+1. [First insight on cash conversion quality]
+2. [Second insight on internal funding capacity]
+3. [Third insight on debt service capability]
+
+**Conclusion**: [One paragraph on cash flow health]
+
+# ⅩⅦ. Asset Quality Analysis - [Descriptive Title]
+
+**Table 1: Asset Base Quality Indicators**
+| Asset Item | FY2024 | FY2023 | Trend |
+|---|---:|---:|---|
+| Property, plant and equipment | [Value] | [Value] | [+%] |
+| Intangible assets | [Value] | [Value] | [+%] |
+| Contract assets | [Value] | [Value] | [+%] |
+
+**Insights**
+1. [First insight on asset composition]
+2. [Second insight on productive vs. financial assets]
+3. [Third insight on asset durability]
+
+**Table 2: Credit Quality Indicators**
+| Indicator | FY2024 | FY2023 | Trend |
+|---|---:|---:|---|
+| Total loss allowance | [Value] | [Value] | [Increased/Decreased] |
+| Trade receivables allowance | [Value] | [Value] | [Increased/Decreased] |
+
+**Insights**
+1. [First insight on provisioning adequacy]
+2. [Second insight on receivable quality]
+3. [Third insight on collection risk]
+
+**Conclusion**: [One paragraph on asset quality]
+
+# ⅩⅧ. Future Forecast - [Descriptive Title]
+
+[Opening paragraph explaining scenario approach]
+
+Assumptions:
+- **Optimistic**: [Assumptions]
+- **Base case**: [Assumptions]
+- **Conservative**: [Assumptions]
+
+**Table 1: Scenario Forecast (FY2025E-FY2027E)**
+| Scenario | Metric | FY2024 Base | FY2025E | FY2026E | FY2027E |
+|---|---|---:|---:|---:|---:|
+| Optimistic | Revenue (RM million) | [Value] | [Value] | [Value] | [Value] |
+| Optimistic | PATMI (RM million) | [Value] | [Value] | [Value] | [Value] |
+| Base case | Revenue (RM million) | [Value] | [Value] | [Value] | [Value] |
+| Base case | PATMI (RM million) | [Value] | [Value] | [Value] | [Value] |
+| Conservative | Revenue (RM million) | [Value] | [Value] | [Value] | [Value] |
+| Conservative | PATMI (RM million) | [Value] | [Value] | [Value] | [Value] |
+
+**Insights**
+1. [First insight on scenario spread and sensitivity]
+2. [Second insight on base case plausibility]
+3. [Third insight on optimistic case requirements]
+4. [Fourth insight on key monitoring triggers]
+
+**Conclusion**: [One paragraph on forward-looking assessment]
+```
 
 ## Quality Checklist
 
