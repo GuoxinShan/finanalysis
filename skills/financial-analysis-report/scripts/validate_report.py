@@ -185,8 +185,8 @@ def validate_calculations(content: str) -> List[Tuple[int, str, str]]:
     """
     issues = []
 
-    # Pattern to match: | Metric | Current | Prior | +X.Y% |
-    yoy_pattern = r'\|\s*([^|]+)\s*\|\s*([\d,]+(?:\.\d+)?)\s*\|\s*([\d,]+(?:\.\d+)?)\s*\|\s*\+?([\d.]+)%'
+    # Pattern to match: | Metric | Current | Prior | +/-X.Y% |
+    yoy_pattern = r'\|\s*([^|]+)\s*\|\s*([\d,]+(?:\.\d+)?)\s*\|\s*([\d,]+(?:\.\d+)?)\s*\|\s*([+-]?[\d.]+)%'
 
     for match in re.finditer(yoy_pattern, content):
         metric_name = match.group(1).strip()

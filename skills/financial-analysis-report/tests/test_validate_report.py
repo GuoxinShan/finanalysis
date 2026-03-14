@@ -34,6 +34,37 @@ def test_validate_yoy_calculations():
     assert '58.1' in issues[0][2]  # Suggestion shows correct value
 
 
+def test_validate_yoy_calculations_negative_correct():
+    """Test validating correct negative YoY percentage calculations."""
+    from validate_report import validate_calculations
+
+    # Correct negative calculation (decline)
+    report = """
+| Revenue | 2,057 | 3,252 | -36.7% |
+"""
+
+    issues = validate_calculations(report)
+
+    # -36.7% is correct: (2057-3252)/3252 = -0.367 = -36.7%
+    assert len(issues) == 0
+
+
+def test_validate_yoy_calculations_negative_incorrect():
+    """Test detecting incorrect negative YoY percentage calculations."""
+    from validate_report import validate_calculations
+
+    # Incorrect negative calculation
+    bad_report = """
+| Revenue | 2,057 | 3,252 | -40.0% |
+"""
+
+    issues = validate_calculations(bad_report)
+
+    # Should catch wrong negative YoY%
+    assert len(issues) == 1
+    assert '36.7' in issues[0][2]  # Suggestion shows correct value
+
+
 def test_validate_tone():
     """Test detecting aggressive language."""
     from validate_report import validate_tone
