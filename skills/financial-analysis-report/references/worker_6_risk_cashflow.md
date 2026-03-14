@@ -1,14 +1,14 @@
 # Worker 6: Risk & Cash Flow Analysis (Sections IX-XI, XVI-XVIII)
 
-You are responsible for comprehensive risk assessment, cash flow analysis, and forward-looking forecast. You handle the most sections (6 total), so be thorough but concise.
+You handle 6 sections covering risk, cash flow, and forward forecast. Be thorough but concise - focus on actionable insights.
 
 ## Your Sections
 
-### Section Ⅸ: Risk Scan (~250 words)
+### Section IX: Risk Scan (250 words)
 
 **Purpose**: Identify and assess key risks
 
-**Tables to include**:
+**Required Tables**:
 ```markdown
 **Table 1: Financial Risks**
 | Risk Area | Current Level | Threshold | Severity |
@@ -25,21 +25,22 @@ You are responsible for comprehensive risk assessment, cash flow analysis, and f
 | Regulatory | Environmental compliance | Low | High |
 ```
 
-**Insights to develop**:
-1. **Top 3-5 risks by severity**: Which risks could materially impact performance?
-2. **Risk controllability**: Internal (execution, credit policy) vs external (macro, commodity prices)
-3. **Mitigation measures**: What is management doing about these risks?
-4. **Early warning indicators**: What metrics should be monitored closely?
+**Analysis** (3-4 paragraphs):
+- Top 3-5 risks by severity and controllability
+- Internal (execution, credit) vs external (macro, commodity)
+- Mitigation measures and early warning indicators
+- Overall risk profile (conservative/moderate/aggressive)
 
-**Conclusion**: Overall risk profile assessment (conservative/moderate/aggressive)
+**Good Example**:
+> Leverage (65% vs 70% covenant) and margin compression (3.5% attributable) are the most severe risks. While liquidity appears adequate (1.32x current ratio), receivables quality in new markets is the early warning indicator - DSO increased from 45 to 72 days in East Malaysia.
 
 ---
 
-### Section Ⅹ: Analysis of Major Items in Three Statements (~300 words)
+### Section X: Major Items in Three Statements (300 words)
 
 **Purpose**: Deep dive into balance sheet, income statement, and cash flow
 
-**Three tables**:
+**Required Tables**:
 ```markdown
 **Balance Sheet Summary**
 | Item | Current | Prior | YoY % |
@@ -66,20 +67,22 @@ You are responsible for comprehensive risk assessment, cash flow analysis, and f
 | Net Cash Change | X | Y | Δ |
 ```
 
-**Insights per statement**:
-- **Balance sheet**: Asset/liability growth balance, liquidity position, capital structure changes
+**Analysis** (1 paragraph per statement):
+- **Balance sheet**: Asset/liability growth balance, capital structure changes
 - **Income statement**: Revenue quality, cost structure, margin drivers
 - **Cash flow**: Operating cash generation, investment intensity, financing needs
+- **Synthesis**: Are profits backed by cash? Is growth funded sustainably?
 
-**Conclusion**: Assess financial statement quality - are profits backed by cash? Is growth funded sustainably?
+**Good Example**:
+> Despite PAT of RM215m, OCF was negative (-RM60m) due to RM95m receivables buildup and RM40m inventory expansion. FCF (after RM180m growth capex) was -RM240m, requiring debt funding.
 
 ---
 
-### Section Ⅺ: Expense Analysis (~200 words)
+### Section XI: Expense Analysis (200 words)
 
 **Purpose**: Understand cost structure and efficiency
 
-**Table**:
+**Required Table**:
 ```markdown
 | Expense Item | Amount (RM'000) | % of Revenue | YoY Change |
 |--------------|-----------------|--------------|------------|
@@ -90,27 +93,22 @@ You are responsible for comprehensive risk assessment, cash flow analysis, and f
 | Taxation | X | Z% (of PBT) | Δ |
 ```
 
-**Insights to develop**:
-1. **Cost control effectiveness**: Are operating expenses growing slower than revenue?
-2. **Interest burden**: Are finance costs manageable given profit levels?
-3. **Tax efficiency**: Effective tax rate vs. statutory rate - why different?
-4. **Fixed vs variable cost mix**: Operating leverage potential
+**Analysis** (3-4 paragraphs):
+1. **Cost control**: Are expenses growing slower than revenue?
+2. **Interest burden**: Are finance costs manageable?
+3. **Tax efficiency**: Effective vs statutory rate
+4. **Fixed vs variable mix**: Operating leverage potential
 
-**Example**:
-> Cost of sales (84% of revenue) rose 2pp YoY, reflecting:
-> - **Steel prices**: +20% input cost, only 12% passed through to customers
-> - **Labor**: Minimum wage hike (+10%) in Jan 2024
-> - **Mix**: Lower-margin East Malaysian sales (85% COS vs. 80% Peninsula)
->
-> Administrative expenses grew slower than revenue (12% vs. 58%), demonstrating operating leverage from central functions. Finance costs doubled (RM40m → RM78m) due to new term loans for Sabah expansion, with interest coverage dropping from 4.7x to 3.5x (still comfortable).
+**Good Example**:
+> Cost of sales (84% of revenue) rose 2pp YoY from steel prices (+20% input, 12% passed through) and lower-margin East Malaysian sales (85% COS vs 80% Peninsula). Admin expenses grew slower than revenue (12% vs 58%), demonstrating operating leverage.
 
 ---
 
-### Section ⅩⅥ: Cash Flow Analysis (~250 words)
+### Section XVI: Cash Flow Analysis (250 words)
 
 **Purpose**: Assess cash generation quality
 
-**Table**:
+**Required Table**:
 ```markdown
 | Indicator | Current | Prior | Benchmark | Status |
 |-----------|---------|-------|-----------|--------|
@@ -120,27 +118,22 @@ You are responsible for comprehensive risk assessment, cash flow analysis, and f
 | OCF/Debt | X% | Y% | >20% | ✓/⚠ |
 ```
 
-**Insights to develop**:
-1. **Cash conversion quality**: Is OCF/Revenue improving or deteriorating?
-2. **Internal financing capacity**: Can FCF fund maintenance capex? Growth capex?
-3. **Debt service buffer**: Can OCF cover interest + principal comfortably?
-4. **Cash vs. profits divergence**: Why is OCF lower/higher than PAT? (working capital, non-cash items)
+**Analysis** (3-4 paragraphs):
+1. **Cash conversion**: Is OCF/Revenue improving?
+2. **Internal financing**: Can FCF fund capex?
+3. **Debt service buffer**: Can OCF cover interest + principal?
+4. **Cash vs profits divergence**: Why is OCF different from PAT?
 
-**Example**:
-> Despite PAT of RM215m, OCF was negative (-RM60m) due to:
-> - **Receivables buildup**: +RM95m working capital drag
-> - **Inventory expansion**: +RM40m safety stock for new markets
-> - **Payables compression**: -RM20m faster payments to secure supply
->
-> This raises questions about earnings quality - profits exist on paper but haven't converted to cash. FCF (after RM180m growth capex) was deeply negative (-RM240m), requiring debt funding to sustain operations.
+**Good Example**:
+> OCF/Revenue deteriorated (15% → -2%) due to working capital drag: +RM95m receivables, +RM40m inventory, -RM20m payables compression. FCF of -RM240m after growth capex signals reliance on debt funding.
 
 ---
 
-### Section ⅩⅦ: Asset Quality Analysis (~200 words)
+### Section XVII: Asset Quality Analysis (200 words)
 
 **Purpose**: Assess asset composition and impairment risk
 
-**Table**:
+**Required Table**:
 ```markdown
 | Asset Category | Amount (RM'000) | % of Total | Quality |
 |----------------|-----------------|------------|---------|
@@ -152,21 +145,21 @@ You are responsible for comprehensive risk assessment, cash flow analysis, and f
 | **Total Assets** | **X** | **100%** | - |
 ```
 
-**Insights to develop**:
-1. **Asset liquidity mix**: What % can be quickly converted to cash?
-2. **Impairment risk**: Goodwill, intangibles, contract assets - any write-down risk?
-3. **Quality of earnings backing**: Are profits creating high-quality assets (cash) or low-quality (receivables)?
+**Analysis** (3-4 paragraphs):
+1. **Liquidity mix**: What % is quickly convertible to cash?
+2. **Impairment risk**: Goodwill, intangibles, contract assets
+3. **Earnings backing**: Profits creating high-quality (cash) or low-quality (receivables) assets?
 4. **Age analysis**: Receivables aging, inventory turnover
 
 **Conclusion**: Asset quality and risk assessment
 
 ---
 
-### Section ⅩⅧ: Future Forecast (~300 words)
+### Section XVIII: Future Forecast (300 words)
 
 **Purpose**: Forward-looking assessment with scenarios
 
-**Table**:
+**Required Table**:
 ```markdown
 **Scenario Analysis**
 | Scenario | Revenue (RM'000) | PBT (RM'000) | Attributable (RM'000) | Probability |
@@ -176,30 +169,24 @@ You are responsible for comprehensive risk assessment, cash flow analysis, and f
 | Cautious | X | Y | Z | 25% |
 
 **Key Assumptions**:
-- **Optimistic**: [Assumptions]
-- **Base Case**: [Assumptions]
-- **Cautious**: [Assumptions]
+- **Optimistic**: [Assumptions for upside case]
+- **Base Case**: [Most likely outcome]
+- **Cautious**: [Downside scenario assumptions]
 ```
 
-**How to develop scenarios**:
-1. **Identify key drivers**: Revenue growth, margin trajectory, working capital
+**Analysis** (3-4 paragraphs):
+1. **Key drivers**: Revenue growth, margin trajectory, working capital
 2. **Base case**: Most likely outcome given current trends
-3. **Upside scenario**: What needs to go right? (market recovery, margin expansion)
-4. **Downside scenario**: What could go wrong? (recession, cost inflation, bad debts)
+3. **Upside/downside**: What needs to go right/wrong?
+4. **Key uncertainties**: Dominant variables and probability weighting
 
-**Key uncertainties**:
-- Dominant uncertainty variables
-- Upside/downside drivers
-- Probability weighting
-
-**Final View**: 2-3 sentence synthesis of outlook and investment thesis
+**Final View**: 2-3 sentence investment thesis
 
 ---
 
 ## Your Data Bundle
 
-You will receive a comprehensive JSON object with:
-
+You receive a JSON object with:
 ```json
 {
   "risks": {
@@ -221,20 +208,19 @@ You will receive a comprehensive JSON object with:
 
 ## Output Format
 
-Write **ONLY** the markdown content for Sections IX, X, XI, XVI, XVII, XVIII in that order. Use proper section headers.
+Write ONLY markdown for Sections IX, X, XI, XVI, XVII, XVIII in that order. Use proper section headers.
 
-## Quality Standards
+## Quality Checklist
 
-- ✅ Comprehensive risk assessment
-- ✅ Connect cash flow to profitability
-- ✅ Develop realistic scenarios
-- ✅ Be forward-looking
+✅ Comprehensive risk assessment
+✅ Connect cash flow to profitability
+✅ Develop realistic scenarios
+✅ Be forward-looking
 
-**Do NOT**:
-- ❌ Ignore negative risks
-- ❌ Make unsupported forecasts
-- ❌ Just list numbers without analysis
+❌ Don't: Ignore negative risks
+❌ Don't: Make unsupported forecasts
+❌ Don't: Just list numbers
 
 ## Task
 
-Using the data bundle provided, write all six sections following the guidelines above. Output ONLY the markdown for these sections in the correct order.
+Write all six sections using the data bundle. Output ONLY markdown in correct section order.

@@ -37,9 +37,37 @@ Coordinator Agent (you)
     - Worker 6: Risk & Cash Flow (Sections IX-XI, XVI-XVIII)
 ```
 
-## Prerequisites
+## Quick Start
 
-Before starting, ensure you have:
+The fastest way to generate a complete report:
+
+```bash
+# End-to-end automation (recommended)
+python scripts/generate_report.py \
+  --pdf-2024 testdata/CHINHIN_Annual_Report_2024.pdf \
+  --pdf-2023 testdata/CHINHIN_Annual_Report_2023.pdf \
+  --company CHINHIN \
+  --output-dir output/CHINHIN \
+  --workspace workspace
+```
+
+This single command:
+1. Parses PDFs with finanalysis CLI (auto-detects installation)
+2. Calculates derived metrics
+3. Generates data bundles for workers
+4. Prepares workspace for parallel workers
+5. Provides instructions for final assembly
+
+After workers complete their sections:
+```bash
+python scripts/assemble_report.py \
+  --workspace workspace \
+  --output CHINHIN-2024-revised.md \
+  --company CHINHIN \
+  --period FY2024
+```
+
+## Prerequisites
 
 ### 1. Install the finanalysis CLI
 
@@ -66,33 +94,76 @@ finanalysis --version
 finanalysis --help
 ```
 
+**Note**: The `generate_report.py` script will auto-detect the CLI installation location, including virtual environments.
+
 ### 2. Prepare Financial Data
 
 - **fs_index.json** from finanalysis CLI (parsed annual/quarterly report)
 - **Prior year fs_index.json** for YoY comparison (optional but recommended)
 - Understanding of the company's business model
 
-If fs_index.json doesn't exist, parse the PDF first:
-```bash
-finanalysis parse <report.pdf> --company <NAME> -o output/<NAME>/<YEAR>
-```
+If fs_index.json doesn't exist, use `generate_report.py` to parse PDFs automatically.
 
 ## Coordinator Workflow
 
-### Step 1: Extract and Prepare Data Bundles
+### Method 1: End-to-End Automation (Recommended)
 
-Read `scripts/data_extractor.py` to prepare focused data bundles for each worker:
+Use `scripts/generate_report.py` to automate the entire pipeline:
 
 ```bash
-# Generate all data bundles
+python scripts/generate_report.py \
+  --pdf-2024 <path/to/2024.pdf> \
+  --pdf-2023 <path/to/2023.pdf> \
+  --company <NAME> \
+  --output-dir output/<NAME> \
+  --workspace workspace
+```
+
+**What it does**:
+1. **PDF Parsing**: Auto-detects and runs finanalysis CLI to parse PDFs
+2. **Metrics Calculation**: Runs `finanalysis calculate` to derive financial ratios
+3. **Data Bundle Generation**: Creates worker-specific data bundles
+4. **Worker Preparation**: Sets up workspace with instructions
+
+**After running workers** (see Step 2 below), assemble the final report:
+
+```bash
+python scripts/assemble_report.py \
+  --workspace workspace \
+  --output <TICKER>-<PERIOD>-revised.md \
+  --company <NAME> \
+  --period <PERIOD>
+```
+
+This assembles worker outputs in correct section order.
+
+---
+
+### Method 2: Manual Step-by-Step (For Control)
+
+#### Step 1: Extract and Prepare Data Bundles
+
+If you already have fs_index.json files:
+
+```bash
 python scripts/data_extractor.py output/2024/fs_index.json \
+  --company CHINHIN \
   --prior output/2023/fs_index.json \
   --output workspace/data_bundles.json
 ```
 
-This creates a JSON file with 6 pre-processed data bundles, one per worker.
+**Robust CLI Detection**: The script automatically finds finanalysis CLI in:
+- System PATH
+- Common virtual environment locations (`../finanalysis/.venv`, `./venv`, etc.)
+- Python module imports
 
-### Step 2: Launch Parallel Workers
+**Real Data Extraction**: Extracts actual values from fs_index.json line_items - no placeholders:
+- Revenue, gross profit, PBT, PAT, attributable profit
+- Operating margins, PBT margins, PAT margins
+- Balance sheet items: assets, liabilities, equity
+- Current ratio, quick ratio, working capital
+
+#### Step 2: Launch Parallel Workers
 
 Spawn 6 worker agents in parallel using the Agent tool. Each worker receives:
 - **Focused context**: Only the sections they need to write (~100-300 lines)
@@ -255,13 +326,34 @@ See `references/writing_standards.md` for detailed guidance.
 
 ## Tools and Scripts
 
+### `scripts/generate_report.py` ⭐ **NEW**
+End-to-end automation script that orchestrates the entire workflow:
+- Auto-detects and runs finanalysis CLI for PDF parsing
+- Calculates derived metrics using `finanalysis calculate`
+- Generates data bundles for workers
+- Prepares workspace with instructions
+- **Usage**: `python scripts/generate_report.py --pdf-2024 <path> --company <NAME> ...`
+
+**Key Features**:
+- **Robust CLI Finding**: Searches PATH, common venv locations, and Python modules
+- **Skip Flags**: `--skip-pdf-parsing`, `--skip-metrics`, `--skip-bundles` for incremental runs
+- **Error Handling**: Clear error messages with actionable steps
+
+### `scripts/assemble_report.py` ⭐ **NEW**
+Assembles worker outputs into final report in correct section order:
+- Reads worker output files from workspace
+- Combines in proper section order (I-III, IV-V, VI-VIII, IX-XI, XII-XIII, XIV-XV, XVI-XVIII)
+- Adds report header with company name and period
+- **Usage**: `python scripts/assemble_report.py --workspace <dir> --output <file> --company <NAME> --period <PERIOD>`
+
 ### `scripts/data_extractor.py`
 Extracts metrics and prepares data bundles for workers:
-- Parses fs_index.json
-- Calculates all ratios and metrics
+- Parses fs_index.json line_items to extract real values
+- Calculates all ratios and metrics (no placeholders)
 - Computes YoY changes and trends
 - Compares against benchmarks
 - Outputs structured JSON for workers
+- **Enhanced**: Now extracts real data with verification metadata
 
 ### `scripts/financial_calculator.py`
 Standalone ratio calculator (can be used independently):
@@ -272,28 +364,25 @@ python scripts/financial_calculator.py output/2024/fs_index.json \
   --format markdown
 ```
 
-### `scripts/assemble_report.py`
-Assembles worker outputs into final report:
-```bash
-python scripts/assemble_report.py \
-  --worker-1 workspace/worker_1_output.md \
-  --worker-2 workspace/worker_2_output.md \
-  ... \
-  --output report.md
-```
-
 ## Example Usage
 
 **User says**: "Analyze Chin Hin Group's 2024 financial performance"
 
-**Your process**:
+**Your process (Automated)**:
+1. Run `python scripts/generate_report.py --pdf-2024 CHINHIN_2024.pdf --pdf-2023 CHINHIN_2023.pdf --company CHINHIN --output-dir output/CHINHIN`
+2. Script parses PDFs, calculates metrics, prepares data bundles
+3. Spawn 6 parallel workers with focused instructions (see Step 2 above)
+4. Collect worker outputs as they complete
+5. Run `python scripts/assemble_report.py --workspace workspace --output CHINHIN-2024-revised.md --company CHINHIN --period FY2024`
+6. Deliver `<TICKER>-<PERIOD>-revised.md` and `-summary.md` to user
+
+**Your process (Manual - if fs_index.json already exists)**:
 1. Check for fs_index.json at `output/CHINHIN/2024/fs_index.json`
 2. Extract data bundles: `python scripts/data_extractor.py ...`
 3. Spawn 6 parallel workers with focused instructions
 4. Collect worker outputs as they complete
-5. Assemble final report in correct section order
-6. Write `<TICKER>-<PERIOD>-revised.md` and `-summary.md`
-7. Deliver to user
+5. Assemble final report using `assemble_report.py`
+6. Deliver to user
 
 ## Benefits of Parallel Architecture
 
@@ -305,17 +394,52 @@ python scripts/assemble_report.py \
 
 ## Troubleshooting
 
+**Problem**: `generate_report.py` cannot find finanalysis CLI
+**Solution**: The script searches multiple locations automatically. If still not found:
+- **Option 1**: Install it: `pip install git+https://github.com/GuoxinShan/finanalysis.git`
+- **Option 2**: Activate venv: `source ../finanalysis/.venv/bin/activate`
+- **Option 3**: Use `--skip-pdf-parsing` if fs_index.json already exists
+
 **Problem**: Worker output missing required sections
-**Solution**: Verify worker instructions explicitly list section headers
+**Solution**:
+- Verify worker instructions explicitly list section headers
+- Check that data bundle contains all required metrics
+- Ensure worker prompt includes output format template
 
 **Problem**: Inconsistent metrics across sections
-**Solution**: Ensure all workers use the same data_bundles.json (no recalculation)
+**Solution**:
+- Ensure all workers use the same data_bundles.json (no recalculation)
+- Verify data_extractor.py extracted real values (check `_verification` metadata)
+- Run `finanalysis calculate` once and reuse the metrics.json
 
 **Problem**: Duplicate content between workers
-**Solution**: Review worker assignments for overlapping responsibilities
+**Solution**:
+- Review worker assignments for overlapping responsibilities
+- Each worker should only see their assigned instruction file
+- Workers should output ONLY their assigned sections
 
 **Problem**: Context still too large for worker
-**Solution**: Further split worker instructions or simplify data bundle format
+**Solution**:
+- Worker instructions have been streamlined for efficiency
+- Each worker sees ~100-300 lines of instructions
+- If still too large, further simplify data bundle format
+
+**Problem**: Worker completion times vary widely
+**Solution**:
+- Worker 2 (Core Performance) has most complex analysis - expected to take longer
+- Simplified instructions now reduce variance
+- Use `sonnet` model for quality (not `haiku`)
+
+**Problem**: Data bundles contain zeros or placeholders
+**Solution**:
+- Verify fs_index.json has actual data (not empty line_items)
+- Check data_extractor.py output for `_verification.data_quality: "REAL_DATA_EXTRACTED"`
+- Ensure finanalysis CLI successfully parsed the PDF
+
+**Problem**: Manual assembly required - no automation
+**Solution**:
+- Use `scripts/assemble_report.py` to automate combining worker outputs
+- Run after all workers complete: `python scripts/assemble_report.py --workspace workspace --output report.md --company NAME --period FY2024`
 
 ## Summary
 
