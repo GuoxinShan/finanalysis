@@ -269,6 +269,36 @@ def compare(output_dirs: tuple, metric: str):
                 click.echo()
 
 
+@cli.command()
+@click.argument('fs_index_path', type=click.Path(exists=True))
+@click.option('--prior', '-p', type=click.Path(exists=True), help='Prior year fs_index.json')
+@click.option('--output', '-o', default=None, help='Output JSON file')
+def calculate(fs_index_path: str, prior: str, output: str):
+    """Calculate derived financial metrics from fs_index.json
+
+    Example:
+        finanalysis calculate output/CHINHIN/2024/fs_index.json \\
+            --prior output/CHINHIN/2023/fs_index.json \\
+            --output output/CHINHIN/2024/metrics.json
+    """
+    import json
+    from .fs_index import FSIndex
+    from .calculators.metrics import MetricsCalculator
+
+    fs_index = FSIndex.load(Path(fs_index_path))
+    prior_fs_index = FSIndex.load(Path(prior)) if prior else None
+
+    calculator = MetricsCalculator(fs_index, prior_fs_index)
+    output_data = calculator.to_output_dict(fs_index_path)
+
+    if output:
+        with open(output, 'w') as f:
+            json.dump(output_data, f, indent=2)
+        click.echo(f"✓ Metrics saved to {output}")
+    else:
+        click.echo(json.dumps(output_data, indent=2))
+
+
 def _print_comparison_table(metric_type: str, rows: list):
     """Print a comparison table for a metric"""
     click.echo(f"\n{metric_type.upper().replace('_', ' ')}:")

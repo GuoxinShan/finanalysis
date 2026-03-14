@@ -43,3 +43,4 @@ output/
 cache/
 *.log
 .env
+/reports

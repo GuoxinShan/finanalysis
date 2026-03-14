@@ -91,7 +91,6 @@ class Stage1Preprocessor:
             metric_candidate_count=0,
             config_snapshot={
                 "cache_enabled": self.settings.cache_enabled,
-                "llm_model": self.settings.llm_model,
             },
         )
 

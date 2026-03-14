@@ -103,7 +103,7 @@ class Pipeline:
                 logger.info("Stopping at Stage 3 (testing mode)")
                 return {"status": "stopped", "stage": 3}
 
-            # Stage 4: Structured financial statement extraction (FSIndex, no LLM)
+            # Stage 4: Structured financial statement extraction
             logger.info("Stage 4: Structured financial statement extraction")
             fs_index = FSIndex.from_pdf(Path(pdf_path), company_name=company_name)
             if fs_index.line_items:
@@ -128,7 +128,7 @@ class Pipeline:
             )
 
             # Write FSIndex metrics as metric_candidates.jsonl
-            # (after Stage 5 which creates the file with empty LLM metrics)
+            # (after Stage 5 which creates the file)
             if fs_index.line_items:
                 self._write_fs_metrics(fs_index, output)
                 summary["statistics"]["metrics"] = len([

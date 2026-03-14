@@ -1,20 +1,17 @@
 [project]
 name = "finanalysis"
 version = "0.1.0"
-description = "Add your description here"
+description = "Financial Report PDF Parsing and Analysis Pipeline"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "camelot-py[cv]>=1.0.9",
     "click>=8.3.1",
     "hatchling>=1.29.0",
-    "openai>=2.26.0",
     "pdfplumber>=0.11.9",
     "pydantic>=2.12.5",
     "pydantic-settings>=2.13.1",
     "pytesseract>=0.3.13",
-    "pytest>=9.0.2",
-    "pytest-cov>=7.0.0",
 ]
 
 [project.scripts]
@@ -26,8 +23,3 @@ package = true
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-pythonpath = ["."]
-addopts = "-v --strict-markers"

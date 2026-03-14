@@ -4,7 +4,7 @@
 Parses financial statement pages from PDFs into a structured index:
   line_item -> {group_current, group_prior, company_current, company_prior}
 
-No LLM needed at query time — pure extraction + direct lookup.
+Uses deterministic pattern matching for extraction with direct lookup queries.
 """
 import json
 import logging

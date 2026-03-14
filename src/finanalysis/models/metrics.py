@@ -52,7 +52,7 @@ class MetricType(str, Enum):
 
 
 class MetricCandidate(BaseModel):
-    """Metric candidate extracted by LLM"""
+    """Metric candidate extracted from financial statements"""
     id: str
     metric_type: MetricType
     value: float
@@ -64,6 +64,6 @@ class MetricCandidate(BaseModel):
     source_table_row_id: str
     source_text: str
 
-    # LLM metadata
+    # Extraction metadata
     confidence: float  # 0-1
     reasoning: Optional[str] = None
