@@ -23,12 +23,15 @@ def cli():
 @click.option('--out', '-o', default='./output', help='Output directory')
 @click.option('--force', '-f', is_flag=True, help='Force reprocess (ignore cache)')
 @click.option('--stage', '-s', type=int, help='Run specific stage only (1-5)')
-def parse(pdf_path: str, out: str, force: bool, stage: int):
+@click.option('--company', '-c', default=None, help='Company name or stock code (e.g. CHINHIN, "Chin Hin Group Berhad")')
+def parse(pdf_path: str, out: str, force: bool, stage: int, company: str):
     """Parse a financial report PDF"""
     output_dir = Path(out)
 
     click.echo(f"Parsing: {pdf_path}")
     click.echo(f"Output: {output_dir}")
+    if company:
+        click.echo(f"Company: {company}")
 
     if force:
         click.echo("Cache: disabled (force=True)")
@@ -37,18 +40,15 @@ def parse(pdf_path: str, out: str, force: bool, stage: int):
         click.echo(f"Running stage: {stage}")
 
     try:
-        # Load settings from environment
         settings = Settings()
-
-        # Create pipeline
         pipeline = Pipeline(settings=settings)
 
-        # Run pipeline
         result = pipeline.run(
             pdf_path=pdf_path,
             output_dir=str(output_dir),
             force=force,
-            stop_at_stage=stage
+            stop_at_stage=stage,
+            company_name=company,
         )
 
         # Display results
