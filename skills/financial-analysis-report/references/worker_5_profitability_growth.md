@@ -160,4 +160,8 @@ Write **ONLY** the markdown content for Sections XII-XIII. Use this exact struct
 
 ## Task
 
-Using the data bundle provided, write Sections XII-XIII following the guidelines above. Output ONLY the markdown for these two sections.
+Using the data bundle provided, write Sections XII-XIII following the guidelines above.
+
+**Output file**: `workspace/worker_5_sections.md`
+
+Output ONLY the markdown for these two sections.

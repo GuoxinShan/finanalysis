@@ -312,5 +312,48 @@ def _print_comparison_table(metric_type: str, rows: list):
         click.echo(f"  {row['label']:<8} {value:>15} {currency:<8} {yoy:>8}  {conf:>6}")
 
 
+@cli.command('validate-report')
+@click.argument('report', type=click.Path(exists=True))
+@click.option('--data', type=click.Path(exists=True), required=True,
+              help='Path to fs_index.json (source data)')
+@click.option('--metrics', type=click.Path(exists=True),
+              help='Path to metrics.json (calculated ratios)')
+@click.pass_context
+def validate_report_cmd(ctx, report, data, metrics):
+    """Validate financial analysis report for data accuracy.
+
+    Checks:
+    - Numbers match source data (fs_index.json)
+    - Calculations are correct (YoY %, margins)
+    - Metrics are consistent across sections
+    - Units are correct
+
+    Exit codes:
+        0 = All checks passed
+        1 = Critical data accuracy issues found
+    """
+    import subprocess
+    import sys
+
+    # Find skill directory (relative to this file)
+    cli_dir = Path(__file__).parent
+    skill_dir = cli_dir.parent.parent / 'skills' / 'financial-analysis-report'
+    validate_script = skill_dir / 'scripts' / 'validate_report.py'
+
+    if not validate_script.exists():
+        click.echo(f"Error: Validation script not found at {validate_script}", err=True)
+        click.echo("Make sure the financial-analysis-report skill is installed.", err=True)
+        ctx.exit(1)
+
+    # Build command
+    cmd = [sys.executable, str(validate_script), report, '--data', data]
+    if metrics:
+        cmd.extend(['--metrics', metrics])
+
+    # Run validation (forward exit code)
+    result = subprocess.run(cmd)
+    ctx.exit(result.returncode)
+
+
 if __name__ == '__main__':
     cli()

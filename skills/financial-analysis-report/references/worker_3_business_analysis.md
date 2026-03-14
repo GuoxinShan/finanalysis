@@ -208,4 +208,8 @@ Write **ONLY** the markdown content for Sections VI-VIII. Use this exact structu
 
 ## Task
 
-Using the data bundle provided, write Sections VI-VIII following the guidelines above. Output ONLY the markdown for these three sections.
+Using the data bundle provided, write Sections VI-VIII following the guidelines above.
+
+**Output file**: `workspace/worker_3_sections.md`
+
+Output ONLY the markdown for these three sections.

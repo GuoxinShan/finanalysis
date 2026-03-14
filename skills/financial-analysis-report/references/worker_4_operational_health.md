@@ -167,4 +167,8 @@ Write **ONLY** the markdown content for Sections XIV-XV. Use this exact structur
 
 ## Task
 
-Using the data bundle provided, write Sections XIV-XV following the guidelines above. Output ONLY the markdown for these two sections.
+Using the data bundle provided, write Sections XIV-XV following the guidelines above.
+
+**Output file**: `workspace/worker_4_sections.md`
+
+Output ONLY the markdown for these two sections.

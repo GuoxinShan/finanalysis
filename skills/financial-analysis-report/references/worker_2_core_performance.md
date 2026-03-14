@@ -154,4 +154,8 @@ Write ONLY markdown for Sections IV-V. Use this exact structure:
 
 ## Task
 
-Write Sections IV-V using the data bundle. Output ONLY markdown for these two sections.
+Write Sections IV-V using the data bundle.
+
+**Output file**: `workspace/worker_2_sections.md`
+
+Output ONLY markdown for these two sections.

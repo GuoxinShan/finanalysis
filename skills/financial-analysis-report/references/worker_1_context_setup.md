@@ -121,4 +121,8 @@ Write **ONLY** the markdown content for Sections I-III. Use this exact structure
 
 ## Task
 
-Using the data bundle provided, write Sections I-III following the guidelines above. Output ONLY the markdown for these three sections.
+Using the data bundle provided, write Sections I-III following the guidelines above.
+
+**Output file**: `workspace/worker_1_sections.md`
+
+Output ONLY the markdown for these three sections.

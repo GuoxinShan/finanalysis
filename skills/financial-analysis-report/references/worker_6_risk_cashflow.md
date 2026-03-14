@@ -400,4 +400,8 @@ Assumptions:
 
 ## Task
 
-Write all six sections using the data bundle. Output ONLY markdown in correct section order.
+Write all six sections using the data bundle.
+
+**Output file**: `workspace/worker_6_sections.md`
+
+Output ONLY markdown in correct section order.
