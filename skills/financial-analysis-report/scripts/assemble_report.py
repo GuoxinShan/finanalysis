@@ -24,18 +24,48 @@ def assemble_report(workspace_dir: str, output_path: str, company_name: str = "C
     """
     workspace = Path(workspace_dir)
 
-    # Section order mapping - defines which worker output file contains which sections
-    section_files = {
-        'I-III': 'worker_1_sections.md',
-        'IV-V': 'worker_2_sections.md',
-        'VI-VIII': 'worker_3_sections.md',
-        'IX-XI': 'worker_6_sections_part1.md',  # Worker 6 does IX-XI first
-        'XII-XIII': 'worker_5_sections.md',
-        'XIV-XV': 'worker_4_sections.md',
-        'XVI-XVIII': 'worker_6_sections_part2.md'  # Worker 6 does XVI-XVIII second
-    }
+    # Section order mapping - worker outputs to final report order
+    # Worker 6 writes Sections IX, X, XI, XVI, XVII, XVIII in one file
+    # These need to be split because XII-XIII and XIV-XV come between XI and XVI
 
-    # Read and combine in order
+    workspace = Path(workspace_dir)
+
+    # Read all worker files
+    worker_files = {}
+    for i in range(1, 7):
+        filename = f'worker_{i}_sections.md'
+        filepath = workspace / filename
+        if filepath.exists():
+            worker_files[i] = filepath.read_text()
+
+    # Extract sections from worker 6's combined output
+    worker_6_content = worker_files.get(6, '')
+
+    # Split worker 6's content at section XVI
+    # Worker 6 writes: IX, X, XI, XVI, XVII, XVIII
+    import re
+
+    # Find where section XVI starts
+    xvi_match = re.search(r'^# ⅩⅥ\.', worker_6_content, re.MULTILINE)
+    if xvi_match:
+        worker_6_part1 = worker_6_content[:xvi_match.start()]  # IX, X, XI
+        worker_6_part2 = worker_6_content[xvi_match.start():]  # XVI, XVII, XVIII
+    else:
+        # Fallback if split fails
+        worker_6_part1 = worker_6_content
+        worker_6_part2 = ""
+
+    # Build final report in correct section order
+    section_order = [
+        (1, 'I-III', 'Worker 1'),
+        (2, 'IV-V', 'Worker 2'),
+        (3, 'VI-VIII', 'Worker 3'),
+        ('6_part1', 'IX-XI', 'Worker 6 (Part 1)'),
+        (5, 'XII-XIII', 'Worker 5'),
+        (4, 'XIV-XV', 'Worker 4'),
+        ('6_part2', 'XVI-XVIII', 'Worker 6 (Part 2)'),
+    ]
+
     final_report = []
     final_report.append(f"# Financial Analysis Report: {company_name} - {period}\n\n")
     final_report.append("---\n\n")
@@ -43,16 +73,24 @@ def assemble_report(workspace_dir: str, output_path: str, company_name: str = "C
     sections_found = []
     sections_missing = []
 
-    for sections, filename in section_files.items():
-        filepath = workspace / filename
-        if filepath.exists():
-            content = filepath.read_text()
+    for worker_id, sections, description in section_order:
+        if worker_id == '6_part1':
+            content = worker_6_part1
+            found = bool(worker_6_part1.strip())
+        elif worker_id == '6_part2':
+            content = worker_6_part2
+            found = bool(worker_6_part2.strip())
+        else:
+            content = worker_files.get(worker_id, '')
+            found = worker_id in worker_files
+
+        if found and content.strip():
             final_report.append(content)
             final_report.append("\n\n---\n\n")
             sections_found.append(sections)
         else:
             sections_missing.append(sections)
-            print(f"⚠️  Warning: {filename} not found (Sections {sections})")
+            print(f"⚠️  Warning: Worker {worker_id} output not found (Sections {sections})")
 
     # Write final report
     output_file = Path(output_path)
