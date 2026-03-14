@@ -110,26 +110,53 @@ def search(output_dir: str, query: str, top_k: int, source: str):
 
 
 @cli.command()
-@click.argument('label')
-@click.option('--company', '-c', required=True, help='Company name or stock code (e.g. CHINHIN)')
-@click.option('--year', '-y', type=int, required=True, help='Fiscal year (e.g. 2024)')
-@click.option('--dirs', '-d', multiple=True, required=True, help='Pipeline output directories')
-def query(label: str, company: str, year: int, dirs: tuple):
-    """Query a financial metric by company and year.
+@click.argument('dirs', nargs=-1, required=True)
+@click.option('--registry', '-r', default='output/registry.json', help='Registry file path')
+def register(dirs: tuple, registry: str):
+    """Register pipeline output directories into a persistent registry.
 
-    Example: finanalysis query revenue -c CHINHIN -y 2024 -d output/annual_2023 -d output/annual_2024
+    Example: finanalysis register output/CHINHIN/2023 output/CHINHIN/2024
     """
     from .report_index import ReportIndex
 
-    registry = ReportIndex()
+    reg = ReportIndex.load(registry) if Path(registry).exists() else ReportIndex()
     for d in dirs:
-        registry.add(d)
+        reg.add(d)
+    reg.save(registry)
+    click.echo(f"Registry saved to {registry}")
+    click.echo(f"Companies: {reg.companies()}")
+    for c in reg.companies():
+        click.echo(f"  {c}: {reg.years(c)}")
 
-    if company.upper() not in registry.companies():
-        click.echo(f"Company '{company}' not found. Available: {registry.companies()}", err=True)
+
+@cli.command()
+@click.argument('label')
+@click.option('--company', '-c', required=True, help='Company name or stock code (e.g. CHINHIN)')
+@click.option('--year', '-y', type=int, required=True, help='Fiscal year (e.g. 2024)')
+@click.option('--dirs', '-d', multiple=True, help='Pipeline output directories (or use --registry)')
+@click.option('--registry', '-r', default='output/registry.json', help='Registry file path')
+def query(label: str, company: str, year: int, dirs: tuple, registry: str):
+    """Query a financial metric by company and year.
+
+    Uses saved registry by default, or pass -d dirs directly.
+
+    Example: finanalysis query revenue -c CHINHIN -y 2024
+    """
+    from .report_index import ReportIndex
+
+    if dirs:
+        reg = ReportIndex().add_many(dirs)
+    else:
+        reg = ReportIndex.load(registry)
+        if not reg.companies():
+            click.echo(f"No registry found at {registry}. Run 'finanalysis register <dirs>' first, or pass -d dirs.", err=True)
+            raise click.Abort()
+
+    if company.upper() not in reg.companies():
+        click.echo(f"Company '{company}' not found. Available: {reg.companies()}", err=True)
         raise click.Abort()
 
-    result = registry.query(label, company=company, year=year)
+    result = reg.query(label, company=company, year=year)
     if result is None:
         click.echo(f"No data found for '{label}' ({company} FY{year})")
         return
@@ -144,20 +171,25 @@ def query(label: str, company: str, year: int, dirs: tuple):
 @cli.command('query-series')
 @click.argument('label')
 @click.option('--company', '-c', required=True, help='Company name or stock code')
-@click.option('--dirs', '-d', multiple=True, required=True, help='Pipeline output directories')
+@click.option('--dirs', '-d', multiple=True, help='Pipeline output directories (or use --registry)')
+@click.option('--registry', '-r', default='output/registry.json', help='Registry file path')
 @click.option('--entity', '-e', default='group', type=click.Choice(['group', 'company']), help='Entity level')
-def query_series(label: str, company: str, dirs: tuple, entity: str):
+def query_series(label: str, company: str, dirs: tuple, registry: str, entity: str):
     """Query a metric across all available years for a company.
 
-    Example: finanalysis query-series revenue -c CHINHIN -d output/annual_2023 -d output/annual_2024
+    Example: finanalysis query-series revenue -c CHINHIN
     """
     from .report_index import ReportIndex
 
-    registry = ReportIndex()
-    for d in dirs:
-        registry.add(d)
+    if dirs:
+        reg = ReportIndex().add_many(dirs)
+    else:
+        reg = ReportIndex.load(registry)
+        if not reg.companies():
+            click.echo(f"No registry found at {registry}. Run 'finanalysis register <dirs>' first, or pass -d dirs.", err=True)
+            raise click.Abort()
 
-    series = registry.query_series(label, company=company, entity=entity)
+    series = reg.query_series(label, company=company, entity=entity)
     if not series:
         click.echo(f"No data found for '{label}' ({company})")
         return
