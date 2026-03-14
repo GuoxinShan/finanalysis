@@ -25,30 +25,23 @@ def test_classify_page_native_text():
     assert page_type == "native_text"
 
 def test_classify_page_table():
-    # Create a mock page with table
-    class MockTable:
-        @property
-        def bbox_area(self):
-            return 400000  # Large area
-
-        @property
-        def bbox(self):
-            return (50, 100, 550, 700)  # (x0, y0, x1, y1)
+    # Create a mock page with tabular text (many lines with aligned numbers)
+    table_text = "\n".join([
+        "Revenue                    3,252,347    2,057,210",
+        "Cost of sales             (2,727,214)  (1,868,788)",
+        "Gross profit                 525,133      188,422",
+        "Other income                  45,678       32,100",
+        "Admin expenses              (120,456)     (98,765)",
+        "Finance costs                (85,432)     (65,321)",
+        "Profit before tax            275,845      189,318",
+        "Tax expense                  (68,961)     (47,329)",
+        "Profit for the year          206,884      141,989",
+        "Some text line without numbers here",
+    ])
 
     class MockPage:
         def extract_text(self):
-            return ""
-
-        def find_tables(self):
-            return [MockTable()]
-
-        @property
-        def width(self):
-            return 612
-
-        @property
-        def height(self):
-            return 792
+            return table_text
 
     page = MockPage()
     page_type = classify_page(page)

@@ -53,8 +53,8 @@ class Stage1Preprocessor:
                     text = page.extract_text() or ""
                     content_hash = hashlib.md5(text.encode()).hexdigest()
 
-                    # Classify page
-                    page_type = classify_page(page)
+                    # Classify page (reuse extracted text)
+                    page_type = classify_page(page, text=text)
 
                     # Get dimensions
                     width, height = get_page_dimensions(page)

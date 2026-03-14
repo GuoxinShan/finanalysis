@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 """
-Benchmark script for finanalysis CLI tool against the test set.
-Uses FSIndex for direct structured lookups — no LLM at query time.
+Benchmark script for finanalysis pipeline output.
+Tests against a CSV of questions with known answers.
 
-Usage: uv run python scripts/benchmark.py [--csv PATH] [--pdf-dir DIR]
+Requires pipeline to have been run first — reads from output directories.
+
+Usage: uv run python scripts/benchmark.py --csv PATH --output-dir DIR [DIR ...]
 """
 import argparse
 import csv
-import re
 import json
+import re
 import sys
 from pathlib import Path
 from collections import defaultdict
@@ -26,8 +28,9 @@ def extract_ground_truth(answer: str) -> float | None:
         return float(unit_match.group(1))
 
     text = answer
-    for noise in ["RM'000", "RM\u2019000", "USD'000", "thousand"]:
-        text = text.replace(noise, "")
+    # Strip any currency'000 patterns (e.g. RM'000, USD'000, S$'000)
+    text = re.sub(r"[A-Z$]{1,4}['\u2019]\s*000", "", text)
+    text = text.replace("thousand", "")
 
     # Prefer comma-formatted numbers
     comma_nums = re.findall(r'-?[\d]{1,3}(?:,\d{3})+', text)
@@ -48,63 +51,74 @@ def parse_question(question: str) -> dict:
     """Parse a question into structured lookup parameters."""
     q = question.lower()
 
-    # Detect entity: company vs group
     entity = "company" if "company" in q and "group" not in q else "group"
 
-    # Detect year
     year = None
     for y in ["2025", "2024", "2023", "2022"]:
         if y in q:
             year = y
             break
 
-    # Extract the metric label from the question
-    # Strategy: extract everything between "the" and the entity/date marker
     label = ""
-    # Try "as at" pattern (balance sheet)
     m = re.search(r'what was the (.+?)\s+(?:as\s+at\s+|at the end of)', q)
     if not m:
-        # Try "for <entity> in <year>" pattern
-        m = re.search(r'what was the (.+?)\s+for\s+(?:chin\s+hin|the)\s+(?:group|company)\b', q)
+        m = re.search(r'what was the (.+)\s+for\s+(?:the\s+)?(?:\w+\s+)*?(?:group|company)\b', q)
     if not m:
         m = re.search(r'what was the (.+?)(?:\s+in\s+\d{4})', q)
     if m:
         label = m.group(1).strip()
 
-    # Strip trailing entity references that leaked into the label
-    label = re.sub(r'\s+for\s+chin\s+hin\s+(?:group|company).*$', '', label)
+    label = re.sub(r'\s+for\s+(?:\w+\s+)*(?:group|company).*$', '', label)
     label = re.sub(r'\s+for\s+the\s+(?:group|company).*$', '', label)
-    # Handle "at the end of 2024" -> "at the end of the financial year"
     label = re.sub(r'\s+at the end of \d{4}$', ' at the end of the financial year', label)
     label = re.sub(r'\s+', ' ', label)
 
     return {"label": label, "entity": entity, "year": year}
 
 
-def run_benchmark(csv_path: Path, pdf_dir: Path):
+def load_indexes(output_dirs: list[Path]) -> dict[str, FSIndex]:
+    """Load FSIndex from pipeline output directories."""
+    indexes: dict[str, FSIndex] = {}
+    for out_dir in output_dirs:
+        fs_path = out_dir / "fs_index.json"
+        if not fs_path.exists():
+            print(f"  WARNING: {fs_path} not found, skipping")
+            continue
+
+        idx = FSIndex.load(fs_path)
+        if not idx.line_items:
+            print(f"  WARNING: {fs_path} has no line items, skipping")
+            continue
+
+        # Detect year from directory name or fs_index content
+        year_match = re.search(r'(20\d{2})', out_dir.name)
+        if not year_match:
+            # Try parent dir
+            year_match = re.search(r'(20\d{2})', str(out_dir))
+        if year_match:
+            year = year_match.group(1)
+            indexes[year] = idx
+            print(f"  Loaded {fs_path}: {len(idx.line_items)} line items, year={year}, currency={idx.currency}")
+        else:
+            print(f"  WARNING: cannot detect year from {out_dir}, skipping")
+
+    return indexes
+
+
+def run_benchmark(csv_path: Path, output_dirs: list[Path]):
     with open(csv_path, encoding="utf-8") as f:
         reader = csv.DictReader(f)
         questions = list(reader)
 
     print(f"Loaded {len(questions)} test questions\n")
 
-    # Build FSIndex for each PDF
-    indexes: dict[str, FSIndex] = {}
-    for pdf in sorted(pdf_dir.glob("*.pdf")):
-        year_match = re.search(r'(20\d{2})', pdf.name)
-        if not year_match:
-            continue
-        year = year_match.group(1)
-        # Prefer annual report
-        if year in indexes and "annual" not in pdf.name.lower():
-            continue
-        print(f"  Indexing {pdf.name}...")
-        idx = FSIndex.from_pdf(pdf)
-        if idx.line_items:
-            indexes[year] = idx
-            print(f"    -> {len(idx.line_items)} line items")
+    indexes = load_indexes(output_dirs)
+    if not indexes:
+        print("ERROR: No valid pipeline outputs found. Run the pipeline first:")
+        print("  uv run finanalysis parse <pdf> -o <output-dir>")
+        sys.exit(1)
 
-    print(f"\nIndexed years: {sorted(indexes.keys())}\n")
+    print(f"\nLoaded years: {sorted(indexes.keys())}\n")
 
     results = []
     correct = 0
@@ -130,14 +144,11 @@ def run_benchmark(csv_path: Path, pdf_dir: Path):
 
         gt_num = extract_ground_truth(ground_truth_str)
 
-        # Direct lookup — period is "current" for the report's own year
         idx = indexes[year]
         predicted = idx.lookup(parsed["label"], parsed["entity"], "current")
 
-        # If not found with current, try prior (some questions ask about
-        # prior year data shown in the same report)
+        # Try prior period from a newer year's report
         if predicted is None:
-            # Check if a newer year's report has this as prior
             for other_year in sorted(indexes.keys(), reverse=True):
                 if other_year > year:
                     predicted = indexes[other_year].lookup(
@@ -209,14 +220,17 @@ def run_benchmark(csv_path: Path, pdf_dir: Path):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Benchmark finanalysis")
+    parser = argparse.ArgumentParser(description="Benchmark finanalysis pipeline output")
     parser.add_argument(
-        "--csv", default="testdata/chin_hin_questions_50_基础指标_标准问法.csv",
+        "--csv", required=True,
         help="Path to test questions CSV"
     )
     parser.add_argument(
-        "--pdf-dir", default="testdata",
-        help="Directory containing source PDFs"
+        "--output-dir", required=True, nargs="+",
+        help="Pipeline output directories (one per year)"
     )
     args = parser.parse_args()
-    run_benchmark(csv_path=Path(args.csv), pdf_dir=Path(args.pdf_dir))
+    run_benchmark(
+        csv_path=Path(args.csv),
+        output_dirs=[Path(d) for d in args.output_dir]
+    )

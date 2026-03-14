@@ -1,4 +1,5 @@
 # src/finanalysis/pipeline.py
+import json
 import logging
 from pathlib import Path
 from typing import Optional
@@ -7,7 +8,6 @@ from .config import Settings
 from .stages.stage1_preprocess import Stage1Preprocessor
 from .stages.stage2_text import Stage2TextExtractor
 from .stages.stage3_tables import Stage3TableExtractor
-from .stages.stage4_metrics import Stage4MetricExtractor
 from .stages.stage5_aggregate import Stage5Aggregator
 from .fs_index import FSIndex
 
@@ -18,11 +18,6 @@ class Pipeline:
     """PDF parsing pipeline orchestrator"""
 
     def __init__(self, settings: Settings):
-        """Initialize pipeline with settings
-
-        Args:
-            settings: Application settings
-        """
         self.settings = settings
 
     def run(
@@ -47,7 +42,6 @@ class Pipeline:
             FileNotFoundError: If PDF doesn't exist
             ValueError: If PDF path is invalid
         """
-        # Validate inputs
         pdf_path_obj = Path(pdf_path)
         if not pdf_path_obj.exists():
             raise FileNotFoundError(f"PDF not found: {pdf_path}")
@@ -55,14 +49,12 @@ class Pipeline:
         if not pdf_path_obj.is_file():
             raise ValueError(f"Not a file: {pdf_path}")
 
-        # Setup output directory
         output = Path(output_dir) if output_dir else Path(self.settings.output_dir)
         output.mkdir(parents=True, exist_ok=True)
 
         logger.info(f"Starting pipeline for {pdf_path}")
         logger.info(f"Output directory: {output}")
 
-        # Override cache if force is set
         if force:
             original_cache = self.settings.cache_enabled
             self.settings.cache_enabled = False
@@ -109,23 +101,12 @@ class Pipeline:
                 logger.info("Stopping at Stage 3 (testing mode)")
                 return {"status": "stopped", "stage": 3}
 
-            # Stage 4: Metric extraction (LLM-based + structured FSIndex)
-            logger.info("Stage 4: Metric extraction")
-            stage4 = Stage4MetricExtractor(settings=self.settings)
-            metrics = stage4.process(
-                pdf_path=pdf_path,
-                doc_manifest=doc_manifest,
-                page_manifests=page_manifests,
-                table_rows=table_rows,
-                output_dir=output,
-                text_blocks=[b.model_dump() for b in text_blocks]
-            )
-
-            # Structured extraction via FSIndex (no LLM, direct parsing)
-            logger.info("Stage 4b: Structured financial statement extraction")
+            # Stage 4: Structured financial statement extraction (FSIndex, no LLM)
+            logger.info("Stage 4: Structured financial statement extraction")
             fs_index = FSIndex.from_pdf(Path(pdf_path))
             if fs_index.line_items:
                 fs_index.save(output / "fs_index.json")
+            doc_manifest.metric_candidate_count = len(fs_index.line_items)
 
             if stop_at_stage == 4:
                 logger.info("Stopping at Stage 4 (testing mode)")
@@ -140,13 +121,17 @@ class Pipeline:
                 page_manifests=page_manifests,
                 text_blocks=text_blocks,
                 table_rows=table_rows,
-                metrics=metrics,
+                metrics=[],
                 output_dir=output
             )
 
-            # Append FSIndex metrics after Stage 5 (which overwrites the file)
+            # Write FSIndex metrics as metric_candidates.jsonl
+            # (after Stage 5 which creates the file with empty LLM metrics)
             if fs_index.line_items:
                 self._write_fs_metrics(fs_index, output)
+                summary["statistics"]["metrics"] = len([
+                    k for k in fs_index.line_items if "(" not in k
+                ])
 
             logger.info("Pipeline complete!")
             return summary
@@ -156,16 +141,14 @@ class Pipeline:
             raise
 
         finally:
-            # Restore cache setting if it was overridden
             if force:
                 self.settings.cache_enabled = original_cache
 
     @staticmethod
     def _write_fs_metrics(fs_index: FSIndex, output_dir: Path):
-        """Write FSIndex line items to metric_candidates.jsonl (append)."""
-        import json
+        """Write FSIndex line items to metric_candidates.jsonl."""
         path = output_dir / "metric_candidates.jsonl"
-        with open(path, "a") as f:
+        with open(path, "w") as f:
             for key, entry in fs_index.line_items.items():
                 # Skip section-qualified duplicates (keep only unqualified)
                 if "(" in key:
@@ -180,7 +163,7 @@ class Pipeline:
                             "id": f"fs-{key}-{entity}-{period_label}",
                             "metric_type": key,
                             "value": abs(val),
-                            "currency": "MYR",
+                            "currency": fs_index.currency,
                             "period": period_label,
                             "source_table_row_id": f"fs-page-{entry.get('page', 0)}",
                             "source_text": entry.get("label", key),
@@ -190,4 +173,4 @@ class Pipeline:
                             "section": entry.get("section", ""),
                         }
                         f.write(json.dumps(record) + "\n")
-        logger.info(f"Appended FSIndex metrics to {path}")
+        logger.info(f"Wrote FSIndex metrics to {path}")

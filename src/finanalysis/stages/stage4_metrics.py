@@ -29,8 +29,8 @@ Given financial report content, identify and extract ALL financial metrics you c
 
 For each metric found, provide:
 - metric_type: The metric type string (see valid values below)
-- value: Numeric value (float, in RM'000 unless stated otherwise)
-- currency: Currency code if mentioned (e.g., "MYR", "USD")
+- value: Numeric value (float, in thousands unless stated otherwise)
+- currency: Currency code if mentioned (e.g., "MYR", "USD", "SGD", "EUR")
 - period: Time period if mentioned (e.g., "2023", "Q4 2023")
 - confidence: Confidence score between 0.0 and 1.0
 - reasoning: Brief explanation of your extraction
@@ -148,7 +148,7 @@ Example format:
     {{
       "metric_type": "revenue",
       "value": 1000000.0,
-      "currency": "MYR",
+      "currency": "USD",
       "period": "2023",
       "confidence": 0.95,
       "reasoning": "Revenue row clearly labeled"

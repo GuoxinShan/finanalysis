@@ -21,7 +21,6 @@ def settings():
 @pytest.fixture
 def test_pdf(tmp_path):
     """Create a minimal test PDF path"""
-    # We'll use the real test PDF
     return "testdata/CHINHIN_Annual_Report_2024.pdf"
 
 
@@ -50,11 +49,11 @@ def test_pipeline_rejects_directory(settings, tmp_path):
 @patch('src.finanalysis.pipeline.Stage1Preprocessor')
 @patch('src.finanalysis.pipeline.Stage2TextExtractor')
 @patch('src.finanalysis.pipeline.Stage3TableExtractor')
-@patch('src.finanalysis.pipeline.Stage4MetricExtractor')
+@patch('src.finanalysis.pipeline.FSIndex')
 @patch('src.finanalysis.pipeline.Stage5Aggregator')
 def test_pipeline_runs_all_stages(
     mock_stage5_class,
-    mock_stage4_class,
+    mock_fsindex_class,
     mock_stage3_class,
     mock_stage2_class,
     mock_stage1_class,
@@ -62,7 +61,7 @@ def test_pipeline_runs_all_stages(
     test_pdf,
     tmp_path
 ):
-    """Test Pipeline runs all 5 stages"""
+    """Test Pipeline runs all stages"""
     # Mock all stages
     mock_stage1 = MagicMock()
     mock_stage1.process.return_value = (Mock(), [Mock()])
@@ -76,12 +75,12 @@ def test_pipeline_runs_all_stages(
     mock_stage3.process.return_value = ([Mock()], [Mock()])
     mock_stage3_class.return_value = mock_stage3
 
-    mock_stage4 = MagicMock()
-    mock_stage4.process.return_value = [Mock()]
-    mock_stage4_class.return_value = mock_stage4
+    mock_fsindex = MagicMock()
+    mock_fsindex.line_items = {}
+    mock_fsindex_class.from_pdf.return_value = mock_fsindex
 
     mock_stage5 = MagicMock()
-    mock_stage5.process.return_value = {"status": "success"}
+    mock_stage5.process.return_value = {"status": "success", "statistics": {"metrics": 0}}
     mock_stage5_class.return_value = mock_stage5
 
     # Run pipeline
@@ -92,7 +91,7 @@ def test_pipeline_runs_all_stages(
     assert mock_stage1.process.called
     assert mock_stage2.process.called
     assert mock_stage3.process.called
-    assert mock_stage4.process.called
+    assert mock_fsindex_class.from_pdf.called
     assert mock_stage5.process.called
 
     # Verify result
@@ -102,11 +101,11 @@ def test_pipeline_runs_all_stages(
 @patch('src.finanalysis.pipeline.Stage1Preprocessor')
 @patch('src.finanalysis.pipeline.Stage2TextExtractor')
 @patch('src.finanalysis.pipeline.Stage3TableExtractor')
-@patch('src.finanalysis.pipeline.Stage4MetricExtractor')
+@patch('src.finanalysis.pipeline.FSIndex')
 @patch('src.finanalysis.pipeline.Stage5Aggregator')
 def test_pipeline_stop_at_stage(
     mock_stage5_class,
-    mock_stage4_class,
+    mock_fsindex_class,
     mock_stage3_class,
     mock_stage2_class,
     mock_stage1_class,
@@ -115,12 +114,10 @@ def test_pipeline_stop_at_stage(
     tmp_path
 ):
     """Test Pipeline can stop at specific stage"""
-    # Mock all stages
     mock_stage1 = MagicMock()
     mock_stage1.process.return_value = (Mock(), [Mock()])
     mock_stage1_class.return_value = mock_stage1
 
-    # Run pipeline with stop_at_stage=1
     pipeline = Pipeline(settings=settings)
     result = pipeline.run(
         pdf_path=test_pdf,
@@ -128,7 +125,6 @@ def test_pipeline_stop_at_stage(
         stop_at_stage=1
     )
 
-    # Verify only stage 1 called
     assert mock_stage1.process.called
     assert result["status"] == "stopped"
     assert result["stage"] == 1
@@ -136,7 +132,6 @@ def test_pipeline_stop_at_stage(
 
 def test_pipeline_force_disables_cache(settings, test_pdf, tmp_path):
     """Test Pipeline force flag disables cache"""
-    # Enable cache in settings
     settings.cache_enabled = True
 
     with patch('src.finanalysis.pipeline.Stage1Preprocessor') as mock_stage1_class:
@@ -146,7 +141,6 @@ def test_pipeline_force_disables_cache(settings, test_pdf, tmp_path):
 
         pipeline = Pipeline(settings=settings)
 
-        # Run with force=True
         pipeline.run(
             pdf_path=test_pdf,
             output_dir=str(tmp_path),
@@ -154,6 +148,4 @@ def test_pipeline_force_disables_cache(settings, test_pdf, tmp_path):
             stop_at_stage=1
         )
 
-        # Verify cache was disabled during run
-        # (This is checked by verifying settings.cache_enabled was set to False)
         assert settings.cache_enabled  # Should be restored after run

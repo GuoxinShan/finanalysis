@@ -28,6 +28,58 @@ _FS_PATTERNS = [
 _STMT_CASHFLOW_KW = {"CASH FLOW", "CASH FLOWS"}
 _STMT_POSITION_KW = {"FINANCIAL POSITION", "BALANCE SHEET"}
 
+# Map common currency codes to standard ISO codes
+_CURRENCY_MAP = {
+    "RM": "MYR", "MYR": "MYR",
+    "USD": "USD", "US": "USD",
+    "SGD": "SGD", "S": "SGD",
+    "HKD": "HKD", "HK": "HKD",
+    "EUR": "EUR",
+    "GBP": "GBP",
+    "CNY": "CNY", "RMB": "CNY",
+    "IDR": "IDR", "RP": "IDR",
+    "THB": "THB",
+    "PHP": "PHP",
+    "INR": "INR",
+    "AUD": "AUD",
+    "JPY": "JPY",
+}
+
+
+def _detect_currency(text: str) -> str:
+    """Detect currency from financial statement page text.
+
+    Looks for patterns like RM'000, USD'000, $'000 in column headers.
+    Returns ISO currency code, defaults to 'USD' if undetectable.
+    """
+    # Match currency code before '000 (e.g. RM'000, USD'000)
+    m = re.search(r"([A-Z]{1,3})['\u2019]\s*000", text)
+    if m:
+        code = m.group(1)
+        if code in _CURRENCY_MAP:
+            return _CURRENCY_MAP[code]
+        # If it's already a 3-letter ISO code, use it directly
+        if len(code) == 3:
+            return code
+    # Fallback: look for explicit currency mentions in headers
+    for pattern, iso in [
+        (r"\bRinggit\b", "MYR"),
+        (r"\bSingapore\b.*\bDollars?\b", "SGD"),
+        (r"\bHong\s+Kong\b.*\bDollars?\b", "HKD"),
+        (r"\bAustralian\b.*\bDollars?\b", "AUD"),
+        (r"(?:\bUS\b|\bUnited\s+States\b).*\bDollars?\b|\bDollars?\b.*\bUS\b", "USD"),
+        (r"\bRupiah\b", "IDR"),
+        (r"\bBaht\b", "THB"),
+        (r"\bRupees?\b", "INR"),
+        (r"\bYuan\b|\bRenminbi\b", "CNY"),
+        (r"\bPound\b|\bSterling\b", "GBP"),
+        (r"\bYen\b", "JPY"),
+        (r"\bEuro\b", "EUR"),
+    ]:
+        if re.search(pattern, text, re.IGNORECASE):
+            return iso
+    return "USD"
+
 
 def _detect_statement_type(text_upper: str) -> str:
     if any(k in text_upper for k in _STMT_CASHFLOW_KW):
@@ -60,8 +112,8 @@ def _is_primary_fs_page(text: str) -> bool:
     text_normalized = re.sub(r'\s+', ' ', upper)
     if "NOTES TO THE FINANCIAL" in text_normalized:
         return False
-    # Must have RM'000 column headers (standard Malaysian format)
-    # or USD'000, $'000 etc. Handle both ASCII ' and Unicode ' (U+2019)
+    # Must have currency'000 column headers (e.g. RM'000, USD'000, $'000)
+    # Handle both ASCII ' and Unicode right single quote (U+2019)
     if not re.search(r"[A-Z]{2,3}['\u2019]000|['\u2019]\s*000", text):
         return False
     # Must have enough data lines (comma-formatted numbers)
@@ -84,13 +136,16 @@ def _parse_fs_line(line: str) -> Optional[dict]:
     if len(tokens) < 2:
         # Try matching standalone integers separated by whitespace
         # (for lines like "Basic and diluted earnings per share (sen)   3         8")
-        # Only if line has a label with parenthetical unit
-        if re.search(r'\(sen\)|\(cents?\)|\(%\)', line, re.IGNORECASE):
+        # Only if line has a label with parenthetical unit (EPS or percentage)
+        # Supports: sen (MYR), cents (USD/AUD/SGD/HKD), pence (GBP), paise (INR), fils (AED), fen (CNY)
+        eps_unit_re = re.compile(
+            r'\((?:sen|cents?|pence|p|paise|fils|fen|%)\)', re.IGNORECASE
+        )
+        if eps_unit_re.search(line):
             tokens = re.findall(r'(?<!\w)(\d+)(?!\w)', line)
             # Filter out note references (single digits before the unit marker)
-            unit_pos = max(
-                (line.lower().find('(sen)'), line.lower().find('(cents)'), line.lower().find('(%)')),
-            )
+            unit_match = eps_unit_re.search(line)
+            unit_pos = unit_match.start() if unit_match else -1
             if unit_pos > 0:
                 tokens = [t for t in tokens if line.find(t, unit_pos) >= unit_pos]
 
@@ -135,6 +190,7 @@ class FSIndex:
 
     def __init__(self):
         self.line_items: dict[str, dict] = {}
+        self.currency: str = "USD"  # detected from PDF, default fallback
 
     @classmethod
     def from_pdf(cls, pdf_path: Path) -> "FSIndex":
@@ -146,10 +202,57 @@ class FSIndex:
             return index
 
         with pdfplumber.open(pdf_path) as pdf:
-            for i, page in enumerate(pdf.pages):
-                text = page.extract_text(layout=True) or ""
+            num_pages = len(pdf.pages)
+
+            # Two-phase scan: coarse sampling to locate FS region, then dense scan
+            _SAMPLE_STEP = 10
+            fs_region_start = None
+            fs_region_end = None
+
+            if num_pages > _SAMPLE_STEP * 3:
+                # Phase 1: coarse scan every Nth page to find FS region
+                for i in range(0, num_pages, _SAMPLE_STEP):
+                    text = pdf.pages[i].extract_text(layout=True) or ""
+                    if _is_primary_fs_page(text):
+                        if fs_region_start is None:
+                            fs_region_start = max(0, i - _SAMPLE_STEP)
+                        fs_region_end = min(num_pages, i + _SAMPLE_STEP + 1)
+
+                if fs_region_start is not None:
+                    # Phase 2: dense scan within the discovered region
+                    scan_range = range(fs_region_start, fs_region_end)
+                    logger.debug(
+                        f"FS region detected: pages {fs_region_start+1}-{fs_region_end} "
+                        f"(scanned {num_pages // _SAMPLE_STEP + 1} samples)"
+                    )
+                else:
+                    # No FS pages found in samples — fall back to full scan
+                    scan_range = range(num_pages)
+            else:
+                # Small PDF — just scan everything
+                scan_range = range(num_pages)
+
+            found_fs = False
+            consecutive_miss = 0
+            _MAX_GAP = 15
+
+            for i in scan_range:
+                text = pdf.pages[i].extract_text(layout=True) or ""
                 if not _is_primary_fs_page(text):
+                    if found_fs:
+                        consecutive_miss += 1
+                        if consecutive_miss >= _MAX_GAP:
+                            break
                     continue
+
+                found_fs = True
+                consecutive_miss = 0
+
+                # Detect currency from first FS page found
+                if not hasattr(index, '_currency_detected'):
+                    detected = _detect_currency(text)
+                    index.currency = detected
+                    index._currency_detected = True
 
                 stmt_type = _detect_statement_type(text.upper())
                 has_company = bool(re.search(r'\bCompany\b', text))
@@ -267,29 +370,12 @@ class FSIndex:
         key = _normalize(label)
         col = f"{entity}_{period}"
 
-        # If direct match has a value, use it
+        # Direct match
         entry = self.line_items.get(key)
         if entry and entry.get(col) is not None:
             return abs(entry[col])
 
-        # Try common label expansions/aliases
-        aliases = []
-        if "attributable" in key:
-            aliases.append(key.replace("profit attributable to", "profit for the financial year attributable to:"))
-        if "non-controlling interests in profit" in key:
-            aliases.append("profit for the financial year attributable to: non-controlling interests")
-            # Also try the raw label from income statement page (may be stored under
-            # a section-qualified key from the income statement)
-            aliases.append("non-controlling interests (income_statement)")
-        if key == "cash and cash equivalents":
-            aliases.append("cash and cash equivalents at the end of the financial year")
-
-        for alias in aliases:
-            entry = self.line_items.get(_normalize(alias))
-            if entry and entry.get(col) is not None:
-                return abs(entry[col])
-
-        # For items that appear in multiple sections, try current first
+        # Section-qualified match (items in multiple sections)
         for suffix in [
             "current assets", "current liabilities",
             "non-current assets", "non-current liabilities",
@@ -301,7 +387,7 @@ class FSIndex:
             if candidate and candidate.get(col) is not None:
                 return abs(candidate[col])
 
-        # Try fuzzy match as last resort
+        # Fuzzy match as last resort
         entry = self._fuzzy_match(key)
         if entry and entry.get(col) is not None:
             return abs(entry[col])
@@ -321,21 +407,28 @@ class FSIndex:
             # Bonus for substring containment
             if key in stored_key or stored_key in key:
                 score += 0.3
-            # Penalize section-qualified keys slightly to prefer exact matches
+            # Penalize section-qualified keys to prefer unqualified matches
             if '(' in stored_key and '(' not in key:
                 score -= 0.05
-            if score > best_score and score >= 0.5:
+            if score > best_score and score >= 0.45:
                 best_score = score
                 best_entry = entry
         return best_entry
 
     def save(self, path: Path):
+        data = {"currency": self.currency, "line_items": self.line_items}
         with open(path, 'w') as f:
-            json.dump(self.line_items, f, indent=2, default=str)
+            json.dump(data, f, indent=2, default=str)
 
     @classmethod
     def load(cls, path: Path) -> "FSIndex":
         index = cls()
         with open(path) as f:
-            index.line_items = json.load(f)
+            data = json.load(f)
+        # Support both new format (with currency) and legacy format (bare dict)
+        if isinstance(data, dict) and "line_items" in data:
+            index.line_items = data["line_items"]
+            index.currency = data.get("currency", "USD")
+        else:
+            index.line_items = data
         return index

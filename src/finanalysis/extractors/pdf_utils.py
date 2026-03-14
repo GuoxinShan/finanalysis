@@ -22,34 +22,29 @@ def get_page_dimensions(page: pdfplumber.pdf.Page) -> Tuple[float, float]:
     """Get page dimensions (width, height)"""
     return (page.width, page.height)
 
-def classify_page(page) -> str:
-    """Classify page type: native_text / table / mixed / ocr_only"""
+def classify_page(page, text: Optional[str] = None) -> str:
+    """Classify page type: native_text / table / mixed / ocr_only
 
-    text = page.extract_text()
-    tables = page.find_tables()
+    Args:
+        page: pdfplumber page object
+        text: Pre-extracted text (avoids redundant extraction)
+    """
+    if text is None:
+        text = page.extract_text() or ""
 
-    text_length = len(text) if text else 0
-    has_tables = len(tables) > 0
+    text_length = len(text)
 
-    # Check if scanned image
-    if text_length < 50 and not has_tables:
+    if text_length < 50:
         return "ocr_only"
 
-    # Calculate table coverage
-    if has_tables:
-        # Calculate table area using bbox
-        table_area = 0
-        for table in tables:
-            if table.bbox:
-                x0, y0, x1, y1 = table.bbox
-                table_area += (x1 - x0) * (y1 - y0)
+    # Heuristic: pages with many aligned numbers are likely tables
+    import re
+    number_lines = len(re.findall(r'[\d,]{3,}.*[\d,]{3,}', text))
+    total_lines = max(text.count('\n'), 1)
+    number_ratio = number_lines / total_lines
 
-        page_area = page.width * page.height
-        table_ratio = table_area / page_area if page_area > 0 else 0
-
-        if table_ratio > 0.5:
-            return "table"
-        else:
-            return "mixed"
-    else:
-        return "native_text"
+    if number_ratio > 0.4:
+        return "table"
+    elif number_ratio > 0.15:
+        return "mixed"
+    return "native_text"

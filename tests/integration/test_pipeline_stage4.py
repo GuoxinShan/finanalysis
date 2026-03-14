@@ -1,13 +1,9 @@
 # tests/integration/test_pipeline_stage4.py
+"""Integration test for Stage 4 (FSIndex structured extraction, no LLM)."""
 import pytest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
-from datetime import datetime
 
-from src.finanalysis.stages.stage1_preprocess import Stage1Preprocessor
-from src.finanalysis.stages.stage2_text import Stage2TextExtractor
-from src.finanalysis.stages.stage3_tables import Stage3TableExtractor
-from src.finanalysis.stages.stage4_metrics import Stage4MetricExtractor
+from src.finanalysis.fs_index import FSIndex
 from src.finanalysis.config import Settings
 
 
@@ -28,134 +24,56 @@ def test_pdf_path():
     return "testdata/CHINHIN_Annual_Report_2024.pdf"
 
 
-@patch('src.finanalysis.stages.stage4_metrics.LLMClient')
-def test_pipeline_through_stage4(mock_llm_client_class, settings, test_pdf_path, tmp_path):
-    """Test full pipeline through Stage 4 with mocked LLM"""
-    # Mock LLM client
-    mock_llm_client = MagicMock()
-    mock_llm_client.extract_json.return_value = {
-        "metrics": [
-            {
-                "metric_type": "revenue",
-                "value": 1500000.0,
-                "currency": "CNY",
-                "period": "2023",
-                "confidence": 0.93,
-                "reasoning": "Revenue figure from financial statement"
-            },
-            {
-                "metric_type": "net_income",
-                "value": 300000.0,
-                "currency": "CNY",
-                "period": "2023",
-                "confidence": 0.91,
-                "reasoning": "Net income from statement"
-            }
-        ]
-    }
-    mock_llm_client_class.return_value = mock_llm_client
+def test_fsindex_extracts_line_items(test_pdf_path):
+    """Test FSIndex extracts line items from real PDF"""
+    pdf_path = Path(test_pdf_path)
+    if not pdf_path.exists():
+        pytest.skip("Test PDF not available")
 
-    # Stage 1: Preprocess
-    stage1 = Stage1Preprocessor(settings=settings)
-    doc_manifest, page_manifests = stage1.process(
-        pdf_path=test_pdf_path,
-        output_dir=tmp_path
-    )
+    idx = FSIndex.from_pdf(pdf_path)
 
-    assert doc_manifest is not None
-    assert doc_manifest.pdf_path == test_pdf_path
-    assert len(page_manifests) > 0
-    assert doc_manifest.total_pages > 0
+    assert len(idx.line_items) > 50
+    assert idx.currency == "MYR"
 
-    # Stage 2: Text extraction
-    stage2 = Stage2TextExtractor(settings=settings)
-    text_blocks, page_manifests = stage2.process(
-        pdf_path=test_pdf_path,
-        doc_manifest=doc_manifest,
-        page_manifests=page_manifests,
-        output_dir=tmp_path
-    )
+    # Verify key metrics are present
+    assert "revenue" in idx.line_items
+    assert "gross profit" in idx.line_items
+    assert "profit before tax" in idx.line_items
 
-    assert isinstance(text_blocks, list)
-    assert doc_manifest.text_block_count >= 0
-
-    # Stage 3: Table extraction
-    stage3 = Stage3TableExtractor(settings=settings)
-    table_rows, page_manifests = stage3.process(
-        pdf_path=test_pdf_path,
-        doc_manifest=doc_manifest,
-        page_manifests=page_manifests,
-        output_dir=tmp_path
-    )
-
-    assert isinstance(table_rows, list)
-    assert doc_manifest.table_row_count >= 0
-
-    # Stage 4: Metric extraction
-    stage4 = Stage4MetricExtractor(settings=settings)
-    metrics = stage4.process(
-        pdf_path=test_pdf_path,
-        doc_manifest=doc_manifest,
-        page_manifests=page_manifests,
-        table_rows=table_rows,
-        output_dir=tmp_path
-    )
-
-    assert isinstance(metrics, list)
-    assert doc_manifest.metric_candidate_count == len(metrics)
-
-    # Verify output files created
-    assert (tmp_path / "document_manifest.json").exists()
-    assert (tmp_path / "text_blocks.jsonl").exists()
-    assert (tmp_path / "table_rows.jsonl").exists()
-    assert (tmp_path / "stage4_metrics.json").exists()
-    assert (tmp_path / "stage4_metrics.jsonl").exists()
-
-    # Verify LLM was called
-    assert mock_llm_client.extract_json.called
+    # Verify values are populated
+    revenue = idx.line_items["revenue"]
+    assert revenue["group_current"] is not None
+    assert revenue["group_prior"] is not None
 
 
-def test_pipeline_stage4_with_empty_tables(settings, tmp_path):
-    """Test Stage 4 handles pipeline with no tables"""
-    # Create minimal manifest with no table rows
-    from src.finanalysis.models import DocumentManifest, PageManifest
+def test_fsindex_save_load_roundtrip(test_pdf_path, tmp_path):
+    """Test FSIndex save/load preserves data"""
+    pdf_path = Path(test_pdf_path)
+    if not pdf_path.exists():
+        pytest.skip("Test PDF not available")
 
-    doc_manifest = DocumentManifest(
-        pdf_path="test.pdf",
-        pdf_hash="abc123",
-        total_pages=1,
-        file_size_bytes=1000,
-        processed_at=datetime.now(),
-        page_types={"native_text": 1},
-        text_block_count=5,
-        table_row_count=0,
-        metric_candidate_count=0,
-        config_snapshot={}
-    )
+    idx = FSIndex.from_pdf(pdf_path)
+    save_path = tmp_path / "fs_index.json"
+    idx.save(save_path)
 
-    page_manifests = [
-        PageManifest(
-            page_number=1,
-            page_type="native_text",
-            width=612,
-            height=792,
-            text_extracted=True,
-            table_extracted=False,
-            ocr_applied=False,
-            text_block_ids=["text-1"],
-            table_row_ids=[],
-            content_hash="hash1"
-        )
-    ]
+    loaded = FSIndex.load(save_path)
+    assert loaded.currency == idx.currency
+    assert len(loaded.line_items) == len(idx.line_items)
+    assert loaded.line_items["revenue"]["group_current"] == idx.line_items["revenue"]["group_current"]
 
-    stage4 = Stage4MetricExtractor(settings=settings)
-    metrics = stage4.process(
-        pdf_path="test.pdf",
-        doc_manifest=doc_manifest,
-        page_manifests=page_manifests,
-        table_rows=[],
-        output_dir=tmp_path
-    )
 
-    assert metrics == []
-    assert doc_manifest.metric_candidate_count == 0
+def test_fsindex_lookup(test_pdf_path):
+    """Test FSIndex lookup returns correct values"""
+    pdf_path = Path(test_pdf_path)
+    if not pdf_path.exists():
+        pytest.skip("Test PDF not available")
+
+    idx = FSIndex.from_pdf(pdf_path)
+
+    revenue = idx.lookup("revenue", "group", "current")
+    assert revenue is not None
+    assert revenue > 0
+
+    # Lookup with fuzzy match
+    ppe = idx.lookup("property, plant and equipment", "group", "current")
+    assert ppe is not None
