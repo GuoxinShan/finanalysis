@@ -310,13 +310,114 @@ def extract_risk_cashflow_data(fs_index: Dict, source_file: str = "") -> Dict:
     """Extract comprehensive risk, cash flow, and forecast data for Worker 6"""
     extraction_time = datetime.now().isoformat()
 
+    # Extract cash flow statement items
+    ocf_current = get_line_item_value(fs_index, 'net cash from operating activities', 'group_current')
+    ocf_prior = get_line_item_value(fs_index, 'net cash from operating activities', 'group_prior')
+
+    investing_cf_current = get_line_item_value(fs_index, 'net cash used in investing activities', 'group_current')
+    investing_cf_prior = get_line_item_value(fs_index, 'net cash used in investing activities', 'group_prior')
+
+    financing_cf_current = get_line_item_value(fs_index, 'net cash from financing activities', 'group_current')
+    financing_cf_prior = get_line_item_value(fs_index, 'net cash from financing activities', 'group_prior')
+
+    # Extract additional cash flow details
+    interest_paid_current = get_line_item_value(fs_index, 'interest paid', 'group_current')
+    interest_paid_prior = get_line_item_value(fs_index, 'interest paid', 'group_prior')
+
+    dividends_paid_current = get_line_item_value(fs_index, 'dividends paid', 'group_current')
+    dividends_paid_prior = get_line_item_value(fs_index, 'dividends paid', 'group_prior')
+
+    # Calculate derived metrics
+    fcf_current = None
+    fcf_prior = None
+    if ocf_current and investing_cf_current:
+        fcf_current = ocf_current - abs(investing_cf_current)
+    if ocf_prior and investing_cf_prior:
+        fcf_prior = ocf_prior - abs(investing_cf_prior)
+
+    # Cash flow adequacy metrics
+    revenue_current = get_line_item_value(fs_index, 'revenue', 'group_current')
+    ocf_to_revenue = None
+    if ocf_current and revenue_current and revenue_current > 0:
+        ocf_to_revenue = round((ocf_current / revenue_current) * 100, 2)
+
+    # Debt service coverage
+    bank_borrowings = get_line_item_value(fs_index, 'bank borrowings', 'group_current')
+    ocf_to_debt = None
+    if ocf_current and bank_borrowings and bank_borrowings > 0:
+        ocf_to_debt = round((ocf_current / bank_borrowings) * 100, 2)
+
+    # Interest coverage
+    interest_coverage = None
+    if ocf_current and interest_paid_current and interest_paid_current > 0:
+        interest_coverage = round(ocf_current / interest_paid_current, 2)
+
+    # YoY growth for cash flows
+    ocf_yoy = None
+    if ocf_current and ocf_prior and ocf_prior != 0:
+        ocf_yoy = round(((ocf_current - ocf_prior) / abs(ocf_prior)) * 100, 2)
+
+    fcf_yoy = None
+    if fcf_current and fcf_prior and fcf_prior != 0:
+        fcf_yoy = round(((fcf_current - fcf_prior) / abs(fcf_prior)) * 100, 2)
+
+    financing_yoy = None
+    if financing_cf_current and financing_cf_prior and financing_cf_prior != 0:
+        financing_yoy = round(((financing_cf_current - financing_cf_prior) / abs(financing_cf_prior)) * 100, 2)
+
     return {
         "_metadata": create_metadata(source_file, extraction_time),
-        "note": "Risk and cash flow analysis based on extracted financial data",
+
+        "cash_flow_statement": {
+            "operating": {
+                "current": ocf_current,
+                "prior": ocf_prior,
+                "yoy_change_pct": ocf_yoy,
+                "_source": "fs_index.line_items['net cash from operating activities']"
+            },
+            "investing": {
+                "current": investing_cf_current,
+                "prior": investing_cf_prior,
+                "_source": "fs_index.line_items['net cash used in investing activities']"
+            },
+            "financing": {
+                "current": financing_cf_current,
+                "prior": financing_cf_prior,
+                "yoy_change_pct": financing_yoy,
+                "_source": "fs_index.line_items['net cash from financing activities']"
+            },
+            "free_cash_flow": {
+                "current": fcf_current,
+                "prior": fcf_prior,
+                "yoy_change_pct": fcf_yoy,
+                "_source": "Calculated: OCF - |Investing CF|"
+            }
+        },
+
+        "cash_flow_quality": {
+            "ocf_to_revenue_pct": ocf_to_revenue,
+            "ocf_to_debt_pct": ocf_to_debt,
+            "interest_coverage_ratio": interest_coverage,
+            "_source": "Calculated from cash flow statement items"
+        },
+
+        "cash_flow_details": {
+            "interest_paid": {
+                "current": interest_paid_current,
+                "prior": interest_paid_prior,
+                "_source": "fs_index.line_items['interest paid']"
+            },
+            "dividends_paid": {
+                "current": dividends_paid_current,
+                "prior": dividends_paid_prior,
+                "_source": "fs_index.line_items['dividends paid']"
+            }
+        },
+
         "_verification": {
-            "data_quality": "ANALYSIS",
-            "source": "Risk assessment based on financial metrics",
-            "validation": "Analysis performed on verified financial data"
+            "data_quality": "REAL_DATA_EXTRACTED",
+            "source": "fs_index.json cash flow statement items",
+            "validation": "All cash flow metrics extracted with source tracking"
         }
     }
 
