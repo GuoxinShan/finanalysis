@@ -312,6 +312,64 @@ def _print_comparison_table(metric_type: str, rows: list):
         click.echo(f"  {row['label']:<8} {value:>15} {currency:<8} {yoy:>8}  {conf:>6}")
 
 
+@cli.command()
+@click.argument('fs_index_path', type=click.Path(exists=True))
+@click.option('--entity', '-e', default='group', type=click.Choice(['group', 'company']),
+              help='Entity to validate')
+@click.option('--period', '-p', default='current', type=click.Choice(['current', 'prior']),
+              help='Period to validate')
+@click.option('--tolerance', '-t', default=1.0, type=float,
+              help='Acceptable difference for floating point comparisons')
+def validate(fs_index_path: str, entity: str, period: str, tolerance: float):
+    """Validate balance sheet equations for mathematical accuracy.
+
+    Checks:
+    - Total Assets = Non-Current Assets + Current Assets
+    - Total Assets = Total Liabilities + Total Equity
+    - Total Equity = Share Capital + Reserves + Retained Earnings
+
+    Example:
+        finanalysis validate output/CHINHIN/2024/fs_index.json --entity group --period current
+    """
+    import json
+    from .fs_index import FSIndex
+    from .validation import BalanceSheetValidator, format_validation_report
+
+    fs_index = FSIndex.load(Path(fs_index_path))
+
+    # Convert FSIndex to metrics dict format
+    metrics = {}
+    for key, entry in fs_index.line_items.items():
+        if '(' in key:  # Skip parentheses variants
+            continue
+        metrics[key] = {
+            'group_current': entry.get('group_current'),
+            'group_prior': entry.get('group_prior'),
+            'company_current': entry.get('company_current'),
+            'company_prior': entry.get('company_prior'),
+        }
+
+    # Run validation
+    validator = BalanceSheetValidator(tolerance=tolerance)
+    issues = validator.validate(metrics, entity=entity, period=period)
+
+    # Print report
+    report = format_validation_report(issues)
+    click.echo(report)
+
+    # Print metadata
+    click.echo(f"\nCompany: {fs_index.company_name}")
+    click.echo(f"Fiscal Year End: {fs_index.fiscal_year_end}")
+    click.echo(f"Currency: {fs_index.currency}")
+    click.echo(f"Entity: {entity}")
+    click.echo(f"Period: {period}")
+
+    # Exit with error code if critical issues found
+    critical_issues = [i for i in issues if i.severity == "error"]
+    if critical_issues:
+        raise click.Abort()
+
+
 @cli.command('validate-report')
 @click.argument('report', type=click.Path(exists=True))
 @click.option('--data', type=click.Path(exists=True), required=True,
