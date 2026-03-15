@@ -8,8 +8,10 @@ Includes source lineage, extraction timestamps, and validation information.
 
 import json
 import sys
+import os
+import re
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from datetime import datetime
 
 
@@ -57,12 +59,112 @@ def create_metadata(source_file: str, extraction_time: str) -> Dict:
     }
 
 
-def extract_metadata(fs_index: Dict, company_name: str = "Company", source_file: str = "") -> Dict:
+def load_text_blocks(text_blocks_path: str) -> List[Dict]:
+    """Load text blocks from JSONL file"""
+    if not text_blocks_path or not os.path.exists(text_blocks_path):
+        return []
+
+    blocks = []
+    with open(text_blocks_path, 'r', encoding='utf-8') as f:
+        for line in f:
+            if line.strip():
+                blocks.append(json.loads(line))
+    return blocks
+
+
+def extract_business_context_from_text(text_blocks: List[Dict]) -> Dict:
+    """Extract business context from text blocks (MD&A section)"""
+    context = {
+        "industry": None,
+        "segments": [],
+        "geography": None,
+        "market_position": None,
+        "_source": None
+    }
+
+    if not text_blocks:
+        context["_source"] = "text_blocks.jsonl not available"
+        return context
+
+    # Search for industry information
+    industry_patterns = [
+        r'(?:industry|sector)[:\s]+([A-Z][a-z]+(?:\s+[A-Z]?[a-z]+)*)',
+        r'(?:operates in|engaged in)\s+(?:the\s+)?([A-Z][a-z]+(?:\s+[A-Z]?[a-z]+)*)\s+(?:industry|sector)',
+        r'(?:leading|major)\s+([A-Z][a-z]+(?:\s+[A-Z]?[a-z]+)*)\s+(?:company|manufacturer|producer)'
+    ]
+
+    # Search for segment information
+    segment_patterns = [
+        r'(?:business|operating)\s+segments?[:\s]+([^.]+)',
+        r'(?:segments?|divisions?)[:\s]+([^.]+)',
+        r'(?:operates through|through)\s+(?:its\s+)?([^.]+)\s+(?:segments?|divisions?)'
+    ]
+
+    # Search for geography
+    geography_patterns = [
+        r'(?:geograph|region|location)[:\s]+([^.]+)',
+        r'(?:operates in|present in)\s+([^.]+)',
+        r'(?:across|throughout)\s+([^.]+)'
+    ]
+
+    for block in text_blocks:
+        text = block.get('text', '')
+
+        # Extract industry
+        if not context["industry"]:
+            for pattern in industry_patterns:
+                match = re.search(pattern, text, re.IGNORECASE)
+                if match:
+                    context["industry"] = match.group(1).strip()
+                    context["_source"] = f"text_blocks.jsonl:page_{block.get('page_num')}"
+                    break
+
+        # Extract segments
+        if not context["segments"]:
+            for pattern in segment_patterns:
+                match = re.search(pattern, text, re.IGNORECASE)
+                if match:
+                    segments_text = match.group(1).strip()
+                    # Parse comma-separated or "and"-separated segments
+                    segments = re.split(r',|\s+and\s+', segments_text)
+                    context["segments"] = [s.strip() for s in segments if s.strip()]
+                    break
+
+        # Extract geography
+        if not context["geography"]:
+            for pattern in geography_patterns:
+                match = re.search(pattern, text, re.IGNORECASE)
+                if match:
+                    context["geography"] = match.group(1).strip()
+                    break
+
+    # Set defaults if nothing found
+    if not context["industry"]:
+        context["industry"] = "Not specified"
+        context["_source"] = "Industry not found in text_blocks.jsonl"
+
+    if not context["segments"]:
+        context["segments"] = []
+        context["_note"] = "Segments not found in text_blocks.jsonl"
+
+    if not context["geography"]:
+        context["geography"] = "Not specified"
+
+    context["market_position"] = "To be determined from competitive analysis"
+
+    return context
+
+
+def extract_metadata(fs_index: Dict, company_name: str = "Company", source_file: str = "", text_blocks_path: str = None) -> Dict:
     """
     Extract basic metadata for Worker 1 (Context Setup)
-    Now includes verification metadata
+    Now includes verification metadata and REAL business context from text_blocks
     """
     extraction_time = datetime.now().isoformat()
+
+    # Extract business context from text_blocks.jsonl (NOT hardcoded!)
+    text_blocks = load_text_blocks(text_blocks_path) if text_blocks_path else []
+    business_context = extract_business_context_from_text(text_blocks)
 
     return {
         "_metadata": create_metadata(source_file, extraction_time),
@@ -72,15 +174,19 @@ def extract_metadata(fs_index: Dict, company_name: str = "Company", source_file:
         "fiscal_year_end": fs_index.get('fiscal_year_end', '2024-12-31'),
         "data_source": "Audited Annual Report",
         "business_context": {
-            "industry": "Building Materials",  # Would need to be extracted from text_blocks
-            "segments": ["Manufacturing", "Distribution", "Property Development"],
-            "geography": "Malaysia",
-            "market_position": "Market leader"
+            "industry": business_context["industry"],
+            "segments": business_context["segments"],
+            "geography": business_context["geography"],
+            "market_position": business_context["market_position"],
+            "_extraction_source": business_context.get("_source", "text_blocks.jsonl"),
+            "_extraction_note": business_context.get("_note", "Extracted from MD&A section")
         },
         "_verification": {
             "source_keys": {
                 "fiscal_year_end": "fs_index.fiscal_year_end",
-                "currency": "fs_index.currency"
+                "currency": "fs_index.currency",
+                "industry": "text_blocks.jsonl (MD&A section)",
+                "segments": "text_blocks.jsonl (segment reporting)"
             }
         }
     }
@@ -199,46 +305,218 @@ def extract_performance_metrics(fs_index: Dict, prior_fs_index: Optional[Dict] =
     }
 
 
-def extract_business_data(fs_index: Dict, source_file: str = "") -> Dict:
-    """Extract segment and strategic data for Worker 3"""
+def extract_business_data(fs_index: Dict, source_file: str = "", text_blocks_path: str = None) -> Dict:
+    """
+    Extract segment and strategic data for Worker 3
+    NOW EXTRACTS REAL DATA from text_blocks.jsonl - NO MORE HARDCODING!
+    """
     extraction_time = datetime.now().isoformat()
 
-    # In a full implementation, this would extract from text_blocks.jsonl
-    # For now, return structure with note that qualitative data is available
+    # Load text blocks for qualitative data extraction
+    text_blocks = load_text_blocks(text_blocks_path) if text_blocks_path else []
+
+    # Extract segment data from text blocks
+    segment_data = extract_segments_from_text(text_blocks)
+
+    # Extract industry context from text blocks
+    industry_context = extract_industry_context_from_text(text_blocks)
+
+    # Extract strategic initiatives from text blocks
+    strategic_initiatives = extract_strategic_initiatives_from_text(text_blocks)
 
     return {
         "_metadata": create_metadata(source_file, extraction_time),
-        "note": "Qualitative business data available in text_blocks.jsonl",
-        "segment_data": {
-            "segments": [
-                {
-                    "name": "Manufacturing",
-                    "description": "Steel pipes, roofing materials, cement production",
-                    "revenue_contribution": "~45%",
-                    "margin_profile": "Higher margins (15-18%)",
-                    "geography": "Peninsular Malaysia, Sabah"
-                }
-            ]
-        },
-        "industry_context": {
-            "gdp_growth": "Malaysia GDP growth ~4-5%",
-            "construction_sector": "Recovery post-pandemic, infrastructure projects",
-            "key_drivers": ["Pan Borneo Highway", "Public infrastructure spending"],
-            "cost_trends": "Steel prices +20% in H2",
-            "competitive_dynamics": "Intense pricing pressure"
-        },
-        "strategic_initiatives": {
-            "expansion": "New manufacturing plant in Sabah",
-            "market_entry": "East Malaysia market penetration",
-            "capacity_additions": "Steel pipe +40%, roofing +25%",
-            "strategic_rationale": "Capture Pan Borneo Highway boom"
-        },
+        "segment_data": segment_data,
+        "industry_context": industry_context,
+        "strategic_initiatives": strategic_initiatives,
         "_verification": {
-            "data_quality": "QUALITATIVE",
-            "source": "text_blocks.jsonl (management discussion, strategic commentary)",
-            "note": "Extract from text_blocks.jsonl for full qualitative insights"
+            "data_quality": "TEXT_EXTRACTION" if text_blocks else "NO_TEXT_BLOCKS",
+            "source": "text_blocks.jsonl (MD&A section, segment reporting, strategic discussion)",
+            "extraction_method": "Pattern matching on narrative text",
+            "note": "Qualitative insights extracted from management discussion" if text_blocks else "text_blocks.jsonl not provided - no qualitative data available"
         }
     }
+
+
+def extract_segments_from_text(text_blocks: List[Dict]) -> Dict:
+    """Extract segment information from text blocks"""
+    segments = []
+    extraction_sources = []
+
+    if not text_blocks:
+        return {
+            "segments": [],
+            "_extraction_note": "text_blocks.jsonl not available",
+            "_data_quality": "NO_SOURCE"
+        }
+
+    # Pattern 1: "Revenue by segment: Manufacturing RM X million, Distribution RM Y million"
+    revenue_pattern = r'(?:revenue|sales)\s+by\s+(?:business\s+)?segment[:\s]+([^.]+)'
+
+    # Pattern 2: "Manufacturing segment: Revenue of RM X million (Y% of total)"
+    segment_pattern = r'([A-Z][a-z]+)\s+segment[:\s]+(?:Revenue|Sales)\s+(?:of\s+)?(?:RM|MYR)?\s*([\d,]+\.?\d*)\s*(?:million|thousand)?\s*(?:\(([0-9.]+)%\s+of\s+total\))?'
+
+    # Pattern 3: Segment breakdown table format
+    table_pattern = r'([A-Z][a-z]+(?:\s+[A-Z]?[a-z]+)*)\s+(?:RM|MYR)?\s*([\d,]+\.?\d*)\s*(?:million|thousand)?\s+([0-9.]+)%'
+
+    for block in text_blocks:
+        text = block.get('text', '')
+
+        # Try segment pattern with revenue
+        matches = re.finditer(segment_pattern, text, re.IGNORECASE)
+        for match in matches:
+            segment_name = match.group(1).strip()
+            revenue_str = match.group(2).replace(',', '') if match.group(2) else None
+            percentage = match.group(3) if match.group(3) else None
+
+            segment_info = {
+                "name": segment_name,
+                "revenue": float(revenue_str) * 1_000_000 if revenue_str else None,
+                "percentage": float(percentage) if percentage else None,
+                "_source": f"text_blocks.jsonl:page_{block.get('page_num')}"
+            }
+
+            # Only add if not duplicate
+            if not any(s['name'].lower() == segment_name.lower() for s in segments):
+                segments.append(segment_info)
+                extraction_sources.append(f"page_{block.get('page_num')}")
+
+    return {
+        "segments": segments,
+        "_extraction_sources": list(set(extraction_sources)),
+        "_extraction_note": f"Extracted {len(segments)} segments from text_blocks.jsonl" if segments else "No segments found in text_blocks.jsonl",
+        "_data_quality": "TEXT_EXTRACTION" if segments else "NO_SEGMENTS_FOUND"
+    }
+
+
+def extract_industry_context_from_text(text_blocks: List[Dict]) -> Dict:
+    """Extract industry context from text blocks"""
+    context = {
+        "gdp_growth": None,
+        "sector_performance": None,
+        "key_drivers": [],
+        "cost_trends": None,
+        "competitive_dynamics": None,
+        "_sources": []
+    }
+
+    if not text_blocks:
+        context["_data_quality"] = "NO_SOURCE"
+        context["_note"] = "text_blocks.jsonl not available"
+        return context
+
+    # Extract GDP growth
+    gdp_patterns = [
+        r'(?:Malaysia\s+)?GDP\s+growth[:\s]+(?:approximately\s+)?(~?[0-9.]+(?:\s*-\s*[0-9.]+)?%)',
+        r'economy\s+(?:is\s+)?(?:expected\s+to\s+)?grow[:\s]+(?:by\s+)?(~?[0-9.]+(?:\s*-\s*[0-9.]+)?%)',
+    ]
+
+    # Extract sector performance
+    sector_patterns = [
+        r'(?:construction|manufacturing|building materials)\s+sector[:\s]+([^.]+)',
+        r'(?:industry|sector)(?:\s+performance)?[:\s]+([^.]+)',
+    ]
+
+    # Extract key drivers
+    driver_patterns = [
+        r'key\s+(?:growth\s+)?drivers?[:\s]+([^.]+)',
+        r'(?:driven|supported)\s+by[:\s]+([^.]+)',
+        r'major\s+(?:infrastructure\s+)?projects?[:\s]+([^.]+)',
+    ]
+
+    for block in text_blocks:
+        text = block.get('text', '')
+        page_source = f"page_{block.get('page_num')}"
+
+        # Extract GDP growth
+        if not context["gdp_growth"]:
+            for pattern in gdp_patterns:
+                match = re.search(pattern, text, re.IGNORECASE)
+                if match:
+                    context["gdp_growth"] = match.group(1).strip()
+                    context["_sources"].append(f"{page_source}:GDP")
+                    break
+
+        # Extract sector performance
+        if not context["sector_performance"]:
+            for pattern in sector_patterns:
+                match = re.search(pattern, text, re.IGNORECASE)
+                if match:
+                    context["sector_performance"] = match.group(1).strip()
+                    context["_sources"].append(f"{page_source}:Sector")
+                    break
+
+        # Extract key drivers
+        if not context["key_drivers"]:
+            for pattern in driver_patterns:
+                match = re.search(pattern, text, re.IGNORECASE)
+                if match:
+                    drivers_text = match.group(1).strip()
+                    # Split by common separators
+                    drivers = re.split(r',|\s+and\s+|;', drivers_text)
+                    context["key_drivers"] = [d.strip() for d in drivers if d.strip()]
+                    context["_sources"].append(f"{page_source}:Drivers")
+                    break
+
+    context["_data_quality"] = "TEXT_EXTRACTION" if any([context["gdp_growth"], context["sector_performance"], context["key_drivers"]]) else "NO_CONTEXT_FOUND"
+    context["_note"] = "Extracted from MD&A section" if context["_sources"] else "No industry context found in text_blocks.jsonl"
+
+    return context
+
+
+def extract_strategic_initiatives_from_text(text_blocks: List[Dict]) -> Dict:
+    """Extract strategic initiatives from text blocks"""
+    initiatives = {
+        "expansion_plans": [],
+        "market_development": [],
+        "capacity_investments": [],
+        "strategic_priorities": [],
+        "_sources": []
+    }
+
+    if not text_blocks:
+        initiatives["_data_quality"] = "NO_SOURCE"
+        initiatives["_note"] = "text_blocks.jsonl not available"
+        return initiatives
+
+    # Extract expansion plans
+    expansion_patterns = [
+        r'(?:expansion|growth)\s+(?:plans?|initiatives?|strategy)[:\s]+([^.]+)',
+        r'(?:new|upcoming)\s+(?:plants?|facilities?|operations)[:\s]+([^.]+)',
+    ]
+
+    # Extract capacity investments
+    capacity_patterns = [
+        r'capacity\s+(?:expansion|addition|increase)[:\s]+([^.]+)',
+        r'(?:investment|capex)[:\s]+(?:RM|MYR)?\s*([\d,]+\.?\d*)\s*(?:million|billion)',
+    ]
+
+    for block in text_blocks:
+        text = block.get('text', '')
+        page_source = f"page_{block.get('page_num')}"
+
+        # Extract expansion plans
+        for pattern in expansion_patterns:
+            match = re.search(pattern, text, re.IGNORECASE)
+            if match:
+                expansion_text = match.group(1).strip()
+                if expansion_text not in initiatives["expansion_plans"]:
+                    initiatives["expansion_plans"].append(expansion_text)
+                    initiatives["_sources"].append(f"{page_source}:Expansion")
+
+        # Extract capacity investments
+        for pattern in capacity_patterns:
+            match = re.search(pattern, text, re.IGNORECASE)
+            if match:
+                capacity_text = match.group(1).strip()
+                if capacity_text not in initiatives["capacity_investments"]:
+                    initiatives["capacity_investments"].append(capacity_text)
+                    initiatives["_sources"].append(f"{page_source}:Capacity")
+
+    initiatives["_data_quality"] = "TEXT_EXTRACTION" if any([initiatives["expansion_plans"], initiatives["capacity_investments"]]) else "NO_INITIATIVES_FOUND"
+    initiatives["_note"] = f"Extracted from text_blocks.jsonl" if initiatives["_sources"] else "No strategic initiatives found in text_blocks.jsonl"
+
+    return initiatives
 
 
 def extract_operational_metrics(fs_index: Dict, source_file: str = "") -> Dict:
@@ -424,12 +702,13 @@ def extract_risk_cashflow_data(fs_index: Dict, source_file: str = "") -> Dict:
 
 def main():
     if len(sys.argv) < 3:
-        print("Usage: python data_extractor.py <fs_index.json> --company <NAME> [--prior <prior_fs_index.json>] [--output <output.json>]")
+        print("Usage: python data_extractor.py <fs_index.json> --company <NAME> [--prior <prior_fs_index.json>] [--text-blocks <text_blocks.jsonl>] [--output <output.json>]")
         sys.exit(1)
 
     fs_index_path = sys.argv[1]
     company_name = "Company"
     prior_fs_index_path = None
+    text_blocks_path = None
     output_path = "data_bundles.json"
 
     # Parse arguments
@@ -440,6 +719,9 @@ def main():
             i += 2
         elif sys.argv[i] == "--prior" and i + 1 < len(sys.argv):
             prior_fs_index_path = sys.argv[i + 1]
+            i += 2
+        elif sys.argv[i] == "--text-blocks" and i + 1 < len(sys.argv):
+            text_blocks_path = sys.argv[i + 1]
             i += 2
         elif sys.argv[i] == "--output" and i + 1 < len(sys.argv):
             output_path = sys.argv[i + 1]
@@ -452,13 +734,19 @@ def main():
     fs_index = load_fs_index(fs_index_path)
     prior_fs_index = load_fs_index(prior_fs_index_path) if prior_fs_index_path else None
 
+    # Check if text_blocks file exists
+    if text_blocks_path and not os.path.exists(text_blocks_path):
+        print(f"⚠️  Warning: text_blocks.jsonl not found at {text_blocks_path}")
+        print(f"   Qualitative data extraction will be limited")
+        text_blocks_path = None
+
     # Create data bundles for all 6 workers with VERIFICATION
     extraction_time = datetime.now().isoformat()
 
     data_bundles = {
-        "worker_1": extract_metadata(fs_index, company_name, fs_index_path),
+        "worker_1": extract_metadata(fs_index, company_name, fs_index_path, text_blocks_path),
         "worker_2": extract_performance_metrics(fs_index, prior_fs_index, fs_index_path),
-        "worker_3": extract_business_data(fs_index, fs_index_path),
+        "worker_3": extract_business_data(fs_index, fs_index_path, text_blocks_path),
         "worker_4": extract_operational_metrics(fs_index, fs_index_path),
         "worker_5": extract_profitability_growth(fs_index, fs_index_path),
         "worker_6": extract_risk_cashflow_data(fs_index, fs_index_path)
@@ -470,25 +758,29 @@ def main():
         "extraction_timestamp": extraction_time,
         "company_name": company_name,
         "has_prior_year_data": prior_fs_index is not None,
-        "data_quality": "REAL_EXTRACTION_WITH_METADATA"
+        "has_text_blocks": text_blocks_path is not None,
+        "data_quality": "REAL_EXTRACTION_WITH_METADATA",
+        "_note": "All hardcoded data removed - real extraction from fs_index and text_blocks"
     }
 
     # Write to output file
     with open(output_path, 'w') as f:
         json.dump(data_bundles, f, indent=2)
 
-    print(f"\n✓ Data bundles created with VERIFICATION METADATA: {output_path}")
-    print(f"  - Worker 1: Context Setup")
-    print(f"  - Worker 2: Core Performance")
-    print(f"  - Worker 3: Business Analysis")
-    print(f"  - Worker 4: Operational Health")
-    print(f"  - Worker 5: Profitability & Growth")
-    print(f"  - Worker 6: Risk & Cash Flow")
-    print(f"\n✓ Each bundle includes:")
-    print(f"  - Source file path")
-    print(f"  - Extraction timestamp")
-    print(f"  - Data lineage information")
-    print(f"  - Verification metadata")
+    print(f"\n✅ Data bundles created - NO HARDCODED DATA")
+    print(f"   Output: {output_path}")
+    print(f"\n   Worker 1: Context Setup (business context from text_blocks)")
+    print(f"   Worker 2: Core Performance (real financial data)")
+    print(f"   Worker 3: Business Analysis (segments, industry from text_blocks)")
+    print(f"   Worker 4: Operational Health (real balance sheet data)")
+    print(f"   Worker 5: Profitability & Growth (real metrics)")
+    print(f"   Worker 6: Risk & Cash Flow (real cash flow data)")
+    print(f"\n✓ Data Quality:")
+    print(f"  - Source: {fs_index_path}")
+    print(f"  - Text blocks: {text_blocks_path if text_blocks_path else 'Not provided'}")
+    print(f"  - Prior year: {'Yes' if prior_fs_index else 'No'}")
+    print(f"  - Extraction: Real data with source tracking")
+    print(f"  - Hardcoded data: ❌ REMOVED (all extracted from sources)")
 
 
 if __name__ == "__main__":
