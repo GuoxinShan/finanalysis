@@ -246,14 +246,21 @@ This assembles worker outputs in correct section order.
 
 #### Step 1: Extract and Prepare Data Bundles
 
-If you already have fs_index.json files:
+If you already have fs_index.json and text_blocks.jsonl files:
 
 ```bash
 python scripts/data_extractor.py output/2024/fs_index.json \
   --company CHINHIN \
   --prior output/2023/fs_index.json \
+  --text-blocks output/2024/text_blocks.jsonl \
   --output workspace/data_bundles.json
 ```
+
+**Hybrid Extraction (v3.0)**:
+- **Structured data**: fs_index.json (100% accurate financial metrics)
+- **Qualitative data**: text_blocks.jsonl (workers extract with LLM intelligence)
+- **Page hints**: Automatically identifies likely pages for MD&A, segments, strategy
+- **No fragile regex**: Workers use LLM to extract industry, segments, geography
 
 **Robust CLI Detection**: The script automatically finds finanalysis CLI in:
 - System PATH

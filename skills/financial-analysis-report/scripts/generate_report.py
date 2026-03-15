@@ -198,11 +198,16 @@ def parse_pdf(pdf_path: str, company_name: str, output_dir: str) -> str:
         year_dir = os.path.join(output_dir, year)
         os.makedirs(year_dir, exist_ok=True)
 
-        # Copy fs_index.json to final location
-        final_output = os.path.join(year_dir, 'fs_index.json')
-        shutil.copy(temp_output, final_output)
+        # Copy ALL output files to final location (not just fs_index.json)
+        # This includes: text_blocks.jsonl, table_rows.jsonl, page_manifests.jsonl, etc.
+        for filename in os.listdir(temp_dir):
+            temp_file = os.path.join(temp_dir, filename)
+            if os.path.isfile(temp_file):
+                final_file = os.path.join(year_dir, filename)
+                shutil.copy(temp_file, final_file)
+                print(f"✓ Copied: {filename}")
 
-        print(f"✓ Saved to: {final_output}")
+        final_output = os.path.join(year_dir, 'fs_index.json')
 
         return final_output
 
@@ -230,12 +235,25 @@ def generate_data_bundles(fs_index_path: str, company_name: str, prior_fs_index_
     if not extractor_path.exists():
         raise FileNotFoundError(f"Could not find data_extractor.py at {extractor_path}")
 
+    # Find text_blocks.jsonl in same directory as fs_index.json
+    fs_index_dir = Path(fs_index_path).parent
+    text_blocks_path = fs_index_dir / 'text_blocks.jsonl'
+
     cmd = [sys.executable, str(extractor_path),
            fs_index_path,
            '--company', company_name]
 
     if prior_fs_index_path:
         cmd.extend(['--prior', prior_fs_index_path])
+
+    # Add text_blocks if it exists
+    if text_blocks_path.exists():
+        cmd.extend(['--text-blocks', str(text_blocks_path)])
+        print(f"✓ Found text_blocks: {text_blocks_path}")
+    else:
+        print(f"⚠️  Warning: text_blocks.jsonl not found at {text_blocks_path}")
+        print(f"   Workers will have limited qualitative data access")
+
     cmd.extend(['--output', output_path])
 
     run_cli(cmd, f"Generating data bundles")
