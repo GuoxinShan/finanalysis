@@ -82,9 +82,13 @@ def _detect_currency(text: str) -> str:
 
 
 def _detect_statement_type(text_upper: str) -> str:
-    if any(k in text_upper for k in _STMT_CASHFLOW_KW):
+    # Normalize whitespace to handle PDF extraction artifacts
+    # (e.g., "FINANCIAL     POSITION" → "FINANCIAL POSITION")
+    text_normalized = ' '.join(text_upper.split())
+
+    if any(k in text_normalized for k in _STMT_CASHFLOW_KW):
         return "cash_flow"
-    if any(k in text_upper for k in _STMT_POSITION_KW):
+    if any(k in text_normalized for k in _STMT_POSITION_KW):
         return "balance_sheet"
     return "income_statement"
 
