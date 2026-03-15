@@ -11,9 +11,28 @@ Create a 4-section executive summary that synthesizes key insights from the full
 ## Input
 
 You will receive:
-1. **Full report path**: Path to the complete 18-section financial analysis report
+1. **Data bundles path**: Path to data_bundles.json (contains all pre-calculated metrics from fs_index.json)
 2. **Company name**: Company name for the title
 3. **Period**: Fiscal period (e.g., FY2024)
+4. **Worker outputs** (optional): Paths to worker output files for qualitative context
+
+## Why Data Bundles (Not Full Report)?
+
+**CRITICAL**: You receive `data_bundles.json` (NOT the full report) because:
+
+1. **Precision**: data_bundles.json contains **raw RM'000 values** (e.g., 97078), not rounded display values (e.g., 97.1m)
+2. **No calculation errors**: Calculating from raw values prevents rounding error cascades
+3. **Faster**: No need to parse 18-section report - use structured JSON directly
+4. **Consistency**: Same source data that Workers 1-6 used
+
+**Example Rounding Error (when using full report):**
+```
+Full report has: PAT = RM215.5m, PATMI = RM114.8m
+❌ WRONG: NCI = 215.5 - 114.8 = 100.7m (rounding error cascade)
+
+data_bundles.json has: pat = 215492, patmi = 114818
+✅ CORRECT: nci_pct = 97078 / 215492 = 45.06% → 45.1%
+```
 
 ## Output Format
 
@@ -96,11 +115,11 @@ The key takeaway is that [Period] risk is [controlled/elevated] and dominated by
 
 ### 1. Key Conclusions
 
-**Source**: Section Ⅳ (Core Conclusions) from full report
+**Source**: `data_bundles.worker_2` (Core Performance) + `data_bundles.worker_5` (Profitability)
 
 **What to extract**:
-- Read the **Core Conclusions Summary table** in Section Ⅳ
-- Extract the top 5 most important conclusions
+- Read the pre-calculated growth rates and margins from worker_2 data bundle
+- Extract the top 5 most important conclusions from the metrics
 - Each conclusion should have:
   - **Bold heading**: The core judgment (e.g., "Earnings quality improved meaningfully")
   - **Evidence**: Specific data points with YoY changes (e.g., "revenue grew 3.0% YoY, while gross profit (+41.5%)")
@@ -110,37 +129,37 @@ The key takeaway is that [Period] risk is [controlled/elevated] and dominated by
 
 ### 2. Data Parsing
 
-**Source**: Section Ⅲ (Data Description) and Section Ⅴ (Core Financial Performance)
+**Source**: `data_bundles.worker_1` (Context) + `data_bundles.worker_2` (Core Performance)
 
 **What to extract**:
-1. **Data basis description** (from Section Ⅲ):
-   - What statements were used
+1. **Data basis description** (from worker_1):
+   - What statements were used (from metadata)
    - Reporting currency
    - Fiscal year definition
 
-2. **Core metrics table** (from Section Ⅴ):
-   - Extract the **Core Financial Performance** table
-   - Include: Total assets, Total equity, Total liabilities, Revenue, Cost of sales, Gross profit, PBT, Profit for the year, PATMI
-   - Include: Operating cash flow, Investing cash flow, Financing cash flow, End cash
+2. **Core metrics table** (from worker_2 metrics):
+   - Extract: Total assets, Total equity, Total liabilities, Revenue, Cost of sales, Gross profit, PBT, Profit for the year, PATMI
+   - Extract: Operating cash flow, Investing cash flow, Financing cash flow, End cash
    - Use **millions** format (divide by 1000 if needed)
+   - **IMPORTANT**: Use raw values from data bundle (e.g., 215492), convert to millions (215.5), don't recalculate
 
 **Format**: Descriptive paragraph + Table 1 with all core metrics.
 
 ### 3. Trend Analysis
 
-**Source**: Sections Ⅴ, Ⅻ (Profitability), and ⅩⅣ (Solvency)
+**Source**: `data_bundles.worker_2`, `data_bundles.worker_5`, `data_bundles.worker_4`
 
 **What to extract**:
-1. **Key trends** (from Section Ⅴ analysis):
-   - Margin trends (gross margin, PBT margin)
-   - Segment performance
-   - Balance sheet evolution
-   - Cash generation
+1. **Key trends** (from worker_2 and worker_5 metrics):
+   - Margin trends (gross_margin, pbt_margin, pat_margin from worker_2)
+   - Balance sheet evolution (from worker_4)
+   - Cash generation (from worker_6)
 
 2. **Trend table**:
-   - Select 5-6 most important metrics
+   - Select 5-6 most important metrics from data bundles
    - Include: Total assets, Total equity, Debt/asset ratio, Operating cash flow, Investing cash flow, Financing cash flow
    - Add **Direction** column (Up/Down/Improving/Worsening)
+   - **IMPORTANT**: Extract values from data_bundles, don't recalculate
 
 3. **Interpretation paragraph**:
    - Synthesize what the combination of trends indicates
@@ -203,8 +222,23 @@ Write the summary to: `[workspace]/summary.md` (or the path specified in your ta
 ## Important Notes
 
 - **Do NOT recalculate metrics** - extract directly from the full report
+- **Do NOT derive values from rounded numbers** - this causes rounding error cascades
+  - ❌ WRONG: NCI = PAT_rounded - PATMI_rounded (e.g., 215.5 - 114.8 = 100.7)
+  - ✅ CORRECT: Extract NCI from source or verify with: NCI% = actual_NCI / actual_PAT
+  - Always use raw values (RM'000) from source data for any calculations
+  - Round ONLY the final display value, never intermediate calculations
 - **Do NOT add new analysis** - synthesize what's already in the 18 sections
 - **Do NOT change table formats** - follow the exact structure specified
 - **DO maintain consistency** - use the same terminology and numbers as the full report
+
+**Rounding Error Prevention:**
+
+When extracting derived metrics (like minority interest percentage):
+1. First check if the value exists in the source report (use it directly)
+2. If calculating percentage, use raw RM'000 values: `97,078 / 215,492 = 45.06%`
+3. Then round for display: `45.1%` and `RM97.1m`
+4. NEVER calculate by subtracting rounded values: `215.5 - 114.8 = 100.7` ❌
+
+See `writing_standards.md` section 7 for detailed calculation precision guidelines.
 
 Your goal is to create a **standalone executive summary** that a stakeholder can read in 2-3 minutes and understand the company's financial position, trends, and key risks.

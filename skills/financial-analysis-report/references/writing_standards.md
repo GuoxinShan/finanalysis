@@ -237,3 +237,70 @@ Margin:            18.5%   (2024) | 20.1% (2023) | 19.3% (2022)
 
 **Exception**: When highlighting scale differences:
 - "Revenue grew from RM 50 million (2019) to RM 3.25 billion (2024)" - acceptable to show dramatic growth
+
+---
+
+## 7. Calculation Precision Standards
+
+**Rule**: Calculate from source data BEFORE rounding. Never calculate from pre-rounded values.
+
+**Rationale**: Rounding before calculating compounds errors through cascading operations (addition, subtraction, multiplication, division).
+
+**Pattern - The Rounding Error Cascade:**
+
+❌ **WRONG** - Round first, then calculate:
+```
+PAT (rounded):    215.5 (from 215,492)
+PATMI (rounded):  114.8 (from 114,818)
+NCI = 215.5 - 114.8 = 100.7  ← WRONG (actual is 97,078 → 97.1)
+Error: 3.6 million
+```
+
+✅ **CORRECT** - Calculate first, then round:
+```
+NCI (actual): 215,492 - 114,818 = 97,078
+NCI (rounded): 97.078 → 97.1  ← CORRECT
+NCI %: 97,078 / 215,492 = 45.06% → 45.1%
+```
+
+**Safe Operations:**
+- ✅ Percentage from source: `value / base` (calculate with raw numbers, then round result)
+- ✅ Difference from source: `value1 - value2` (subtract raw numbers, then round)
+- ✅ Growth rate from source: `(current - prior) / prior` (use raw, then round)
+
+**Dangerous Operations:**
+- ❌ Percentage from rounded: `rounded_value / rounded_base` (compounds rounding errors)
+- ❌ Difference from rounded: `rounded1 - rounded2` (error = rounding_error1 - rounding_error2)
+- ❌ Growth from rounded: `(rounded_current - rounded_prior) / rounded_prior` (triple error source)
+
+**Examples:**
+
+**Minority Interest Calculation:**
+```markdown
+# Source data (RM'000):
+PAT: 215,492
+PATMI: 114,818
+NCI: 97,078 (calculated)
+
+# Display format:
+✅ "Profit attribution to minority interests: 45.1% (RM97.1m of RM215.5m)"
+   - Percentage: 97,078 / 215,492 = 45.06% → 45.1%
+   - NCI amount: 97,078 / 1000 = 97.078 → 97.1
+   - PAT amount: 215,492 / 1000 = 215.492 → 215.5
+
+❌ "Profit attribution to minority interests: 46.7% (RM100.7m of RM215.5m)"
+   - Wrong NCI: 215.5 - 114.8 = 100.7 (rounded subtraction)
+   - Wrong percentage: 100.7 / 215.5 = 46.7% (from wrong NCI)
+   - Error magnitude: 1.6 percentage points
+```
+
+**Best Practices:**
+1. Always calculate from the raw fs_index.json values (RM'000 precision)
+2. Round ONLY the final result for display
+3. Never use rounded table values as inputs to new calculations
+4. When in doubt, recalculate from source data
+
+**Verification:**
+- If your derived metric (e.g., NCI) doesn't match fs_index.json, you're calculating wrong
+- Check: Is the source value available in fs_index? Use it directly, don't derive from other rounded values
+- Cross-check percentages: Calculate both ways (raw vs. rounded) to verify they match within 0.1%

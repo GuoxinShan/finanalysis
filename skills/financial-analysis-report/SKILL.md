@@ -458,8 +458,30 @@ Each worker must follow these principles:
 3. **Connect the dots** - Link insights within your sections
 4. **Be forward-looking** - Assess implications and risks
 5. **Write for the user** - Professional but accessible
+6. **Calculate precisely** - Never derive from rounded values (see Precision Standards below)
 
-See `references/writing_standards.md` for detailed guidance.
+### Precision Standards
+
+**CRITICAL**: Calculate from source data BEFORE rounding. Never use rounded values as calculation inputs.
+
+**The Rounding Error Pattern:**
+```
+❌ WRONG: Round → Calculate
+   PAT: 215.5m, PATMI: 114.8m
+   NCI = 215.5 - 114.8 = 100.7m  ← ERROR (actual: 97.1m)
+
+✅ CORRECT: Calculate → Round
+   NCI = 215,492 - 114,818 = 97,078
+   Display: 97.1m (97,078 / 1000)
+```
+
+**Why This Matters:**
+- Rounding errors compound through subtraction/addition
+- A 0.5m rounding error in each input becomes 3.6m error in output
+- Always use raw RM'000 values from fs_index.json for calculations
+- Round ONLY the final display value
+
+See `references/writing_standards.md` section 7 for detailed examples.
 
 ## Tools and Scripts
 

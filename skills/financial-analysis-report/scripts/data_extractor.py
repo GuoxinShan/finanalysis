@@ -666,6 +666,12 @@ def main():
             "structured_data": "fs_index.json (100% accurate)",
             "qualitative_data": "text_blocks.jsonl (worker extracts with LLM)",
             "approach": "No fragile regex patterns - worker intelligence"
+        },
+        "precision_standards": {
+            "calculation_rule": "Calculate from raw RM'000 values BEFORE rounding",
+            "forbidden_operations": "Never derive metrics from rounded display values",
+            "example": "NCI = actual_value_from_fs_index, not (PAT_rounded - PATMI_rounded)",
+            "rounding": "Round ONLY the final display value, never intermediate calculations"
         }
     }
 

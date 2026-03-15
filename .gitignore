@@ -1,3 +1,6 @@
+# Ignore files
+.DS_Store
+node_modules/
 # Python
 __pycache__/
 *.py[cod]
