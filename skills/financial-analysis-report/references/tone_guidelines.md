@@ -197,6 +197,8 @@ Financial analysis reports serve multiple stakeholders: executives making strate
 
 | Avoid | Use Instead | Why |
 |-------|-------------|-----|
+| "Explosive growth" | "Strong growth of X%" | Professional, quantified |
+| "Crisis" | "Challenge" or "Risk" | Objective, not sensational |
 | "Dramatic collapse" | "Sharp decline of X%" | Specific, objective |
 | "Exploded" | "Surged X%" | Professional |
 | "Burning cash" | "Negative operating cash flow of RM X million" | Precise |

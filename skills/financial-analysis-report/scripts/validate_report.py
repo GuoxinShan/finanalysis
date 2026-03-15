@@ -70,12 +70,33 @@ def extract_numbers_from_markdown(content: str) -> List[ExtractedNumber]:
 
 # Map common metric names to fs_index.json field names
 METRIC_ALIASES = {
+    # Income Statement
     'revenue': ['revenue', 'total revenue', 'sales', 'turnover'],
     'gross_profit': ['gross profit', 'profit before overhead', 'gross operating profit'],
+    'operating_profit': ['profit from operations', 'operating profit', 'pbt before finance costs'],
     'pbt': ['profit before tax', 'pbt', 'profit before taxation'],
-    'pat': ['profit after tax', 'pat', 'profit for the year', 'net profit'],
+    'pat': ['profit after tax', 'pat', 'profit for the year', 'profit for the financial year', 'net profit'],
+    'attributable_profit': ['profit attributable to owners', 'attributable to owners of the parent'],
+    'selling_expenses': ['selling and marketing expenses', 'selling expenses', 'distribution costs'],
+    'admin_expenses': ['administration expenses', 'administrative expenses', 'admin costs'],
+    'finance_costs': ['finance costs', 'interest expense', 'finance expenses'],
+
+    # Balance Sheet
     'total_assets': ['total assets', 'total non-current and current assets'],
+    'current_assets': ['total current assets', 'current assets'],
+    'non_current_assets': ['total non-current assets', 'non-current assets'],
     'total_equity': ['total equity', "shareholders' equity", 'total shareholders\' funds'],
+    'total_liabilities': ['total liabilities', 'total non-current and current liabilities'],
+    'current_liabilities': ['total current liabilities', 'current liabilities'],
+    'cash': ['cash and bank balances', 'cash and cash equivalents', 'cash'],
+    'inventory': ['inventories', 'stock', 'inventory'],
+    'receivables': ['trade receivables', 'accounts receivable', 'receivables'],
+    'payables': ['trade payables', 'accounts payable', 'payables'],
+
+    # Cash Flow
+    'ocf': ['net cash from operating activities', 'operating cash flow', 'cash from operations'],
+    'icf': ['net cash used in investing activities', 'investing cash flow', 'cash used in investing'],
+    'fcf': ['net cash from financing activities', 'financing cash flow', 'cash from financing'],
 }
 
 
