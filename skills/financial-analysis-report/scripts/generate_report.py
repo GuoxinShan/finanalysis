@@ -96,6 +96,11 @@ def run_cli(command: List[str], description: str = "Run a CLI command and handle
     except FileNotFoundError:
         print(f"❌ Command not found: {' '.join(command)}")
         raise
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Command failed with exit code {e.returncode}")
+        print(f"   stdout: {e.stdout}")
+        print(f"   stderr: {e.stderr}")
+        raise
 
 
 def extract_year_from_fs_index(fs_index_path: str) -> str:
@@ -153,6 +158,12 @@ def parse_pdf(pdf_path: str, company_name: str, output_dir: str) -> str:
     """Parse a PDF and generate fs_index.json in a year-based subdirectory"""
     cli = find_finanalysis_cli()
 
+    # Validate PDF exists
+    if not os.path.exists(pdf_path):
+        raise FileNotFoundError(f"PDF file not found: {pdf_path}")
+
+    print(f"Parsing PDF: {pdf_path}")
+
     # Parse to temporary directory first to get fiscal year
     import tempfile
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -160,7 +171,25 @@ def parse_pdf(pdf_path: str, company_name: str, output_dir: str) -> str:
 
         # Run parse command to temporary location
         cmd = cli + ['parse', pdf_path, '--company', company_name, '-o', temp_dir]
-        run_cli(cmd, f"Parsing {pdf_path}")
+
+        try:
+            run_cli(cmd, f"Parsing {pdf_path}")
+        except subprocess.CalledProcessError as e:
+            print(f"\n❌ Failed to parse PDF: {pdf_path}")
+            print(f"   Command: {' '.join(cmd)}")
+            print(f"   Exit code: {e.returncode}")
+            if e.stdout:
+                print(f"   stdout: {e.stdout}")
+            if e.stderr:
+                print(f"   stderr: {e.stderr}")
+            raise
+
+        # Check if fs_index.json was created
+        if not os.path.exists(temp_output):
+            raise FileNotFoundError(
+                f"fs_index.json not created at {temp_output}. "
+                f"The finanalysis parse command may have failed silently."
+            )
 
         # Extract year from fs_index
         year = extract_year_from_fs_index(temp_output)
