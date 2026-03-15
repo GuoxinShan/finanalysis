@@ -98,20 +98,84 @@ def run_cli(command: List[str], description: str = "Run a CLI command and handle
         raise
 
 
+def extract_year_from_fs_index(fs_index_path: str) -> str:
+    """Extract fiscal year from fs_index.json"""
+    import json
+    with open(fs_index_path, 'r') as f:
+        fs_index = json.load(f)
+
+    fiscal_year_end = fs_index.get('fiscal_year_end', '')
+    if fiscal_year_end:
+        return fiscal_year_end[:4]  # Extract year from "YYYY-MM-DD"
+    return 'unknown'
+
+
+def validate_periods(fs_index_path: str, prior_fs_index_path: Optional[str]) -> None:
+    """Validate that periods are different and in correct order"""
+    if not prior_fs_index_path:
+        return
+
+    import json
+
+    with open(fs_index_path, 'r') as f:
+        current_fs = json.load(f)
+
+    with open(prior_fs_index_path, 'r') as f:
+        prior_fs = json.load(f)
+
+    current_year = current_fs.get('fiscal_year_end', '')[:4]
+    prior_year = prior_fs.get('fiscal_year_end', '')[:4]
+
+    if not current_year or not prior_year:
+        print("⚠️  Warning: Could not determine fiscal years from fs_index files")
+        return
+
+    if current_year == prior_year:
+        raise ValueError(
+            f"❌ ERROR: Both PDFs are from the same year ({current_year}). "
+            f"Current PDF and prior PDF must be from different periods.\n"
+            f"   Current: {fs_index_path} (FY{current_year})\n"
+            f"   Prior: {prior_fs_index_path} (FY{prior_year})"
+        )
+
+    if int(current_year) <= int(prior_year):
+        raise ValueError(
+            f"❌ ERROR: Current period (FY{current_year}) must be later than prior period (FY{prior_year}). "
+            f"You may have swapped the --pdf-2024 and --pdf-2023 arguments.\n"
+            f"   Current: {fs_index_path} (FY{current_year})\n"
+            f"   Prior: {prior_fs_index_path} (FY{prior_year})"
+        )
+
+    print(f"✓ Period validation passed: FY{current_year} vs FY{prior_year}")
+
+
 def parse_pdf(pdf_path: str, company_name: str, output_dir: str) -> str:
-    """Parse a PDF and generate fs_index.json"""
+    """Parse a PDF and generate fs_index.json in a year-based subdirectory"""
     cli = find_finanalysis_cli()
 
-    # Ensure output directory exists
-    os.makedirs(output_dir, exist_ok=True)
+    # Parse to temporary directory first to get fiscal year
+    import tempfile
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_output = os.path.join(temp_dir, 'fs_index.json')
 
-    # Run parse command
-    cmd = cli + ['parse', pdf_path, '--company', company_name, '-o', output_dir]
+        # Run parse command to temporary location
+        cmd = cli + ['parse', pdf_path, '--company', company_name, '-o', temp_dir]
+        run_cli(cmd, f"Parsing {pdf_path}")
 
-    run_cli(cmd, f"Parsing {pdf_path}")
+        # Extract year from fs_index
+        year = extract_year_from_fs_index(temp_output)
 
-    # Return path to fs_index.json
-    return os.path.join(output_dir, 'fs_index.json')
+        # Create year-based subdirectory
+        year_dir = os.path.join(output_dir, year)
+        os.makedirs(year_dir, exist_ok=True)
+
+        # Copy fs_index.json to final location
+        final_output = os.path.join(year_dir, 'fs_index.json')
+        shutil.copy(temp_output, final_output)
+
+        print(f"✓ Saved to: {final_output}")
+
+        return final_output
 
 
 def calculate_metrics(fs_index_path: str, prior_fs_index_path: Optional[str], output_path: str) -> str:
@@ -290,12 +354,7 @@ def main():
     os.makedirs(args.output_dir, exist_ok=True)
     os.makedirs(args.workspace, exist_ok=True)
 
-    # Determine period from PDF filename or use default
-    period = "FY2024"
-    if "2024" in args.pdf_2024:
-        period = "FY2024"
-    elif "2023" in args.pdf_2024:
-        period = "FY2023"
+    # Period will be determined after parsing from fs_index metadata
 
     # Step 1: Parse PDFs
     if not args.skip_pdf_parsing:
@@ -307,10 +366,49 @@ def main():
         fs_index_2023 = None
         if args.pdf_2023:
             fs_index_2023 = parse_pdf(args.pdf_2023, args.company, args.output_dir)
+
+        # Validate periods are different and in correct order
+        if fs_index_2023:
+            try:
+                validate_periods(fs_index_2024, fs_index_2023)
+            except ValueError as e:
+                print(str(e))
+                sys.exit(1)
     else:
-        fs_index_2024 = os.path.join(args.output_dir, 'fs_index.json')
-        fs_index_2023 = os.path.join(args.output_dir, 'fs_index.json') if args.pdf_2023 else None
-        print("✓ Using existing fs_index.json files")
+        # When skipping parsing, find fs_index.json in year-based subdirectories
+        # Try to auto-detect years from directory structure
+        import glob
+
+        fs_index_files = glob.glob(os.path.join(args.output_dir, '*/fs_index.json'))
+
+        if not fs_index_files:
+            print(f"❌ ERROR: No fs_index.json files found in {args.output_dir}/*/")
+            print("   Run without --skip-pdf-parsing to parse PDFs first")
+            sys.exit(1)
+
+        # Sort by year (newest first)
+        fs_index_files.sort(reverse=True)
+
+        fs_index_2024 = fs_index_files[0]
+        fs_index_2023 = fs_index_files[1] if len(fs_index_files) > 1 else None
+
+        print(f"✓ Using existing fs_index.json files:")
+        print(f"  Current: {fs_index_2024}")
+        if fs_index_2023:
+            print(f"  Prior: {fs_index_2023}")
+
+        # Validate periods
+        if fs_index_2023:
+            try:
+                validate_periods(fs_index_2024, fs_index_2023)
+            except ValueError as e:
+                print(str(e))
+                sys.exit(1)
+
+    # Determine period from current fs_index
+    period_year = extract_year_from_fs_index(fs_index_2024)
+    period = f"FY{period_year}"
+    print(f"✓ Period: {period}")
 
     # Step 2: Calculate metrics
     if not args.skip_metrics:

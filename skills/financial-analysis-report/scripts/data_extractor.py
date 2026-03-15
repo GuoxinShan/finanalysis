@@ -107,13 +107,21 @@ def extract_performance_metrics(fs_index: Dict, prior_fs_index: Optional[Dict] =
     pat_prior = get_line_item_value(fs_index, 'profit for the financial year', 'group_prior')
 
     # Attributable profit - need to find the right key
+    # Must contain BOTH "profit" AND "attributable to owners" to avoid matching equity
     attr_current = None
     attr_prior = None
     for key in fs_index['line_items'].keys():
-        if 'attributable to owners' in key.lower():
+        key_lower = key.lower()
+        if 'profit' in key_lower and 'attributable to owners' in key_lower:
             attr_current = fs_index['line_items'][key].get('group_current')
             attr_prior = fs_index['line_items'][key].get('group_prior')
             break
+
+    # Sanity check: Attributable profit should be <= PAT
+    if attr_current and pat_current and attr_current > pat_current * 1.01:  # 1% tolerance
+        print(f"⚠️  WARNING: Attributable profit ({attr_current}) > PAT ({pat_current})")
+        print(f"   This is unusual. Attributable profit should typically be <= PAT.")
+        print(f"   Check extraction logic in data_extractor.py")
 
     # Calculate margins
     def safe_margin(numerator, denominator):
