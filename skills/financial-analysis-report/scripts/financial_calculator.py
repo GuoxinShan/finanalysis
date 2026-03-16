@@ -3,18 +3,39 @@
 Financial ratio calculator for finanalysis data.
 
 Reads fs_index.json and computes standard financial ratios.
-Extensible via formula registry.
+Outputs JSON to stdout.
+
+Usage:
+    python financial_calculator.py <fs_index.json>                           # All ratios
+    python financial_calculator.py <fs_index.json> --category profitability  # Specific category
+    python financial_calculator.py <fs_index.json> --prior <prior.json>       # YoY growth
+    python financial_calculator.py <fs_index.json> --trend 2022:<f1> 2023:<f2>  # Multi-year
 """
 
+import argparse
 import json
 import sys
 from pathlib import Path
-from typing import Any, Callable
 
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
 
 def safe_divide(numerator: float, denominator: float, default: float = 0.0) -> float:
     """Safe division with default value for zero denominator."""
     return numerator / denominator if denominator != 0 else default
+
+
+def _normalize_label(label: str) -> str:
+    """Normalize a financial statement label for fuzzy matching."""
+    s = label.lower()
+    # Normalize cash flow direction markers: (used in)/from, from/(used in)
+    s = s.replace("(used in)/from", "from")
+    s = s.replace("from/(used in)", "from")
+    s = s.replace("from/", "")
+    s = s.replace("/(used in)", "")
+    # Remove extra whitespace
+    s = " ".join(s.split())
+    return s
 
 
 def get_metric_value(data: dict, label: str, entity: str = "group", period: str = "current") -> float:
@@ -37,10 +58,12 @@ def get_metric_value(data: dict, label: str, entity: str = "group", period: str 
         if label.lower() in line_items:
             item = line_items[label.lower()]
         else:
-            # Fuzzy search for label
+            # Fuzzy search: normalize both sides and compare
+            norm_label = _normalize_label(label)
             item = None
             for key, value in line_items.items():
-                if label.lower() in key.lower() or key.lower() in label.lower():
+                norm_key = _normalize_label(key)
+                if norm_label in norm_key or norm_key in norm_label:
                     item = value
                     break
 
@@ -70,48 +93,63 @@ def get_metric_value(data: dict, label: str, entity: str = "group", period: str 
 
 def get_total_borrowings(data: dict, entity: str = "group", period: str = "current") -> float:
     """Get total borrowings (current + non-current)."""
-    # Try to get both current and non-current borrowings
-    non_current = get_metric_value(data, "bank borrowings (non-current liabilities)", entity, period)
-    current = get_metric_value(data, "bank borrowings (current liabilities)", entity, period)
+    line_items = data.get("line_items", {})
 
-    # Fallback: if specific labels don't work, try generic
-    if non_current == 0.0 and current == 0.0:
-        # Maybe there's only one "bank borrowings" that combines both
-        return get_metric_value(data, "bank borrowings", entity, period)
+    non_current = 0.0
+    current = 0.0
+    generic_borrowings = 0.0
 
-    return non_current + current
+    for key, value in line_items.items():
+        norm = _normalize_label(key)
+        if "borrowings" not in norm:
+            continue
+        if "non-current" in norm:
+            non_current = get_metric_value(data, key, entity, period)
+        elif "current" in norm:
+            current = get_metric_value(data, key, entity, period)
+        else:
+            generic_borrowings = get_metric_value(data, key, entity, period)
+
+    if non_current > 0.0 or current > 0.0:
+        return non_current + current
+    return generic_borrowings
 
 
 def get_operating_expenses(data: dict, entity: str = "group", period: str = "current") -> float:
     """Get total operating expenses."""
-    # Sum all operating expense categories
     cost_of_sales = get_metric_value(data, "cost of sales", entity, period)
     distribution = get_metric_value(data, "distribution expenses", entity, period)
     administrative = get_metric_value(data, "administrative expenses", entity, period)
     other = get_metric_value(data, "other expenses", entity, period)
 
-    # If nothing found, try generic label
     if cost_of_sales == 0.0 and distribution == 0.0 and administrative == 0.0:
         return get_metric_value(data, "operating expenses", entity, period)
 
     return cost_of_sales + distribution + administrative + other
 
 
+# ── Category calculators ─────────────────────────────────────────────────────
+
+CATEGORIES = ["profitability", "liquidity", "solvency", "efficiency", "cashflow"]
+
+
 def calculate_profitability_ratios(data: dict) -> dict[str, float]:
     """Calculate profitability margins and returns."""
     revenue = get_metric_value(data, "revenue")
-    operating_profit = get_metric_value(data, "gross profit")  # Use gross profit as proxy
+    operating_profit = get_metric_value(data, "gross profit")
     pbt = get_metric_value(data, "profit before tax")
     pat = get_metric_value(data, "profit for the financial year")
     attributable = get_metric_value(data, "profit for the financial year attributable to: owners of the parent")
     equity = get_metric_value(data, "equity attributable to owners of the parent")
+    total_assets = get_metric_value(data, "total assets")
 
     return {
         "operating_margin": safe_divide(operating_profit, revenue) * 100,
         "pbt_margin": safe_divide(pbt, revenue) * 100,
         "pat_margin": safe_divide(pat, revenue) * 100,
         "attributable_margin": safe_divide(attributable, revenue) * 100,
-        "roe": safe_divide(attributable, equity) * 100,  # Simplified (should annualize)
+        "roe": safe_divide(attributable, equity) * 100,
+        "roa": safe_divide(attributable, total_assets) * 100,
     }
 
 
@@ -141,7 +179,6 @@ def calculate_solvency_ratios(data: dict) -> dict[str, float]:
     cash = get_metric_value(data, "cash and bank balances")
     equity = get_metric_value(data, "equity attributable to owners of the parent")
 
-    # If equity not found, try total equity
     if equity == 0.0:
         equity = get_metric_value(data, "total equity")
 
@@ -164,11 +201,10 @@ def calculate_efficiency_ratios(data: dict, period_days: int = 365) -> dict[str,
         period_days: Reporting period (365 for annual, 182 for H1)
     """
     revenue = get_metric_value(data, "revenue")
-    operating_expenses = abs(get_operating_expenses(data))  # Use absolute value
+    operating_expenses = abs(get_operating_expenses(data))
     trade_receivables = get_metric_value(data, "trade receivables")
     trade_payables = get_metric_value(data, "trade payables")
 
-    # Days calculations
     receivables_days = safe_divide(trade_receivables * period_days, revenue)
     payables_days = safe_divide(trade_payables * period_days, operating_expenses)
 
@@ -187,7 +223,6 @@ def calculate_cashflow_ratios(data: dict) -> dict[str, float]:
     total_borrowings = get_total_borrowings(data)
     finance_costs = get_metric_value(data, "finance costs")
 
-    # Approximate FCF (OCF - capex, where capex ≈ negative ICF)
     capex = -icf if icf < 0 else 0
     fcf = ocf - capex
 
@@ -197,41 +232,6 @@ def calculate_cashflow_ratios(data: dict) -> dict[str, float]:
         "ocf_interest_coverage": safe_divide(ocf, finance_costs),
         "ocf_to_debt": safe_divide(ocf, total_borrowings) * 100,
     }
-
-
-def calculate_growth_metrics(current: dict, prior: dict) -> dict[str, float]:
-    """
-    Calculate YoY growth rates.
-
-    Args:
-        current: Current period fs_index.json data
-        prior: Prior period fs_index.json data
-    """
-    metrics = [
-        "revenue",
-        "profit from operations",
-        "profit before tax",
-        "profit for the financial year",
-        "profit attributable to owners of the company",
-        "basic earnings per share",
-        "total assets",
-    ]
-
-    growth = {}
-    for metric in metrics:
-        curr_val = get_metric_value(current, metric)
-        prior_val = get_metric_value(prior, metric)
-
-        if prior_val > 0:
-            growth_rate = ((curr_val - prior_val) / prior_val) * 100
-        else:
-            growth_rate = 0.0
-
-        # Clean metric name for key
-        key = metric.replace(" ", "_") + "_growth"
-        growth[key] = growth_rate
-
-    return growth
 
 
 def calculate_all_ratios(data: dict, period_days: int = 365) -> dict[str, dict[str, float]]:
@@ -249,6 +249,8 @@ def calculate_all_ratios(data: dict, period_days: int = 365) -> dict[str, dict[s
         "cashflow": calculate_cashflow_ratios(data),
     }
 
+
+# ── Growth & trend analysis ──────────────────────────────────────────────────
 
 def calculate_enhanced_growth_analysis(current: dict, prior: dict) -> dict[str, dict]:
     """
@@ -287,7 +289,6 @@ def calculate_enhanced_growth_analysis(current: dict, prior: dict) -> dict[str, 
         else:
             growth_rate = 0.0
 
-        # Flag significant changes (>15%)
         is_significant = abs(growth_rate) > 15.0
 
         growth_analysis[meta["label"]] = {
@@ -297,7 +298,7 @@ def calculate_enhanced_growth_analysis(current: dict, prior: dict) -> dict[str, 
             "growth_rate": growth_rate,
             "is_significant": is_significant,
             "unit": meta["unit"],
-            "direction": "▲" if growth_rate > 0 else "▼" if growth_rate < 0 else "—",
+            "direction": "+" if growth_rate > 0 else "-" if growth_rate < 0 else "=",
         }
 
     return growth_analysis
@@ -323,16 +324,15 @@ def calculate_ratio_changes(current_ratios: dict, prior_ratios: dict) -> dict[st
             prior_value = prior_ratios[category].get(ratio_name, 0.0)
             abs_change = current_value - prior_value
 
-            # For ratios, calculate percentage point change
             if "margin" in ratio_name or "to_assets" in ratio_name or "to_revenue" in ratio_name:
-                change_metric = "pp"  # percentage points
-                is_significant = abs(abs_change) > 2.0  # 2pp threshold
+                change_metric = "pp"
+                is_significant = abs(abs_change) > 2.0
             elif "ratio" in ratio_name or "coverage" in ratio_name or "turnover" in ratio_name:
-                change_metric = "x"  # times
-                is_significant = abs(abs_change) > 0.2  # 0.2x threshold
+                change_metric = "x"
+                is_significant = abs(abs_change) > 0.2
             else:
                 change_metric = "units"
-                is_significant = abs(abs_change) > 5.0  # Generic threshold
+                is_significant = abs(abs_change) > 5.0
 
             ratio_changes[category][ratio_name] = {
                 "current": current_value,
@@ -340,7 +340,7 @@ def calculate_ratio_changes(current_ratios: dict, prior_ratios: dict) -> dict[st
                 "absolute_change": abs_change,
                 "change_metric": change_metric,
                 "is_significant": is_significant,
-                "direction": "▲" if abs_change > 0 else "▼" if abs_change < 0 else "—",
+                "direction": "+" if abs_change > 0 else "-" if abs_change < 0 else "=",
             }
 
     return ratio_changes
@@ -379,14 +379,12 @@ def calculate_trend_analysis(datasets: list[tuple[str, dict]]) -> dict[str, dict
             values.append(val)
             periods.append(period_label)
 
-        # Calculate CAGR (Compound Annual Growth Rate)
         if len(values) >= 2 and values[0] > 0:
             years = len(values) - 1
             cagr = ((values[-1] / values[0]) ** (1 / years) - 1) * 100
         else:
             cagr = 0.0
 
-        # Calculate volatility (standard deviation of year-over-year growth)
         if len(values) >= 3:
             yoy_growth = []
             for i in range(1, len(values)):
@@ -403,7 +401,6 @@ def calculate_trend_analysis(datasets: list[tuple[str, dict]]) -> dict[str, dict
         else:
             volatility = 0.0
 
-        # Determine trend direction
         if cagr > 10:
             direction = "Strong Growth"
         elif cagr > 3:
@@ -415,7 +412,6 @@ def calculate_trend_analysis(datasets: list[tuple[str, dict]]) -> dict[str, dict
         else:
             direction = "Sharp Decline"
 
-        # Consistency: Are all YoY changes in same direction?
         if len(values) >= 3:
             yoy_directions = []
             for i in range(1, len(values)):
@@ -437,302 +433,96 @@ def calculate_trend_analysis(datasets: list[tuple[str, dict]]) -> dict[str, dict
     return trends
 
 
-def compare_to_industry_benchmarks(
-    company_ratios: dict[str, dict[str, float]], industry_benchmarks: dict | None = None
-) -> dict[str, dict]:
-    """
-    Compare company ratios against industry benchmarks.
+# ── CLI ───────────────────────────────────────────────────────────────────────
 
-    Args:
-        company_ratios: Ratios from calculate_all_ratios()
-        industry_benchmarks: Optional dict of industry benchmark ratios
-                           If None, uses generic healthy company benchmarks
-
-    Returns:
-        Dict with comparison results and flags
-    """
-    # Default healthy company benchmarks (generic, should be customized by industry)
-    default_benchmarks = {
-        "profitability": {
-            "operating_margin": 15.0,  # 15% is healthy
-            "pbt_margin": 10.0,
-            "roe": 15.0,
-        },
-        "liquidity": {
-            "current_ratio": 1.5,  # 1.5x is healthy
-            "quick_ratio": 1.0,  # 1.0x is healthy
-        },
-        "solvency": {
-            "liabilities_to_assets": 60.0,  # <60% is healthy
-            "equity_to_assets": 25.0,  # >25% is healthy
-        },
-        "efficiency": {
-            "receivables_days": 90.0,  # <90 days is good
-            "payables_days": 60.0,  # 60 days is reasonable
-        },
-        "cashflow": {"ocf_to_revenue": 10.0},  # >10% is healthy},
-    }
-
-    benchmarks = industry_benchmarks or default_benchmarks
-    comparisons = {}
-
-    for category, ratios in company_ratios.items():
-        comparisons[category] = {}
-
-        for ratio_name, company_value in ratios.items():
-            benchmark_value = benchmarks.get(category, {}).get(ratio_name)
-
-            if benchmark_value is not None:
-                # Determine if better/worse based on ratio type
-                # Higher is better for: margins, returns, liquidity, coverage
-                # Lower is better for: leverage ratios, days
-                higher_is_better = any(
-                    keyword in ratio_name
-                    for keyword in ["margin", "roe", "ratio", "coverage", "turnover", "equity_to"]
-                )
-
-                if higher_is_better:
-                    status = "Above" if company_value >= benchmark_value else "Below"
-                    delta = company_value - benchmark_value
-                else:
-                    # Lower is better (leverage, days)
-                    status = "Better" if company_value <= benchmark_value else "Worse"
-                    delta = benchmark_value - company_value
-
-                # Flag significant deviations (>20% from benchmark)
-                is_significant = (
-                    abs(delta / benchmark_value) > 0.2 if benchmark_value != 0 else False
-                )
-
-                comparisons[category][ratio_name] = {
-                    "company_value": company_value,
-                    "benchmark": benchmark_value,
-                    "delta": delta,
-                    "status": status,
-                    "is_significant": is_significant,
-                }
-
-    return comparisons
+CATEGORY_CALCULATORS = {
+    "profitability": calculate_profitability_ratios,
+    "liquidity": calculate_liquidity_ratios,
+    "solvency": calculate_solvency_ratios,
+    "efficiency": calculate_efficiency_ratios,
+    "cashflow": calculate_cashflow_ratios,
+}
 
 
-def format_ratio_table(ratios: dict[str, float], title: str) -> str:
-    """Format ratios as Markdown table."""
-    lines = [
-        f"**{title}**",
-        "| Ratio | Value |",
-        "|---|---:|",
-    ]
-
-    # Metrics that should be formatted as absolute values (not percentages or ratios)
-    absolute_value_keys = ["working_capital", "free_cash_flow"]
-
-    # Metrics that should be formatted as days
-    days_keys = ["receivables_days", "payables_days"]
-
-    for key, value in ratios.items():
-        # Format based on key type
-        if any(abs_key in key.lower() for abs_key in absolute_value_keys):
-            # Absolute value in RM'000
-            formatted = f"RM{value:,.0f}'000"
-        elif any(day_key in key.lower() for day_key in days_keys):
-            # Days
-            formatted = f"{value:.1f} days"
-        elif "ratio" in key or "coverage" in key or "turnover" in key:
-            # Ratio (x times)
-            formatted = f"{value:.2f}x"
-        elif abs(value) >= 100:
-            # Large percentage
-            formatted = f"{value:,.1f}%"
-        else:
-            # Small percentage
-            formatted = f"{value:.2f}%"
-
-        # Clean key for display
-        display_key = key.replace("_", " ").title()
-        lines.append(f"| {display_key} | {formatted} |")
-
-    return "\n".join(lines)
-
-
-def main(
-    fs_index: str,
-    output_format: str = "json",
-    prior_index: str | None = None,
-    trend_years: list[str] | None = None,
-    benchmark: bool = False,
-):
-    """
-    Main function with enhanced analysis capabilities.
-
-    Args:
-        fs_index: Path to current period fs_index.json
-        output_format: "json" or "markdown"
-        prior_index: Path to prior period fs_index.json (for YoY growth)
-        trend_years: List of fs_index.json paths for trend analysis (chronological)
-        benchmark: Whether to include industry benchmark comparison
-    """
-    path = Path(fs_index)
-    if not path.exists():
-        print(f"Error: {fs_index} not found", file=sys.stderr)
-        sys.exit(1)
-
-    with open(path) as f:
-        current_data = json.load(f)
-
-    # Detect period
-    period_days = 182 if "Q" in path.stem or "H1" in path.stem else 365
-
-    # Calculate current period ratios
-    current_ratios = calculate_all_ratios(current_data, period_days)
-
-    results = {"ratios": current_ratios}
-
-    # YoY Growth Analysis
-    if prior_index:
-        prior_path = Path(prior_index)
-        if prior_path.exists():
-            with open(prior_path) as f:
-                prior_data = json.load(f)
-
-            prior_ratios = calculate_all_ratios(prior_data, period_days)
-            growth_analysis = calculate_enhanced_growth_analysis(current_data, prior_data)
-            ratio_changes = calculate_ratio_changes(current_ratios, prior_ratios)
-
-            results["yoy_growth"] = growth_analysis
-            results["ratio_changes"] = ratio_changes
-        else:
-            print(f"Warning: Prior file {prior_index} not found, skipping YoY analysis", file=sys.stderr)
-
-    # Trend Analysis (3+ years)
-    if trend_years and len(trend_years) >= 2:
-        datasets = []
-        for year_path in trend_years:
-            p = Path(year_path)
-            if p.exists():
-                with open(p) as f:
-                    datasets.append((p.stem, json.load(f)))
-            else:
-                print(f"Warning: Trend file {year_path} not found, skipping", file=sys.stderr)
-
-        if len(datasets) >= 2:
-            results["trends"] = calculate_trend_analysis(datasets)
-
-    # Industry Benchmarking
-    if benchmark:
-        results["benchmarks"] = compare_to_industry_benchmarks(current_ratios)
-
-    # Output
-    if output_format == "json":
-        print(json.dumps(results, indent=2))
-    else:
-        # Markdown output
-        print("# Financial Analysis Report\n")
-
-        # 1. Current Ratios
-        print("## Current Period Ratios\n")
-        for category, ratios in current_ratios.items():
-            print(format_ratio_table(ratios, category.replace("_", " ").title()))
-            print()
-
-        # 2. YoY Growth
-        if "yoy_growth" in results:
-            print("## Year-over-Year Growth\n")
-            print("| Metric | Current | Prior | Change | Growth | Sig |")
-            print("|---|---:|---:|---:|---:|---|")
-            for metric, data in results["yoy_growth"].items():
-                sig_flag = "✓" if data["is_significant"] else ""
-                print(
-                    f"| {metric} | {data['current']:,.0f} | {data['prior']:,.0f} | "
-                    f"{data['direction']} {abs(data['absolute_change']):,.0f} | "
-                    f"{data['growth_rate']:+.1f}% | {sig_flag} |"
-                )
-            print()
-
-        # 3. Ratio Changes
-        if "ratio_changes" in results:
-            print("## Ratio Changes\n")
-            for category, ratios in results["ratio_changes"].items():
-                print(f"**{category.replace('_', ' ').title()}**")
-                print("| Ratio | Current | Prior | Change | Sig |")
-                print("|---|---:|---:|---:|---|")
-                for ratio_name, data in ratios.items():
-                    sig_flag = "✓" if data["is_significant"] else ""
-                    display_name = ratio_name.replace("_", " ").title()
-                    print(
-                        f"| {display_name} | {data['current']:.2f} | {data['prior']:.2f} | "
-                        f"{data['direction']} {abs(data['absolute_change']):.2f} | {sig_flag} |"
-                    )
-                print()
-
-        # 4. Trend Analysis
-        if "trends" in results:
-            print("## Multi-Year Trend Analysis\n")
-            for metric, trend_data in results["trends"].items():
-                if "error" in trend_data:
-                    continue
-
-                print(f"**{metric.replace('_', ' ').title()}**")
-                print(f"- **CAGR**: {trend_data['cagr']:.2f}%")
-                print(f"- **Direction**: {trend_data['direction']}")
-                print(f"- **Consistency**: {trend_data['consistency']}")
-                print(f"- **Volatility**: {trend_data['volatility']:.2f}%")
-                print()
-
-        # 5. Benchmarks
-        if "benchmarks" in results:
-            print("## Industry Benchmark Comparison\n")
-            for category, comparisons in results["benchmarks"].items():
-                print(f"**{category.replace('_', ' ').title()}**")
-                print("| Ratio | Company | Benchmark | Status |")
-                print("|---|---:|---:|---|")
-                for ratio_name, data in comparisons.items():
-                    display_name = ratio_name.replace("_", " ").title()
-                    print(
-                        f"| {display_name} | {data['company_value']:.2f} | "
-                        f"{data['benchmark']:.2f} | {data['status']} |"
-                    )
-                print()
-
-
-if __name__ == "__main__":
-    import argparse
-
+def main():
     parser = argparse.ArgumentParser(
-        description="Calculate financial ratios from finanalysis output",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  # Basic ratio calculation
-  python financial_calculator.py output/2024/fs_index.json --format markdown
-
-  # With YoY growth analysis
-  python financial_calculator.py output/2024/fs_index.json --prior output/2023/fs_index.json
-
-  # Multi-year trend analysis
-  python financial_calculator.py output/2024/fs_index.json --trend 2022 2023 2024
-
-  # Full analysis with benchmarking
-  python financial_calculator.py output/2024/fs_index.json --prior output/2023/fs_index.json --benchmark
-        """,
+        description="Calculate financial ratios from finanalysis fs_index.json output.",
     )
-
-    parser.add_argument("fs_index", help="Path to current period fs_index.json")
-    parser.add_argument("--format", choices=["json", "markdown"], default="json", help="Output format")
-    parser.add_argument("--prior", help="Path to prior period fs_index.json (for YoY growth)")
+    parser.add_argument("fs_index", help="Path to fs_index.json")
+    parser.add_argument(
+        "--category",
+        choices=CATEGORIES,
+        help="Compute ratios for a single category (flat dict output)",
+    )
+    parser.add_argument("--prior", help="Path to prior period fs_index.json for YoY growth analysis")
     parser.add_argument(
         "--trend",
         nargs="+",
-        metavar="YEAR_PATH",
-        help="Paths to fs_index.json files for trend analysis (in chronological order)",
+        metavar="YEAR:FILE",
+        help="Multi-year trend: YEAR:<path> pairs in chronological order",
     )
-    parser.add_argument("--benchmark", action="store_true", help="Compare against industry benchmarks")
 
     args = parser.parse_args()
 
-    main(
-        args.fs_index,
-        args.format,
-        args.prior,
-        args.trend,
-        args.benchmark,
-    )
+    fs_path = Path(args.fs_index)
+    if not fs_path.exists():
+        print(f"Error: {args.fs_index} not found", file=sys.stderr)
+        sys.exit(1)
+
+    with open(fs_path) as f:
+        current_data = json.load(f)
+
+    # Detect half-year vs full-year from filename
+    period_days = 182 if "Q" in fs_path.stem or "H1" in fs_path.stem else 365
+
+    # ── Calculate ratios ──────────────────────────────────────────────────
+    if args.category:
+        calc_fn = CATEGORY_CALCULATORS[args.category]
+        if args.category == "efficiency":
+            result = calc_fn(current_data, period_days)
+        else:
+            result = calc_fn(current_data)
+    else:
+        result = calculate_all_ratios(current_data, period_days)
+
+    # ── YoY growth ────────────────────────────────────────────────────────
+    if args.prior:
+        prior_path = Path(args.prior)
+        if not prior_path.exists():
+            print(f"Error: prior file {args.prior} not found", file=sys.stderr)
+            sys.exit(1)
+
+        with open(prior_path) as f:
+            prior_data = json.load(f)
+
+        result["yoy_growth"] = calculate_enhanced_growth_analysis(current_data, prior_data)
+
+        # Ratio changes only when we have all categories
+        if not args.category:
+            current_ratios = calculate_all_ratios(current_data, period_days)
+            prior_ratios = calculate_all_ratios(prior_data, period_days)
+            result["ratio_changes"] = calculate_ratio_changes(current_ratios, prior_ratios)
+
+    # ── Trend analysis ────────────────────────────────────────────────────
+    if args.trend:
+        datasets = []
+        for spec in args.trend:
+            if ":" not in spec:
+                print(f"Error: --trend argument must be YEAR:<path>, got '{spec}'", file=sys.stderr)
+                sys.exit(1)
+            year, _, file_path = spec.partition(":")
+            p = Path(file_path)
+            if not p.exists():
+                print(f"Error: trend file {file_path} not found", file=sys.stderr)
+                sys.exit(1)
+            with open(p) as f:
+                datasets.append((year, json.load(f)))
+
+        if len(datasets) >= 2:
+            result["trends"] = calculate_trend_analysis(datasets)
+
+    print(json.dumps(result, indent=2))
+
+
+if __name__ == "__main__":
+    main()
