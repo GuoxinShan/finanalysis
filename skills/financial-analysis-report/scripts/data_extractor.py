@@ -78,6 +78,58 @@ def create_metadata(source_file: str, extraction_time: str) -> Dict:
     }
 
 
+def extract_essential_text(text_blocks: List[Dict],
+                            text_hints: Dict[str, List[int]],
+                            max_chars_per_section: int = 1000) -> Dict[str, str]:
+    """
+    Extract lightweight text summaries for specified sections.
+
+    This is the **hybrid approach** (Option C):
+    - Pre-extracts 2-3 key paragraphs (lightweight)
+    - Keeps bundle size manageable (~200-300 lines)
+    - Workers can access full text_blocks.jsonl if needed (rare)
+
+    Args:
+        text_blocks: List of text blocks from text_blocks.jsonl
+        text_hints: Dict mapping section names to page numbers
+            Example: {"mda_section": [45, 46], "strategy_outlook": [12, 13]}
+        max_chars_per_section: Maximum characters per section (default 1000, ~150 words)
+
+    Returns:
+        Dict with extracted text summaries (not full text)
+    """
+    excerpts = {}
+
+    for section_name, pages in text_hints.items():
+        # Get blocks for these pages
+        relevant_blocks = [
+            block for block in text_blocks
+            if block.get('page_number') in pages
+        ]
+
+        # Filter for substantial content (not headers, not bullet points)
+        substantial_blocks = [
+            block for block in relevant_blocks
+            if len(block.get('text', '').strip()) > 200  # Substantial paragraphs
+        ]
+
+        # Limit to first 2-3 blocks (keep it lightweight)
+        selected_blocks = substantial_blocks[:3]
+
+        # Combine text
+        combined_text = '\n\n'.join(
+            block.get('text', '') for block in selected_blocks
+        )
+
+        # Truncate if too long (keep bundle size manageable)
+        if len(combined_text) > max_chars_per_section:
+            combined_text = combined_text[:max_chars_per_section] + "..."
+
+        excerpts[section_name] = combined_text
+
+    return excerpts
+
+
 def identify_likely_pages(text_blocks: List[Dict]) -> Dict[str, List[int]]:
     """
     Identify likely page ranges for common annual report sections.
@@ -405,6 +457,17 @@ def extract_worker3_business(fs_index: Dict, source_file: str, text_blocks_path:
     # Build search index
     search_index = build_simple_search_index(text_blocks)
 
+    # Extract lightweight text summaries (Option C: Hybrid approach)
+    text_excerpts = extract_essential_text(
+        text_blocks,
+        {
+            "mda_section": page_hints.get("mda_section", []),
+            "strategy_outlook": page_hints.get("strategy_outlook", []),
+            "segment_reporting": page_hints.get("segment_reporting", [])
+        },
+        max_chars_per_section=1000  # ~150 words per section
+    ) if text_blocks else {}
+
     return {
         "_metadata": create_metadata(source_file, extraction_time),
 
@@ -420,11 +483,19 @@ def extract_worker3_business(fs_index: Dict, source_file: str, text_blocks_path:
             "_usage": "Search text_blocks to extract: segments, industry context, strategic initiatives"
         },
 
+        "text_excerpts": text_excerpts,  # NEW: Lightweight summaries
+
+        "source_files": {  # NEW: Optional deep-dive access
+            "text_blocks_path": text_blocks_path,
+            "fs_index_path": source_file
+        },
+
         "_extraction_note": "Worker should use LLM intelligence to extract business data from text_blocks",
         "_verification": {
-            "data_quality": "RAW_TEXT_ACCESS" if text_blocks else "NO_TEXT_BLOCKS",
-            "source": "text_blocks.jsonl",
-            "extraction_method": "No regex - worker extracts with LLM intelligence"
+            "data_quality": "REAL_DATA_EXTRACTED" if text_blocks else "NO_TEXT_BLOCKS",
+            "extraction_method": "hybrid_extraction_v3.0",
+            "text_blocks": len(text_blocks) if text_blocks else 0,
+            "page_hints": len(page_hints) if page_hints else 0
         }
     }
 
@@ -602,25 +673,114 @@ def extract_worker6_risk_cashflow(fs_index: Dict, source_file: str = "") -> Dict
     }
 
 
+def extract_multi_year_trends(current_fs_index: Dict, prior_fs_indices: List[Dict]) -> Dict:
+    """
+    Extract multi-year trend data for enhanced financial analysis.
+
+    Args:
+        current_fs_index: Current year fs_index
+        prior_fs_indices: List of prior year fs_indices (newest first)
+
+    Returns:
+        Dict with multi-year trend data for key metrics
+    """
+    extraction_time = datetime.now().isoformat()
+
+    # Get current year
+    fiscal_year_end = current_fs_index.get('fiscal_year_end')
+    current_year = fiscal_year_end[:4] if fiscal_year_end else 'current'
+
+    # Get prior years
+    prior_years = []
+    for idx in prior_fs_indices:
+        fiscal_year_end = idx.get('fiscal_year_end')
+        if fiscal_year_end and len(fiscal_year_end) >= 4:
+            year = fiscal_year_end[:4]
+            if year:
+                prior_years.append(year)
+        else:
+            # Use placeholder if year not available
+            prior_years.append(f'prior_{len(prior_years) + 1}')
+
+    all_years = [current_year] + prior_years
+
+    def get_metric_value(fs_index: Dict, metric_name: str) -> Optional[float]:
+        """Helper to extract metric from fs_index"""
+        return get_line_item_value(fs_index, metric_name, 'group_current')
+
+    # Extract key metrics across all years
+    metrics_to_track = [
+        'revenue',
+        'gross profit',
+        'profit before tax',
+        'profit for the financial year',
+        'profit attributable to owners of the company',
+        'total assets',
+        'total liabilities',
+        'total equity',
+        'net cash from operating activities',
+        'net cash from investing activities',
+        'net cash from financing activities'
+    ]
+
+    trends = {}
+    for metric in metrics_to_track:
+        values = {}
+        values['current'] = get_metric_value(current_fs_index, metric)
+
+        for i, prior_idx in enumerate(prior_fs_indices):
+            year_label = prior_years[i] if i < len(prior_years) else f'prior_{i+1}'
+            values[year_label] = get_metric_value(prior_idx, metric)
+
+        trends[metric] = values
+
+    # Calculate CAGRs if we have 2+ years of data
+    cagrs = {}
+    if len(all_years) >= 2:
+        for metric in metrics_to_track:
+            current_val = trends[metric].get('current')
+            oldest_val = trends[metric].get(prior_years[-1] if prior_years else None)
+
+            if current_val and oldest_val and oldest_val != 0 and len(all_years) > 1:
+                years_diff = len(all_years) - 1
+                try:
+                    cagr = ((current_val / oldest_val) ** (1 / years_diff)) - 1
+                    cagrs[f"{metric}_cagr_{years_diff}yr"] = round(cagr * 100, 2)  # As percentage
+                except:
+                    pass
+
+    return {
+        "years": all_years,
+        "num_years": len(all_years),
+        "trends": trends,
+        "cagrs": cagrs,
+        "extraction_timestamp": extraction_time,
+        "usage_note": "Workers should use this multi-year data for trend tables, CAGR calculations, and historical context. Compare FY2024 vs FY2023 vs FY2022 patterns."
+    }
+
+
 def main():
     if len(sys.argv) < 3:
-        print("Usage: python data_extractor.py <fs_index.json> --company <NAME> [--prior <prior_fs_index.json>] [--text-blocks <text_blocks.jsonl>] [--output <output.json>]")
+        print("Usage: python data_extractor.py <fs_index.json> --company <NAME> [--prior <prior1.json>] [--prior <prior2.json>] [--text-blocks <text_blocks.jsonl>] [--output <output.json>]")
+        print("\nMulti-year support:")
+        print("  --prior can be specified multiple times for multi-year trend analysis")
+        print("  Example: --prior 2023.json --prior 2022.json")
         sys.exit(1)
 
     fs_index_path = sys.argv[1]
     company_name = "Company"
-    prior_fs_index_path = None
+    prior_fs_index_paths = []  # List of prior year paths
     text_blocks_path = None
     output_path = "data_bundles.json"
 
-    # Parse arguments
+    # Parse arguments - support multiple --prior flags
     i = 2
     while i < len(sys.argv):
         if sys.argv[i] == "--company" and i + 1 < len(sys.argv):
             company_name = sys.argv[i + 1]
             i += 2
         elif sys.argv[i] == "--prior" and i + 1 < len(sys.argv):
-            prior_fs_index_path = sys.argv[i + 1]
+            prior_fs_index_paths.append(sys.argv[i + 1])
             i += 2
         elif sys.argv[i] == "--text-blocks" and i + 1 < len(sys.argv):
             text_blocks_path = sys.argv[i + 1]
@@ -634,7 +794,15 @@ def main():
     # Load fs_index files
     print(f"Loading: {fs_index_path}")
     fs_index = load_fs_index(fs_index_path)
-    prior_fs_index = load_fs_index(prior_fs_index_path) if prior_fs_index_path else None
+
+    # Load multiple prior year fs_index files
+    prior_fs_indices = []
+    for prior_path in prior_fs_index_paths:
+        print(f"Loading prior: {prior_path}")
+        prior_fs_indices.append(load_fs_index(prior_path))
+
+    # For backwards compatibility, also provide single prior if available
+    prior_fs_index = prior_fs_indices[0] if prior_fs_indices else None
 
     # Check if text_blocks file exists
     if text_blocks_path and not os.path.exists(text_blocks_path):
@@ -661,6 +829,7 @@ def main():
         "company_name": company_name,
         "has_prior_year_data": prior_fs_index is not None,
         "has_text_blocks": text_blocks_path is not None,
+        "num_prior_years": len(prior_fs_indices),
         "data_quality": "HYBRID_EXTRACTION",
         "extraction_strategy": {
             "structured_data": "fs_index.json (100% accurate)",
@@ -672,8 +841,18 @@ def main():
             "forbidden_operations": "Never derive metrics from rounded display values",
             "example": "NCI = actual_value_from_fs_index, not (PAT_rounded - PATMI_rounded)",
             "rounding": "Round ONLY the final display value, never intermediate calculations"
+        },
+        "multi_year_support": {
+            "available": len(prior_fs_indices) > 0,
+            "years_loaded": len(prior_fs_indices) + 1,
+            "trend_analysis": f"{len(prior_fs_indices) + 1}-year analysis enabled" if len(prior_fs_indices) > 0 else "Single year only"
         }
     }
+
+    # Add multi-year trend data if multiple years available
+    if len(prior_fs_indices) > 0:
+        print(f"\n✓ Multi-year trend data available: {len(prior_fs_indices) + 1} years")
+        data_bundles["_multi_year_trends"] = extract_multi_year_trends(fs_index, prior_fs_indices)
 
     # Write to output file
     with open(output_path, 'w') as f:
@@ -692,6 +871,13 @@ def main():
     print(f"  - Qualitative data: text_blocks.jsonl (worker extracts)")
     print(f"  - NO fragile regex patterns")
     print(f"  - Workers use LLM intelligence for context")
+
+    if len(prior_fs_indices) > 0:
+        print(f"\n✓ Multi-Year Trends:")
+        print(f"  - Years: {len(prior_fs_indices) + 1} years of data")
+        print(f"  - CAGR calculations: Available")
+        print(f"  - Trend analysis: Enabled for all workers")
+        print(f"  - Location: data_bundles._multi_year_trends")
 
 
 if __name__ == "__main__":

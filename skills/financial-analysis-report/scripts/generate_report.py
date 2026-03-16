@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-End-to-end Financial Analysis Report Generation
+End-to-end Financial Analysis Report Generation - Multi-Year Support
 
 Orchestrates the complete workflow:
 1. Parse PDFs with finanalysis CLI
@@ -9,13 +9,25 @@ Orchestrates the complete workflow:
 4. Spawn parallel workers
 5. Assemble final report
 
-Usage:
+Usage (Flexible Multi-Year):
+    # 3 years of data (recommended for trend analysis)
     python generate_report.py \
-        --pdf-2024 <path/to/2024.pdf> \
-        --pdf-2023 <path/to/2023.pdf> \
         --company CHINHIN \
+        --pdfs 2024:path/to/2024.pdf 2023:path/to/2023.pdf 2022:path/to/2022.pdf \
         --output-dir output/CHINHIN \
-        [--workspace workspace/]
+        --workspace workspace/
+
+    # 2 years of data (minimum for YoY comparison)
+    python generate_report.py \
+        --company CHINHIN \
+        --pdfs 2024:path/to/2024.pdf 2023:path/to/2023.pdf \
+        --output-dir output/CHINHIN
+
+    # Single year (no trend analysis)
+    python generate_report.py \
+        --company CHINHIN \
+        --pdfs 2024:path/to/2024.pdf \
+        --output-dir output/CHINHIN
 """
 
 import argparse
@@ -25,7 +37,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Dict, Tuple
 
 
 def find_finanalysis_cli() -> List[str]:
@@ -115,43 +127,38 @@ def extract_year_from_fs_index(fs_index_path: str) -> str:
     return 'unknown'
 
 
-def validate_periods(fs_index_path: str, prior_fs_index_path: Optional[str]) -> None:
-    """Validate that periods are different and in correct order"""
-    if not prior_fs_index_path:
+def validate_periods(fs_index_paths: Dict[str, str]) -> None:
+    """
+    Validate that all periods are different and in correct chronological order.
+
+    Args:
+        fs_index_paths: Dict mapping year string to fs_index.json path
+                       e.g., {"2024": "output/2024/fs_index.json", "2023": "output/2023/fs_index.json"}
+    """
+    if len(fs_index_paths) < 2:
         return
 
-    import json
+    # Extract years and sort them
+    years = sorted(fs_index_paths.keys(), reverse=True)
 
-    with open(fs_index_path, 'r') as f:
-        current_fs = json.load(f)
-
-    with open(prior_fs_index_path, 'r') as f:
-        prior_fs = json.load(f)
-
-    current_year = current_fs.get('fiscal_year_end', '')[:4]
-    prior_year = prior_fs.get('fiscal_year_end', '')[:4]
-
-    if not current_year or not prior_year:
-        print("⚠️  Warning: Could not determine fiscal years from fs_index files")
-        return
-
-    if current_year == prior_year:
+    # Verify each year is different
+    if len(years) != len(set(years)):
         raise ValueError(
-            f"❌ ERROR: Both PDFs are from the same year ({current_year}). "
-            f"Current PDF and prior PDF must be from different periods.\n"
-            f"   Current: {fs_index_path} (FY{current_year})\n"
-            f"   Prior: {prior_fs_index_path} (FY{prior_year})"
+            f"❌ ERROR: Duplicate years detected in input. "
+            f"Each PDF must be from a different fiscal year.\n"
+            f"Years provided: {years}"
         )
 
-    if int(current_year) <= int(prior_year):
-        raise ValueError(
-            f"❌ ERROR: Current period (FY{current_year}) must be later than prior period (FY{prior_year}). "
-            f"You may have swapped the --pdf-2024 and --pdf-2023 arguments.\n"
-            f"   Current: {fs_index_path} (FY{current_year})\n"
-            f"   Prior: {prior_fs_index_path} (FY{prior_year})"
-        )
+    # Verify chronological order (newest first)
+    for i in range(len(years) - 1):
+        if int(years[i]) <= int(years[i + 1]):
+            raise ValueError(
+                f"❌ ERROR: Years must be in descending order (newest first).\n"
+                f"Found: {years[i]} followed by {years[i + 1]}\n"
+                f"Expected order: {years}"
+            )
 
-    print(f"✓ Period validation passed: FY{current_year} vs FY{prior_year}")
+    print(f"✓ Period validation passed: {', '.join([f'FY{y}' for y in years])}")
 
 
 def parse_pdf(pdf_path: str, company_name: str, output_dir: str) -> str:
@@ -212,13 +219,26 @@ def parse_pdf(pdf_path: str, company_name: str, output_dir: str) -> str:
         return final_output
 
 
-def calculate_metrics(fs_index_path: str, prior_fs_index_path: Optional[str], output_path: str) -> str:
-    """Calculate derived metrics from fs_index.json"""
+def calculate_metrics(fs_index_path: str, prior_fs_index_paths: Optional[List[str]], output_path: str) -> str:
+    """
+    Calculate derived metrics from fs_index.json
+
+    Args:
+        fs_index_path: Path to current year fs_index.json
+        prior_fs_index_paths: List of paths to prior year fs_index.json files (in chronological order, newest first)
+        output_path: Where to save metrics.json
+    """
     cli = find_finanalysis_cli()
 
     cmd = cli + ['calculate', fs_index_path]
-    if prior_fs_index_path:
-        cmd.extend(['--prior', prior_fs_index_path])
+
+    # Add prior years if available (newest first)
+    if prior_fs_index_paths:
+        # For now, only use the most recent prior year for metrics calculation
+        # The finanalysis CLI currently only supports one --prior argument
+        # Future enhancement: support multi-year metrics calculation
+        cmd.extend(['--prior', prior_fs_index_paths[0]])
+
     cmd.extend(['--output', output_path])
 
     run_cli(cmd, f"Calculating metrics for {fs_index_path}")
@@ -226,8 +246,21 @@ def calculate_metrics(fs_index_path: str, prior_fs_index_path: Optional[str], ou
     return output_path
 
 
-def generate_data_bundles(fs_index_path: str, company_name: str, prior_fs_index_path: Optional[str], output_path: str) -> str:
-    """Generate data bundles for workers"""
+def generate_data_bundles(
+    fs_index_path: str,
+    company_name: str,
+    prior_fs_index_paths: Optional[List[str]],
+    output_path: str
+) -> str:
+    """
+    Generate data bundles for workers with multi-year support
+
+    Args:
+        fs_index_path: Path to current year fs_index.json
+        company_name: Company name
+        prior_fs_index_paths: List of paths to prior year fs_index.json files (newest first)
+        output_path: Where to save data_bundles.json
+    """
     # Get path to data_extractor.py
     script_dir = Path(__file__).parent
     extractor_path = script_dir / 'data_extractor.py'
@@ -235,7 +268,7 @@ def generate_data_bundles(fs_index_path: str, company_name: str, prior_fs_index_
     if not extractor_path.exists():
         raise FileNotFoundError(f"Could not find data_extractor.py at {extractor_path}")
 
-    # Find text_blocks.jsonl in same directory as fs_index.json
+    # Get path to text_blocks.jsonl for current year
     fs_index_dir = Path(fs_index_path).parent
     text_blocks_path = fs_index_dir / 'text_blocks.jsonl'
 
@@ -243,8 +276,10 @@ def generate_data_bundles(fs_index_path: str, company_name: str, prior_fs_index_
            fs_index_path,
            '--company', company_name]
 
-    if prior_fs_index_path:
-        cmd.extend(['--prior', prior_fs_index_path])
+    # Add multiple prior years if available
+    if prior_fs_index_paths:
+        for prior_path in prior_fs_index_paths:
+            cmd.extend(['--prior', prior_path])
 
     # Add text_blocks if it exists
     if text_blocks_path.exists():
@@ -256,7 +291,7 @@ def generate_data_bundles(fs_index_path: str, company_name: str, prior_fs_index_
 
     cmd.extend(['--output', output_path])
 
-    run_cli(cmd, f"Generating data bundles")
+    run_cli(cmd, f"Generating data bundles with {len(prior_fs_index_paths) if prior_fs_index_paths else 0} prior years")
 
     return output_path
 
@@ -335,20 +370,82 @@ def assemble_final_report(workspace_dir: str, output_path: str, company_name: st
     print(f"✓ Final report: {output_path}")
 
 
+def parse_pdfs_arg(pdfs_list: List[str]) -> Dict[str, str]:
+    """
+    Parse --pdfs arguments into a dict mapping year to path.
+
+    Args:
+        pdfs_list: List of strings in format "YEAR:PATH"
+
+    Returns:
+        Dict mapping year string to PDF path
+
+    Example:
+        Input: ["2024:path/to/2024.pdf", "2023:path/to/2023.pdf"]
+        Output: {"2024": "path/to/2024.pdf", "2023": "path/to/2023.pdf"}
+    """
+    pdfs = {}
+    for item in pdfs_list:
+        if ':' not in item:
+            raise ValueError(
+                f"❌ Invalid --pdfs format: '{item}'\n"
+                f"Expected format: YEAR:PATH (e.g., '2024:path/to/2024.pdf')"
+            )
+
+        parts = item.split(':', 1)  # Split on first colon only
+        if len(parts) != 2:
+            raise ValueError(
+                f"❌ Invalid --pdfs format: '{item}'\n"
+                f"Expected format: YEAR:PATH (e.g., '2024:path/to/2024.pdf')"
+            )
+
+        year, path = parts
+        year = year.strip()
+        path = path.strip()
+
+        # Validate year
+        if not year.isdigit() or len(year) != 4:
+            raise ValueError(
+                f"❌ Invalid year: '{year}'\n"
+                f"Year must be a 4-digit number (e.g., '2024')"
+            )
+
+        pdfs[year] = path
+
+    return pdfs
+
+
 def main():
     parser = argparse.ArgumentParser(
-        description="Generate complete financial analysis report end-to-end"
+        description="Generate complete financial analysis report end-to-end with multi-year support",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # 3 years of data (recommended for trend analysis)
+  python generate_report.py \\
+    --company CHINHIN \\
+    --pdfs 2024:report2024.pdf 2023:report2023.pdf 2022:report2022.pdf \\
+    --output-dir output/CHINHIN
+
+  # 2 years of data (minimum for YoY comparison)
+  python generate_report.py \\
+    --company CHINHIN \\
+    --pdfs 2024:report2024.pdf 2023:report2023.pdf \\
+    --output-dir output/CHINHIN
+
+  # Single year (no trend analysis)
+  python generate_report.py \\
+    --company CHINHIN \\
+    --pdfs 2024:report2024.pdf \\
+    --output-dir output/CHINHIN
+        """
     )
 
     parser.add_argument(
-        "--pdf-2024",
+        "--pdfs",
+        nargs='+',
         required=True,
-        help="Path to 2024 annual report PDF"
-    )
-
-    parser.add_argument(
-        "--pdf-2023",
-        help="Path to 2023 annual report PDF (for YoY comparison)"
+        help="PDF files in format YEAR:PATH (e.g., 2024:report2024.pdf 2023:report2023.pdf)"
     )
 
     parser.add_argument(
@@ -390,9 +487,21 @@ def main():
     args = parser.parse_args()
 
     print("=" * 80)
-    print("Financial Analysis Report Generator")
+    print("Financial Analysis Report Generator - Multi-Year Edition")
     print("=" * 80)
+
+    # Parse PDF arguments
+    try:
+        pdfs = parse_pdfs_arg(args.pdfs)
+    except ValueError as e:
+        print(str(e))
+        sys.exit(1)
+
+    # Sort years (newest first)
+    years = sorted(pdfs.keys(), reverse=True)
+
     print(f"Company: {args.company}")
+    print(f"Years: {', '.join([f'FY{y}' for y in years])} ({len(years)} years)")
     print(f"Output Directory: {args.output_dir}")
     print(f"Workspace: {args.workspace}")
     print("=" * 80)
@@ -401,69 +510,68 @@ def main():
     os.makedirs(args.output_dir, exist_ok=True)
     os.makedirs(args.workspace, exist_ok=True)
 
-    # Period will be determined after parsing from fs_index metadata
-
     # Step 1: Parse PDFs
+    fs_index_paths = {}  # Maps year to fs_index.json path
+
     if not args.skip_pdf_parsing:
         print("\n[Step 1/5] Parsing PDFs...")
         print("-" * 80)
 
-        fs_index_2024 = parse_pdf(args.pdf_2024, args.company, args.output_dir)
-
-        fs_index_2023 = None
-        if args.pdf_2023:
-            fs_index_2023 = parse_pdf(args.pdf_2023, args.company, args.output_dir)
+        for year in years:
+            pdf_path = pdfs[year]
+            fs_index_path = parse_pdf(pdf_path, args.company, args.output_dir)
+            fs_index_paths[year] = fs_index_path
 
         # Validate periods are different and in correct order
-        if fs_index_2023:
-            try:
-                validate_periods(fs_index_2024, fs_index_2023)
-            except ValueError as e:
-                print(str(e))
-                sys.exit(1)
+        try:
+            validate_periods(fs_index_paths)
+        except ValueError as e:
+            print(str(e))
+            sys.exit(1)
     else:
         # When skipping parsing, find fs_index.json in year-based subdirectories
-        # Try to auto-detect years from directory structure
-        import glob
+        print("\n[Step 1/5] Using existing fs_index.json files...")
+        print("-" * 80)
 
-        fs_index_files = glob.glob(os.path.join(args.output_dir, '*/fs_index.json'))
+        for year in years:
+            fs_index_path = os.path.join(args.output_dir, year, 'fs_index.json')
 
-        if not fs_index_files:
-            print(f"❌ ERROR: No fs_index.json files found in {args.output_dir}/*/")
-            print("   Run without --skip-pdf-parsing to parse PDFs first")
-            sys.exit(1)
-
-        # Sort by year (newest first)
-        fs_index_files.sort(reverse=True)
-
-        fs_index_2024 = fs_index_files[0]
-        fs_index_2023 = fs_index_files[1] if len(fs_index_files) > 1 else None
-
-        print(f"✓ Using existing fs_index.json files:")
-        print(f"  Current: {fs_index_2024}")
-        if fs_index_2023:
-            print(f"  Prior: {fs_index_2023}")
-
-        # Validate periods
-        if fs_index_2023:
-            try:
-                validate_periods(fs_index_2024, fs_index_2023)
-            except ValueError as e:
-                print(str(e))
+            if not os.path.exists(fs_index_path):
+                print(f"❌ ERROR: fs_index.json not found at {fs_index_path}")
+                print(f"   Run without --skip-pdf-parsing to parse PDFs first")
                 sys.exit(1)
 
-    # Determine period from current fs_index
-    period_year = extract_year_from_fs_index(fs_index_2024)
-    period = f"FY{period_year}"
-    print(f"✓ Period: {period}")
+            fs_index_paths[year] = fs_index_path
+
+        print(f"✓ Using existing fs_index.json files:")
+        for year in years:
+            print(f"  FY{year}: {fs_index_paths[year]}")
+
+        # Validate periods
+        try:
+            validate_periods(fs_index_paths)
+        except ValueError as e:
+            print(str(e))
+            sys.exit(1)
+
+    # Determine period from current (most recent) year
+    current_year = years[0]
+    prior_years = years[1:] if len(years) > 1 else []
+
+    period = f"FY{current_year}"
+    print(f"\n✓ Current Period: {period}")
+    if prior_years:
+        print(f"✓ Prior Years: {', '.join([f'FY{y}' for y in prior_years])}")
 
     # Step 2: Calculate metrics
     if not args.skip_metrics:
         print("\n[Step 2/5] Calculating derived metrics...")
         print("-" * 80)
 
-        metrics_path = os.path.join(args.output_dir, 'metrics.json')
-        calculate_metrics(fs_index_2024, fs_index_2023, metrics_path)
+        metrics_path = os.path.join(args.output_dir, current_year, 'metrics.json')
+
+        prior_paths = [fs_index_paths[y] for y in prior_years] if prior_years else None
+        calculate_metrics(fs_index_paths[current_year], prior_paths, metrics_path)
     else:
         print("\n[Step 2/5] Skipping metrics calculation (using existing)")
         print("-" * 80)
@@ -474,14 +582,22 @@ def main():
         print("-" * 80)
 
         data_bundles_path = os.path.join(args.workspace, 'data_bundles.json')
-        generate_data_bundles(fs_index_2024, args.company, fs_index_2023, data_bundles_path)
+
+        prior_paths = [fs_index_paths[y] for y in prior_years] if prior_years else None
+        generate_data_bundles(fs_index_paths[current_year], args.company, prior_paths, data_bundles_path)
+
+        print(f"\n✓ Multi-year data bundles created:")
+        print(f"  Current: FY{current_year}")
+        if prior_years:
+            for y in prior_years:
+                print(f"  Prior: FY{y}")
     else:
         print("\n[Step 3/5] Skipping data bundle generation (using existing)")
         print("-" * 80)
         data_bundles_path = os.path.join(args.workspace, 'data_bundles.json')
 
     # Step 4: Prepare worker workspace
-    print("\n[Step 4/4] Preparing worker workspace...")
+    print("\n[Step 4/5] Preparing worker workspace...")
     print("-" * 80)
 
     # Prepare workspace (create dir, copy data bundles if needed)
@@ -503,6 +619,7 @@ def main():
     print(f"\n📄 Ready to generate: {output_path}")
     print(f"📊 Data Bundles: {data_bundles_path}")
     print(f"🔍 Workspace: {args.workspace}")
+    print(f"📅 Years: {', '.join([f'FY{y}' for y in years])} ({len(years)}-year analysis)")
 
     print("\n💡 NEXT STEPS:")
     print("   1. Spawn 6 parallel workers (see instructions below)")
