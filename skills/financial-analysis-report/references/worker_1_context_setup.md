@@ -1,41 +1,25 @@
 # Worker 1: Context Setup (Sections I-III)
 
-**🚫 CRITICAL FILE ACCESS RESTRICTIONS 🚫**
+## Data Access
 
-Your data is **PRE-LOADED** in your prompt below. **ABSOLUTELY DO NOT**:
-- ❌ Read `fs_index.json`
-- ❌ Read `data_bundles.json`
-- ❌ Read any `.json` files
-- ❌ Use the Read tool for any data access
-- ❌ Attempt to access the filesystem for metrics
+Your financial metrics are **PRE-LOADED** in your prompt (company name, period, currency, page hints).
 
-**Why?** Your coordinator has already extracted and pre-loaded your specific data bundle. Reading files wastes time, duplicates work, and can cause errors.
+For qualitative context (business overview, corporate info, industry), read `text_blocks.jsonl` from the path in your bundle:
 
-**What to do instead**: Use the JSON data provided directly below in your prompt.
-
----
-
-### 📂 **Optional: Deep-Dive Access** (10% of cases)
-
-If you need additional context beyond the pre-loaded data, file paths are provided in your bundle under `source_files`:
-
-**When to use**:
-- ✅ Need complete company background (not just summary)
-- ✅ Need full board of directors details
-- ✅ Need all corporate governance information
-
-**How to access** (ONLY if needed):
 ```python
-# Read text_blocks.jsonl for specific pages
+import json
 text_blocks = []
 with open(text_blocks_path, 'r') as f:
     for line in f:
-        block = json.loads(line)
-        if block.get('page_number') in [1, 2, 3]:  # First 3 pages
-            text_blocks.append(block)
+        text_blocks.append(json.loads(line))
+
+# Search by page hints or keywords
+for block in text_blocks:
+    if 'corporate' in block.get('text', '').lower():
+        print(block['text'][:200])
 ```
 
-**Note**: 90% of the time, the pre-loaded data is sufficient. Only access files when absolutely necessary.
+**Do NOT** read `fs_index.json`, `data_bundles.json`, or any other `.json` files — your metrics are already provided.
 
 ---
 

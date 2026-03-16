@@ -1,47 +1,10 @@
 # Worker 6: Risk Analysis (Sections IX-XI)
 
-**🚫 CRITICAL FILE ACCESS RESTRICTIONS 🚫**
+## Data Access
 
-Your data is **PRE-LOADED** in your prompt below. **ABSOLUTELY DO NOT**:
-- ❌ Read `fs_index.json`
-- ❌ Read `data_bundles.json`
-- ❌ Read any `.json` files
-- ❌ Use the Read tool for any data access
-- ❌ Attempt to access the filesystem for metrics
+Your data is **PRE-LOADED** in your prompt. All risk metrics and debt structure data are in the JSON bundle below.
 
-**Why?** Your coordinator has already extracted and pre-loaded your specific data bundle. Reading files wastes time, duplicates work, and can cause errors.
-
-**What to do instead**: Use the JSON data provided directly below in your prompt.
-
----
-
-### 📂 **Optional: Deep-Dive Access** (10% of cases)
-
-If you need additional context beyond the pre-loaded data, file paths are provided in your bundle under `source_files`:
-
-**When to use**:
-- ✅ Need complete cash flow history (not just current/prior)
-- ✅ Need detailed risk factor breakdown from full MD&A
-- ✅ Need all 236 line items for comprehensive analysis
-- ✅ Need full risk management discussion
-
-**How to access** (ONLY if needed):
-```python
-# 1. Search text_blocks.jsonl for risk management pages
-text_blocks = []
-with open(text_blocks_path, 'r') as f:
-    for line in f:
-        block = json.loads(line)
-        if block.get('page_number') in [50, 51, 52]:  # Risk management section
-            text_blocks.append(block)
-
-# 2. Or read complete fs_index for full breakdown
-with open(fs_index_path, 'r') as f:
-    fs_index = json.load(f)
-    all_line_items = fs_index['line_items']
-```
-
-**Note**: 90% of the time, the pre-loaded data is sufficient. Only access files when absolutely necessary.
+**Do NOT** read any files (`fs_index.json`, `data_bundles.json`, etc.) — everything is already provided.
 
 ---
 

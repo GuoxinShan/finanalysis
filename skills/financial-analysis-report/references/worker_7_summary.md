@@ -1,17 +1,10 @@
 # Worker 7: Executive Summary Generation
 
-**🚫 CRITICAL FILE ACCESS RESTRICTIONS 🚫**
+## Data Access
 
-Your data is **PRE-LOADED** in your prompt below. **ABSOLUTELY DO NOT**:
-- ❌ Read `fs_index.json`
-- ❌ Read `data_bundles.json`
-- ❌ Read any `.json` files
-- ❌ Use the Read tool for any data access
-- ❌ Attempt to access the filesystem for metrics
+Your data is **PRE-LOADED** in your prompt (metrics bundle + assembled report from Workers 1-6b).
 
-**Why?** Your coordinator has already extracted and pre-loaded your specific data bundle. Reading files wastes time, duplicates work, and can cause errors.
-
-**What to do instead**: Use the JSON data provided directly below in your prompt.
+**Do NOT** read any files (`fs_index.json`, `data_bundles.json`, etc.) — everything is already provided.
 
 ## Your Role
 
