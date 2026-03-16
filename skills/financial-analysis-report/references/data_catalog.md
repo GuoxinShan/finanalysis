@@ -24,7 +24,7 @@ Each line item has fields: `label`, `statement`, `section`, `page`, `group_curre
 
 **Values are in RM'000** (divide by 1000 for RM millions).
 
-#### Income Statement (27 items)
+#### Income Statement (20 items)
 
 | Label | fs_index key |
 |---|---|
@@ -116,7 +116,7 @@ Key items (many adjustments exist — use `--search` to find specific items):
 
 | Ratio | Formula | Unit |
 |---|---|---|
-| `operating_margin` | gross_profit / revenue × 100 | % |
+| `gross_margin` | gross_profit / revenue × 100 | % |
 | `pbt_margin` | profit_before_tax / revenue × 100 | % |
 | `pat_margin` | profit_for_year / revenue × 100 | % |
 | `attributable_margin` | attributable_profit / revenue × 100 | % |

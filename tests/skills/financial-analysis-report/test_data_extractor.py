@@ -217,7 +217,7 @@ class TestMetric:
         assert out["source"] == "gross profit"
 
     def test_multiple_metrics(self):
-        out = _run(["--metric", "revenue", "--metric", "total assets"])
+        out = _run(["--metric", "revenue", "total assets"])
         assert isinstance(out, dict)
         assert "revenue" in out
         # Key is "total assets" (the fs_index key), not "total_assets"
@@ -353,6 +353,11 @@ class TestTextSearch:
         out = _run(["--text-search", "revenue"])
         assert out["count"] == 0
         assert "warning" in out
+
+    def test_text_search_top_flag(self):
+        """--top limits the number of results returned."""
+        out = _run(["--text-search", "Revenue", "--top", "1"], text_blocks=SAMPLE_TEXT_BLOCKS)
+        assert out["count"] <= 1
 
 
 # ── --text-page ───────────────────────────────────────────────────────────────

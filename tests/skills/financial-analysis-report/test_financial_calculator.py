@@ -161,10 +161,10 @@ class TestAllRatios:
 # ── Profitability ─────────────────────────────────────────────────────────────
 
 class TestProfitability:
-    def test_operating_margin(self):
+    def test_gross_margin(self):
         out = _run(["--category", "profitability"])
         # gross_profit / revenue * 100 = 400000 / 1000000 * 100 = 40.0
-        assert out["operating_margin"] == pytest.approx(40.0)
+        assert out["gross_margin"] == pytest.approx(40.0)
 
     def test_pbt_margin(self):
         out = _run(["--category", "profitability"])
@@ -334,8 +334,8 @@ class TestPriorYoY:
     def test_ratio_changes_profitability(self):
         out = _run([], prior_index=_make_prior_fs_index())
         changes = out["ratio_changes"]["profitability"]
-        assert "operating_margin" in changes
-        margin_data = changes["operating_margin"]
+        assert "gross_margin" in changes
+        margin_data = changes["gross_margin"]
         assert "current" in margin_data
         assert "prior" in margin_data
         assert "absolute_change" in margin_data
@@ -419,7 +419,7 @@ class TestCategoryWithPrior:
             prior_index=_make_prior_fs_index(),
         )
         # Category output is flat dict
-        assert "operating_margin" in out
+        assert "gross_margin" in out
         assert "roe" in out
         # Growth info is also present
         assert "yoy_growth" in out
@@ -472,10 +472,10 @@ class TestMissingData:
         fs = {"currency": "MYR", "fiscal_year_end": "2024-12-31", "company_name": "EMPTY", "line_items": {}}
         out = _run([], fs_index=fs)
         assert "profitability" in out
-        assert out["profitability"]["operating_margin"] == 0.0
+        assert out["profitability"]["gross_margin"] == 0.0
 
     def test_zero_revenue_safe_divide(self):
         fs = _make_fs_index()
         fs["line_items"]["revenue"] = {"group_current": 0, "group_prior": 0}
         out = _run(["--category", "profitability"], fs_index=fs)
-        assert out["operating_margin"] == 0.0
+        assert out["gross_margin"] == 0.0

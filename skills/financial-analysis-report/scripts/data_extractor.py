@@ -136,7 +136,7 @@ def cmd_list(fs_index: Dict) -> Dict:
     return out
 
 
-def cmd_text_search(directory: str, query: str) -> Dict:
+def cmd_text_search(directory: str, query: str, top: int = 20) -> Dict:
     """Search text_blocks.jsonl for keyword."""
     blocks = load_text_blocks(directory)
     if blocks is None:
@@ -152,7 +152,7 @@ def cmd_text_search(directory: str, query: str) -> Dict:
         for b in blocks
         if q in b.get("text", "").lower()
     ]
-    return {"query": query, "count": len(results), "results": results}
+    return {"query": query, "count": len(results[:top]), "results": results[:top]}
 
 
 def _parse_page_range(range_str: str):
@@ -189,12 +189,13 @@ def build_parser() -> argparse.ArgumentParser:
         description="Query fs_index.json and text_blocks.jsonl for financial data."
     )
     parser.add_argument("fs_index", help="Path to fs_index.json file")
-    parser.add_argument("--metric", action="append", dest="metrics", help="Extract a specific metric (repeatable)")
+    parser.add_argument("--metric", nargs="+", dest="metrics", help="Extract one or more metrics by name")
     parser.add_argument("--category", choices=["income_statement", "balance_sheet", "cash_flow"],
                         help="Extract all metrics from a statement")
     parser.add_argument("--search", help="Fuzzy search line items by keyword")
     parser.add_argument("--list", action="store_true", help="List all available fields grouped by statement")
     parser.add_argument("--text-search", help="Search text_blocks.jsonl for keywords")
+    parser.add_argument("--top", type=int, default=20, help="Max results for --text-search (default: 20)")
     parser.add_argument("--text-page", help="Extract text from page range (e.g., 45-60)")
     return parser
 
@@ -230,7 +231,7 @@ def main():
     elif args.list:
         result = cmd_list(fs_index)
     elif args.text_search:
-        result = cmd_text_search(fs_dir, args.text_search)
+        result = cmd_text_search(fs_dir, args.text_search, args.top)
     elif args.text_page:
         result = cmd_text_page(fs_dir, args.text_page)
     else:

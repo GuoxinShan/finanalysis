@@ -640,7 +640,7 @@ def _check_rounded_derivation(
     return None
 
 
-def validate_report(report_path: Path, fs_index_path: Path, metrics_path: Optional[Path] = None) -> Dict:
+def validate_report(report_path: Path, fs_index_path: Path, prior_path: Optional[Path] = None) -> Dict:
     """Run all validation checks with DATA ACCURACY as priority.
 
     Returns a structured dict with issues and summary counts.
@@ -652,9 +652,9 @@ def validate_report(report_path: Path, fs_index_path: Path, metrics_path: Option
     content = report_path.read_text(encoding='utf-8')
     fs_index = json.loads(fs_index_path.read_text())
 
-    metrics_data = None
-    if metrics_path and metrics_path.exists():
-        metrics_data = json.loads(metrics_path.read_text())
+    prior_index = None
+    if prior_path and prior_path.exists():
+        prior_index = json.loads(prior_path.read_text())
 
     all_issues = []
     verified_numbers: Set[Tuple[float, int]] = set()
@@ -842,8 +842,8 @@ def main():
     parser.add_argument('report', type=Path, help='Path to report markdown file')
     parser.add_argument('--data', type=Path, required=True,
                        help='Path to fs_index.json (source data)')
-    parser.add_argument('--metrics', type=Path,
-                       help='Path to metrics.json (calculated ratios)')
+    parser.add_argument('--prior', type=Path,
+                       help='Path to prior year fs_index.json (for YoY verification)')
 
     args = parser.parse_args()
 
@@ -855,7 +855,7 @@ def main():
         print(f"Error: Data file not found: {args.data}")
         sys.exit(1)
 
-    results = validate_report(args.report, args.data, args.metrics)
+    results = validate_report(args.report, args.data, args.prior)
     print_report(results)
 
     # Exit with error code if critical issues found

@@ -79,7 +79,6 @@ def get_metric_value(data: dict, label: str, entity: str = "group", period: str 
         for key_format in [
             f"{entity_prefix}_{period_key}",  # group_current
             f"{entity_prefix}{period_key.capitalize()}",  # groupCurrent
-            f"{entity_prefix}_{period_key}",  # company_current
         ]:
             if key_format in item:
                 val = item[key_format]
@@ -136,7 +135,7 @@ CATEGORIES = ["profitability", "liquidity", "solvency", "efficiency", "cashflow"
 def calculate_profitability_ratios(data: dict) -> dict[str, float]:
     """Calculate profitability margins and returns."""
     revenue = get_metric_value(data, "revenue")
-    operating_profit = get_metric_value(data, "gross profit")
+    gross_profit = get_metric_value(data, "gross profit")
     pbt = get_metric_value(data, "profit before tax")
     pat = get_metric_value(data, "profit for the financial year")
     attributable = get_metric_value(data, "profit for the financial year attributable to: owners of the parent")
@@ -144,7 +143,7 @@ def calculate_profitability_ratios(data: dict) -> dict[str, float]:
     total_assets = get_metric_value(data, "total assets")
 
     return {
-        "operating_margin": safe_divide(operating_profit, revenue) * 100,
+        "gross_margin": safe_divide(gross_profit, revenue) * 100,
         "pbt_margin": safe_divide(pbt, revenue) * 100,
         "pat_margin": safe_divide(pat, revenue) * 100,
         "attributable_margin": safe_divide(attributable, revenue) * 100,
