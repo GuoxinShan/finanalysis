@@ -1,4 +1,4 @@
-# Worker 3: Business Analysis (Sections VI-VIII)
+# Worker 3: Business & Strategy (Section IV)
 
 ## Data Access
 
@@ -18,24 +18,23 @@ with open(text_blocks_path, 'r') as f:
 
 ---
 
-You are responsible for segment performance, industry impact, and strategic execution.
+You are responsible for segment performance, industry impact, and strategic execution. Go deeper than surface-level observations — assess whether strategy is translating to financial outcomes.
 
 ## Canonical Data Ownership
 
-**You own**: Segment revenue/PBT, order book, geographic mix.
-**Do NOT restate**: Revenue totals, gross margin, profit figures — those belong to Section V. Reference Section V if needed.
-
-See `references/canonical_data_registry.md` for the full ownership table.
+**You own**: Segment revenue/PBT, order book, geographic mix, industry impact assessment, strategic scorecard.
+**Do NOT restate**: Revenue totals, gross margin, profit figures — those belong to Section III. Reference Section III if needed.
 
 ---
 
-## Your Sections
+## Your Section
 
-### Section VI: Analysis of Changes in Core Business
+### Section IV: Business & Strategy
 
-**Purpose**: Segment-level performance and business model evolution.
+**Purpose**: Comprehensive business analysis covering segments, industry context, and strategic execution. This section answers "what does this company actually do, and how well are they doing it?"
 
-**Tables** (if segment data available):
+**Required Tables** (3 tables):
+
 ```markdown
 **Table 1: Segment Revenue (RM million)**
 | Segment | FY2024 | FY2023 | YoY % | Share |
@@ -43,108 +42,62 @@ See `references/canonical_data_registry.md` for the full ownership table.
 | [Segment] | [Value] | [Value] | [+%] | [%] |
 | **Total** | **[Value]** | **[Value]** | **[+%]** | **100%** |
 
-**Table 2: Segment PBT (RM million)**
+**Table 2: Segment Profitability (RM million)**
 | Segment | FY2024 | FY2023 | YoY % | Margin |
 |---------|--------|--------|-------|--------|
 | [Segment] | [Value] | [Value] | [+%] | [%] |
 | **Total** | **[Value]** | **[Value]** | **[+%]** | **[%]** |
-```
 
-**Analysis** (1 paragraph): Which segments drove growth? Are margins improving or deteriorating at segment level? Is the mix shifting toward higher-value businesses?
-
-**What NOT to include**:
-- Plant locations, product descriptions, or operational details
-- Lists of individual projects (keep order book aggregate only)
-- Sub-sub-sections per subsidiary (VI.3.1, VI.3.2, etc.)
-- Sub-segment detail beyond what the tables show (2-3 sentences max per segment in the analysis paragraph)
-
----
-
-### Section VII: Industry Change Analysis
-
-**Purpose**: External factors that materially impacted this company — only what's specific and actionable.
-
-**Table**:
-```markdown
-**Table: Industry Impact Assessment**
-| Factor | Signal | Impact on Company |
-|--------|--------|-------------------|
-| [Demand/cost/regulatory factor] | [Specific market signal] | [Specific impact on performance] |
-```
-
-**Analysis** (2-3 sentences): How did external factors directly affect this company's results?
-
-**What NOT to include**:
-- Macroeconomic background (GDP growth rates, OPR decisions, broad industry statistics) — these are annual report filler, not analysis
-- Generic industry commentary that doesn't connect to company-specific performance
-- Climate risk / TCFD assessments (not financial analysis at this level)
-- Multiple sub-sections (VII.1, VII.2, etc.) — one table + 2-3 sentences is enough
-
----
-
-### Section VIII: Strategic Initiatives
-
-**Purpose**: Assess management's strategic execution and its financial impact.
-
-**Table**:
-```markdown
-**Table: Strategic Initiatives Scorecard**
+**Table 3: Strategic Scorecard**
 | Initiative | Evidence | Assessment |
 |------------|----------|------------|
 | [M&A / Capex / Expansion] | [Specific action + financial impact] | [Effective/Mixed/Concerning] |
 ```
 
-**Analysis** (1 paragraph): Are strategic moves translating to financial outcomes? Is the acquisition pipeline paying off? Is execution disciplined?
+**Analysis** (3 paragraphs):
+
+1. **Segment dynamics**: Which segments drove growth? Are margins improving or deteriorating at segment level? Is the mix shifting toward higher-value businesses? Use text_blocks.jsonl for management commentary on segment performance.
+
+2. **Industry impact**: How did external factors (demand, regulation, input costs) directly affect this company's results? Be specific — connect industry signals to company-specific financial outcomes. No generic macro commentary (GDP, OPR).
+
+3. **Strategic execution**: Are strategic moves translating to financial outcomes? Is M&A paying off? Is capex generating returns? Is the company disciplined about capital allocation? Be critical — this is not a press release.
 
 **What NOT to include**:
-- Digital transformation bullet lists (BIM, RPA, AI, IoT) without quantified financial impact
+- Plant locations, product descriptions, or operational details
+- Lists of individual projects (keep order book aggregate only)
+- Digital transformation bullet lists (BIM, RPA, AI) without quantified financial impact
 - Sustainability / ESG initiatives without financial materiality
-- Detailed acquisition histories for minor deals (keep only major M&A)
-- Plant-by-plant capacity tables (operational detail, not financial analysis)
-- Sub-sections for each initiative category (VIII.1, VIII.2, etc.) — one table suffices
+- Macroeconomic background (GDP growth rates, OPR decisions)
+- Sub-sections per subsidiary
 
 ---
 
 ## Output Format
 
-Write **ONLY** markdown for Sections VI-VIII:
+Write **ONLY** markdown for Section IV:
 
 ```markdown
-# Ⅵ. Analysis of Changes in Core Business - [Descriptive Title]
+# Ⅳ. Business & Strategy - [Descriptive Title]
 
 **Table 1: Segment Revenue (RM million)**
 | Segment | FY2024 | FY2023 | YoY | Share |
 |---|---:|---:|---:|---:|
 | [Data] | [Data] | [Data] | [%] | [%] |
 
-**Table 2: Segment PBT (RM million)**
+**Table 2: Segment Profitability (RM million)**
 | Segment | FY2024 | FY2023 | YoY | Margin |
 |---|---:|---:|---:|---:|
 | [Data] | [Data] | [Data] | [%] | [%] |
 
-[1 paragraph analysis]
-
----
-
-# Ⅶ. Industry Change Analysis - [Descriptive Title]
-
-**Table: Industry Impact Assessment**
-| Factor | Signal | Impact on Company |
-|---|---|---|
-| [Factor] | [Signal] | [Impact] |
-
-[2-3 sentences]
-
----
-
-# Ⅷ. Strategic Initiatives - [Descriptive Title]
-
-**Table: Strategic Scorecard**
+**Table 3: Strategic Scorecard**
 | Initiative | Evidence | Assessment |
 |---|---|---|
 | [Initiative] | [Evidence] | [Assessment] |
 
-[1 paragraph analysis]
+**Analysis**
+1. [Segment dynamics paragraph]
+2. [Industry impact paragraph]
+3. [Strategic execution paragraph]
 ```
 
 ## Quality Standards
@@ -156,12 +109,12 @@ Write **ONLY** markdown for Sections VI-VIII:
 **Do NOT**:
 - Invent segment data if not provided
 - Write generic macro commentary
-- Include operational filler (plant lists, product catalogs, project lists)
+- Include operational filler (plant lists, product catalogs)
 
 ## Task
 
-Write Sections VI-VIII using the data bundle.
+Write Section IV using the data bundle.
 
 **Output file**: `workspace/worker_3_sections.md`
 
-Output ONLY markdown for these three sections.
+Output ONLY markdown for this section.

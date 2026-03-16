@@ -3,7 +3,7 @@
 Assemble worker outputs into final report in correct section order.
 
 This script reads all worker output files and combines them into the final
-18-section financial analysis report in the correct order.
+9-section financial analysis report in the correct order.
 """
 
 import json
@@ -24,10 +24,13 @@ def assemble_report(workspace_dir: str, output_path: str, company_name: str = "C
     """
     workspace = Path(workspace_dir)
 
-    # Section order mapping - worker outputs to final report order
-    # Worker 6  writes Sections IX, X, XI
-    # Worker 6b writes Sections XVI, XVII, XVIII
-    # XII-XIII (Worker 5) and XIV-XV (Worker 4) slot between XI and XVI
+    # Section order mapping - Worker outputs to final report order
+    # Worker 1: Section I
+    # Worker 2: Sections II-III
+    # Worker 3: Section IV
+    # Worker 4: Sections V, VII
+    # Worker 5: Section VI
+    # Worker 6: Sections VIII-IX
 
     # Read all worker files
     worker_files = {}
@@ -37,20 +40,14 @@ def assemble_report(workspace_dir: str, output_path: str, company_name: str = "C
         if filepath.exists():
             worker_files[i] = filepath.read_text()
 
-    # Worker 6b is a separate file
-    worker_6b_path = workspace / 'worker_6b_sections.md'
-    if worker_6b_path.exists():
-        worker_files['6b'] = worker_6b_path.read_text()
-
     # Build final report in correct section order
     section_order = [
-        (1,    'I-III',    'Worker 1'),
-        (2,    'IV-V',     'Worker 2'),
-        (3,    'VI-VIII',  'Worker 3'),
-        (6,    'IX-XI',    'Worker 6'),
-        (5,    'XII-XIII', 'Worker 5'),
-        (4,    'XIV-XV',   'Worker 4'),
-        ('6b', 'XVI-XVIII','Worker 6b'),
+        (1, 'I',        'Worker 1'),
+        (2, 'II-III',   'Worker 2'),
+        (3, 'IV',       'Worker 3'),
+        (4, 'V, VII',   'Worker 4'),
+        (5, 'VI',       'Worker 5'),
+        (6, 'VIII-IX',  'Worker 6'),
     ]
 
     final_report = []

@@ -164,7 +164,7 @@ worker_2 = Agent(
 {json.dumps(worker_bundles[2], indent=2)}
 ```
 
-Write Sections IV-V using the data above.
+Write Sections II-III using the data above.
     """,
     model="sonnet"
 )
@@ -207,7 +207,7 @@ worker_2 = Agent(
 {json.dumps(data_bundles.get('_multi_year_trends', {}), indent=2)}
 ```
 
-**Task**: Write Sections IV and V using the pre-loaded data above.
+**Task**: Write Sections II and III using the pre-loaded data above.
 Output ONLY the markdown content for these two sections.
     """,
     model="sonnet"  # Use sonnet for quality
@@ -287,12 +287,12 @@ outputs = [wait_for_agent(w) for w in workers]
 
 # Organize by section
 sections = {
-    "I-III": outputs[0],    # Worker 1
-    "IV-V": outputs[1],     # Worker 2
-    "VI-VIII": outputs[2],  # Worker 3
-    "XIV-XV": outputs[3],   # Worker 4
-    "XII-XIII": outputs[4], # Worker 5
-    "IX-XI-XVI-XVIII": outputs[5],  # Worker 6
+    "I": outputs[0],      # Worker 1
+    "II-III": outputs[1],  # Worker 2
+    "IV": outputs[2],      # Worker 3
+    "VII": outputs[3],     # Worker 4
+    "V": outputs[4],       # Worker 5
+    "VI, VIII-IX": outputs[5],  # Worker 6
 }
 
 # Save individual worker outputs
@@ -312,19 +312,19 @@ Combine worker outputs in correct section order:
 ```markdown
 # Financial Analysis Report: [Company Name] - [Period]
 
-[Worker 1: Sections I-III]
+[Worker 1: Section I]
 
-[Worker 2: Sections IV-V]
+[Worker 2: Sections II-III]
 
-[Worker 3: Sections VI-VIII]
+[Worker 3: Section IV]
 
-[Worker 6: Sections IX, X, XI]
+[Worker 6: Section VI]
 
-[Worker 5: Sections XII-XIII]
+[Worker 5: Section V]
 
-[Worker 4: Sections XIV-XV]
+[Worker 4: Section VII]
 
-[Worker 6: Sections XVI-XVIII]
+[Worker 6: Sections VIII-IX]
 ```
 
 ### Option B: Use assemble_report.py Script
@@ -339,11 +339,11 @@ python scripts/assemble_report.py \
 
 **What the script does**:
 1. Reads worker output files from workspace
-2. Combines in proper section order (I-III, IV-V, VI-VIII, IX-XI, XII-XIII, XIV-XV, XVI-XVIII)
+2. Combines in proper section order (I, II-III, IV, V, VI, VII, VIII-IX)
 3. Adds report header with company name and period
 4. Writes final report
 
-**Output**: `<TICKER>-<PERIOD>-revised.md` (full 18-section report)
+**Output**: `<TICKER>-<PERIOD>-revised.md` (full 9-section report)
 
 ---
 
@@ -374,13 +374,13 @@ Write the summary to: CHINHIN-summary.md
 ```
 
 **What Worker 7 does**:
-1. Reads the full 18-section report
+1. Reads the full 9-section report
 2. Extracts key insights from:
-   - Section IV (Core Conclusions)
-   - Section V (Core Performance)
-   - Section IX (Risk Scan)
-   - Section XII (Profitability)
-   - Section XIV (Solvency)
+   - Section II (Core Conclusions)
+   - Section III (Core Performance)
+   - Section VI (Risk Assessment)
+   - Section V (Profitability & Growth)
+   - Section VII (Financial Health)
 3. Synthesizes into 4-section executive summary
 4. Maintains narrative coherence and identifies most important insights
 
@@ -390,31 +390,31 @@ Write the summary to: CHINHIN-summary.md
 
 ## Step 6: Quality Check
 
-Before delivering, verify the **COMPLETE 18-SECTION REPORT**:
+Before delivering, verify the **COMPLETE 9-SECTION REPORT**:
 
 ### Checklist
 
-- [ ] **All 18 sections present** in correct Roman numeral order (Ⅰ-ⅩⅤⅢ)
-- [ ] **CRITICAL**: Sections IX, X, XI exist (Risk Scan, Major Items, Expense Analysis) - **most frequently missed**
-- [ ] **Section order**: Ⅰ→Ⅱ→Ⅲ→Ⅳ→Ⅴ→Ⅵ→Ⅶ→Ⅷ→Ⅸ→Ⅹ→Ⅺ→Ⅻ→ⅩⅢ→ⅩⅣ→ⅩⅤ→ⅩⅥ→ⅩⅦ→ⅩⅧ
+- [ ] **All 9 sections present** in correct Roman numeral order (Ⅰ-Ⅸ)
+- [ ] **CRITICAL**: Section VI exists (Risk Assessment) - **most frequently missed**
+- [ ] **Section order**: Ⅰ→Ⅱ→Ⅲ→Ⅳ→Ⅴ→Ⅵ→Ⅶ→Ⅷ→Ⅸ
 - [ ] Tables formatted correctly with consistent headers
 - [ ] No duplicate or missing content between workers
 - [ ] Consistent terminology and metrics across all sections
 - [ ] All metrics from data bundles appear in relevant sections
-- [ ] **Section IX**: Enhanced risk matrix with severity ratings (Critical/High/Medium/Low), probability, impact, priority rankings (1-4), and time-bound mitigation actions
+- [ ] **Section VI**: Enhanced risk matrix with severity ratings (Critical/High/Medium/Low), probability, impact, priority rankings (1-4), and time-bound mitigation actions
 
 ### Common Issues
 
-1. **Sections IX, X, XI missing**: Worker 6 handles 6 sections (IX, X, XI, XVI, XVII, XVIII). Verify all 6 are present.
+1. **Section VI missing**: Worker 6 handles 3 sections (VI, VIII, IX). Verify all 3 are present.
 
 2. **Section order wrong**: The correct order is:
-   - I-III (Worker 1)
-   - IV-V (Worker 2)
-   - VI-VIII (Worker 3)
-   - IX-XI (Worker 6)
-   - XII-XIII (Worker 5)
-   - XIV-XV (Worker 4)
-   - XVI-XVIII (Worker 6)
+   - I (Worker 1)
+   - II-III (Worker 2)
+   - IV (Worker 3)
+   - V (Worker 5)
+   - VI (Worker 6)
+   - VII (Worker 4)
+   - VIII-IX (Worker 6)
 
 3. **Duplicate content**: Workers should not overlap. Each worker has unique section assignments.
 
@@ -426,12 +426,12 @@ Before delivering, verify the **COMPLETE 18-SECTION REPORT**:
 
 | Worker | Sections | Instruction File | Output File |
 |--------|----------|------------------|-------------|
-| Worker 1 | I-III (Company Profile, Purpose, Data Description) | worker_1_context_setup.md | worker_1_output.md |
-| Worker 2 | IV-V (Core Conclusions, Core Performance) | worker_2_core_performance.md | worker_2_output.md |
-| Worker 3 | VI-VIII (Segment Analysis, Industry, Strategy) | worker_3_business_analysis.md | worker_3_output.md |
-| Worker 4 | XIV-XV (Solvency, Operational Capability) | worker_4_operational_health.md | worker_4_output.md |
-| Worker 5 | XII-XIII (Profitability, Growth Capability) | worker_5_profitability_growth.md | worker_5_output.md |
-| Worker 6 | IX-XI, XVI-XVIII (Risk, Major Items, Expenses, Cash Flow, Asset Quality, Forecast) | worker_6_risk_cashflow.md | worker_6_output.md |
+| Worker 1 | I (Company Overview) | worker_1_context_setup.md | worker_1_output.md |
+| Worker 2 | II-III (Core Conclusions, Core Performance) | worker_2_core_performance.md | worker_2_output.md |
+| Worker 3 | IV (Business & Strategy) | worker_3_business_analysis.md | worker_3_output.md |
+| Worker 4 | VII (Financial Health) | worker_4_operational_health.md | worker_4_output.md |
+| Worker 5 | V (Profitability & Growth) | worker_5_profitability_growth.md | worker_5_output.md |
+| Worker 6 | VI, VIII-IX (Risk Assessment, Cash Flow, Outlook) | worker_6_risk_cashflow.md | worker_6_output.md |
 | Worker 7 | Executive Summary (4 sections) | worker_7_summary.md | worker_7_output.md |
 
 ---
@@ -453,13 +453,13 @@ finanalysis parse report.pdf --company CHINHIN -o output/CHINHIN/2024
 3. Ensure worker prompt includes output format template
 4. Review worker instruction file for completeness
 
-### Problem: Sections IX, X, XI missing from final report
+### Problem: Section VI missing from final report
 
 **Solution**:
-- Worker 6 generates 6 sections total: IX (Risk Scan), X (Major Items), XI (Expense Analysis), XVI (Cash Flow), XVII (Asset Quality), XVIII (Forecast)
-- Verify Worker 6 output file contains all 6 sections before assembly
+- Worker 6 generates 3 sections total: VI (Risk Assessment), VIII (Cash Flow), IX (Outlook)
+- Verify Worker 6 output file contains all 3 sections before assembly
 - Check that assemble_report.py includes Worker 6 output in correct position
-- The correct order is: VIII → IX → X → XI → XII → XIII → XIV → XV → XVI → XVII → XVIII
+- The correct order is: Ⅰ→Ⅱ→Ⅲ→Ⅳ→Ⅴ→Ⅵ→Ⅶ→Ⅷ→Ⅸ
 
 ### Problem: Inconsistent metrics across sections
 
@@ -487,6 +487,6 @@ The manual workflow provides maximum control at the cost of more steps:
 4. **Collect worker outputs**: Save to `worker_N_output.md`
 5. **Assemble report**: `assemble_report.py` → final report
 6. **Generate summary**: Worker 7 reads full report → executive summary
-7. **Quality check**: Verify all 18 sections present
+7. **Quality check**: Verify all 9 sections present
 
 **For most users**: The automated workflow via `generate_report.py` is faster and less error-prone. Use manual workflow only when you need fine-grained control.

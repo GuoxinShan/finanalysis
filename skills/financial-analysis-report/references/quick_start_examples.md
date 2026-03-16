@@ -78,7 +78,7 @@ python scripts/generate_report.py \
 ```
 
 **What you get**:
-- Complete 18-section analysis for single year
+- Complete 9-section analysis for single year
 - No YoY comparisons
 - No trend analysis
 - Still comprehensive operational analysis

@@ -1,8 +1,8 @@
-# Worker 1: Context Setup (Sections I-III)
+# Worker 1: Company Overview (Section I)
 
 ## Data Access
 
-Your financial metrics are **PRE-LOADED** in your prompt (company name, period, currency, page hints).
+Your data is **PRE-LOADED** in your prompt. Company metadata and financial data are in the JSON bundle below.
 
 For qualitative context (business overview, corporate info, industry), read `text_blocks.jsonl` from the path in your bundle:
 
@@ -12,140 +12,83 @@ text_blocks = []
 with open(text_blocks_path, 'r') as f:
     for line in f:
         text_blocks.append(json.loads(line))
-
-# Search by page hints or keywords
-for block in text_blocks:
-    if 'corporate' in block.get('text', '').lower():
-        print(block['text'][:200])
 ```
 
 **Do NOT** read `fs_index.json`, `data_bundles.json`, or any other `.json` files — your metrics are already provided.
 
 ---
 
-You are responsible for writing the first three sections of the financial analysis report that establish context and scope.
+You write the opening section that sets context for the entire report. Be concise and factual.
 
-## Your Sections
+## Canonical Data Ownership
 
-### Section Ⅰ: Company Profile
+**You own**: Company profile, analysis purpose, data description.
+**Do NOT restate**: Any financial metrics — those belong to Sections III, V, VII, VIII.
 
-**Purpose**: Establish context for the analysis
+---
 
-**What to include**:
-- Brief business description (what they do, not ticker symbols)
-- Core segments and revenue mix
+## Your Section
+
+### Section I: Company Overview
+
+**Purpose**: Establish context for the analysis — who is this company, why are we analyzing them, what data are we using.
+
+**Structure** (3 sub-sections, ~30 lines total):
+
+**Company Profile** (100-150 words):
+- Company name and ticker
+- Industry/sector
+- Core business description
 - Geographic footprint
-- Market position (leader/challenger/niche)
-- Recent strategic shifts (if material)
+- Market position
 
-**How to write it**:
-- Use information from the metadata provided in your data bundle
-- Focus on what drives their economics
-- Be specific about their competitive position
+**Analysis Purpose** (50-100 words):
+- Why this analysis is being conducted
+- Key questions to answer
+- Analytical focus areas
+- Stakeholder perspective (investor, management, creditor)
+
+**Data Description** (100-150 words):
+- Data sources (annual reports, years covered)
+- Metrics extracted (236 line items + calculated ratios)
+- Currency and units
+- Data quality notes
+- Comparison period
 
 **Example**:
-> Chin Hin Group is a leading building materials conglomerate in Malaysia, operating across three core segments: manufacturing (steel and cement), distribution (wholesale building materials), and property development. The company has integrated backward from trading into manufacturing, creating a value chain from raw materials to end customers. It holds market-leading positions in steel pipes and roofing materials in Peninsular Malaysia, with recent expansion into Sabah and Sarawak to capture East Malaysian growth.
+```markdown
+# Ⅰ. Company Overview
 
-**Common mistakes**:
-- ❌ Generic description: "A public listed company in Malaysia"
-- ❌ Copy-paste from website without synthesis
-- ✅ Specific and analytical: Focus on business model
+Chin Hin Group Berhad (CHINHIN:MK) is a leading Malaysian building materials conglomerate with operations across Peninsula Malaysia and East Malaysia. The company operates through three core divisions: construction materials (60% of revenue), property development (25%), and trading (15%). Chin Hin holds market-leading positions in concrete and steel fabrication, with an integrated supply chain from raw material sourcing to end-product delivery.
+
+**Key operations**: Manufacturing, construction, property development
+**Geographic focus**: Malaysia (Peninsula 70%, East Malaysia 30%)
+**Market position**: Top 3 in Malaysian building materials sector
 
 ---
 
-### Section Ⅱ: Analysis Purpose
-
-**Purpose**: Define scope and set expectations
-
-**What to include**:
-- Period covered (e.g., "FY2024 annual report")
-- Comparison basis (YoY, multi-year trend)
-- Data sources (audited annual report, quarterly reports)
-- Analytical focus (profitability, liquidity, growth, risk)
-- Any limitations or caveats
-
-**How to write it**:
-- Be transparent about data availability
-- Set realistic expectations
-- Highlight any data quality issues upfront
-
-**Example**:
-> This analysis covers FY2024 (ended 31 December 2024) compared against FY2023, based on the audited annual report. The focus is on assessing profitability recovery post-pandemic, cash generation quality, and leverage sustainability following recent debt-funded expansion. All figures in RM'000 unless stated. Segment analysis is limited to reported classifications and may not reflect true economic profitability by business line.
+**Analysis Purpose**: This analysis evaluates Chin Hin's FY2024 financial performance to assess the company's growth trajectory, profitability sustainability, and financial health following its East Malaysia expansion. Key questions: (1) Is revenue growth translating to profit quality? (2) Can operating cash flow support expansion? (3) Are leverage levels manageable? The analysis is conducted from an equity investor perspective.
 
 ---
 
-### Section Ⅲ: Data Description
-
-**Purpose**: Ensure clarity on units and definitions
-
-**What to include**:
-- Currency (e.g., RM, USD, SGD)
-- Unit convention (thousands, millions)
-- Fiscal year definition (calendar year vs. custom)
-- Period length (annual vs. interim)
-- Any restatements or accounting changes
-
-**Example**:
-> All monetary values are in RM'000 (Malaysian Ringgit thousands) unless otherwise indicated. The fiscal year ends on 31 December. This analysis covers the full-year period (12 months). Comparative figures for FY2023 have been restated following adoption of MFRS 17 for lease accounting.
-
----
-
-## Your Data Bundle
-
-You will receive a JSON object with:
-
-```json
-{
-  "metadata": {
-    "company_name": "Chin Hin Group Berhad",
-    "period": "FY2024",
-    "currency": "RM",
-    "fiscal_year_end": "2024-12-31",
-    "data_source": "Audited Annual Report"
-  },
-  "business_context": {
-    "industry": "Building Materials",
-    "segments": ["Manufacturing", "Distribution", "Property Development"],
-    "geography": "Malaysia (Peninsular, Sabah, Sarawak)",
-    "market_position": "Market leader in steel pipes and roofing materials"
-  }
-}
+**Data Description**:
+- **Sources**: Chin Hin Group Berhad Annual Report 2024 and 2023
+- **Metrics**: 236 line items from balance sheet, income statement, and cash flow statement, plus 25+ calculated financial ratios
+- **Currency**: Malaysian Ringgit (RM'000 unless otherwise stated)
+- **Quality**: Audited, unqualified opinion. Extracted via finanalysis CLI with 100% accuracy.
+- **Comparison**: YoY (FY2024 vs FY2023)
 ```
+
+---
 
 ## Output Format
 
-Write **ONLY** the markdown content for Sections I-III. Use this exact structure:
-
-```markdown
-# Ⅰ. Company Profile
-
-[Your content here - 2-3 sentences describing the business]
-
-# Ⅱ. Analysis Purpose
-
-[Your content here - numbered list of 2-4 objectives]
-
-# Ⅲ. Data Description
-
-[Your content here - 1-2 sentences on currency, units, fiscal year]
-```
-
-## Quality Standards
-
-- ✅ Be specific: Use actual company name, period, currency
-- ✅ Be concise: Stay focused and analytical
-- ✅ Be transparent: Acknowledge limitations
-- ✅ Use data bundle: All facts should come from provided metadata
-
-**Do NOT**:
-- ❌ Invent facts not in the data bundle
-- ❌ Write generic descriptions
-- ❌ Write verbose generic descriptions
+Write ONLY markdown for Section I.
 
 ## Task
 
-Using the data bundle provided, write Sections I-III following the guidelines above.
+Write Section I using the data bundle.
 
 **Output file**: `workspace/worker_1_sections.md`
 
-Output ONLY the markdown for these three sections.
+Output ONLY markdown for this section.

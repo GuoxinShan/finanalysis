@@ -635,7 +635,7 @@ Examples:
     print(f"📅 Years: {', '.join([f'FY{y}' for y in years])} ({len(years)}-year analysis)")
 
     print("\n💡 NEXT STEPS:")
-    print("   1. Spawn 7 parallel workers (see instructions below)")
+    print("   1. Spawn 6 parallel workers (see instructions below)")
     print("   2. After workers complete, run:")
     print(f"      python scripts/assemble_report.py \\")
     print(f"        --workspace {args.workspace} \\")
@@ -648,7 +648,7 @@ Examples:
     print("=" * 80)
     print("\nEach worker's data is pre-extracted in workspace/bundles/. ")
     print("The coordinator reads each bundle file and embeds it in the worker's prompt:")
-    print("\nfor i in {1,2,3,4,5,6,6b}; do")
+    print("\nfor i in {1,2,3,4,5,6}; do")
     print("  bundle = Read(f'{args.workspace}/bundles/worker_${{i}}_bundle.json')")
     print("  instructions = Read(f'references/worker_${{i}}_*.md')")
     print("  Agent(")

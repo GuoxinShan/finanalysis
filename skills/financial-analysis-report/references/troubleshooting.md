@@ -189,34 +189,34 @@ prompt = f"""
 **Your Pre-Loaded Data**:
 {json.dumps(worker_data, indent=2)}
 
-**Task**: Write Sections IV and V.
+**Task**: Write Sections II and III.
 Output ONLY markdown content.
 """
 ```
 
 ---
 
-### Problem: Sections IX, X, XI missing from final report
+### Problem: Section VI missing from final report
 
-**Symptoms**: Risk Scan, Major Items, and Expense Analysis sections absent
+**Symptoms**: Risk Assessment section absent
 
-**Root Cause**: Worker 6 handles 6 sections (IX, X, XI, XVI, XVII, XVIII) - sometimes incomplete
+**Root Cause**: Worker 6 handles 3 sections (VI, VIII, IX) - sometimes incomplete
 
 **This is the #1 most common issue!**
 
 **Solutions**:
 
-1. **Verify Worker 6 output contains all 6 sections**:
+1. **Verify Worker 6 output contains all 3 sections**:
 ```bash
 # Check worker 6 output
-grep -E "^# [ⅨⅩⅪⅩⅥⅩⅦⅩⅧ]" workspace/worker_6_output.md
-# Should show 6 matches: IX, X, XI, XVI, XVII, XVIII
+grep -E "^# [ⅥⅧⅨ]" workspace/worker_6_output.md
+# Should show 3 matches: VI, VIII, IX
 ```
 
 2. **Check worker 6 instruction file**:
 ```bash
 cat references/worker_6_risk_cashflow.md | grep "## Your Task"
-# Should list all 6 sections
+# Should list all 3 sections
 ```
 
 3. **Verify assembly script includes Worker 6 output**:
@@ -228,11 +228,11 @@ python scripts/assemble_report.py \
   --period FY2024
 
 # Check assembled report
-grep -E "^# [ⅨⅩⅪ]" report.md
-# Should show sections IX, X, XI
+grep -E "^# [Ⅵ]" report.md
+# Should show section VI
 ```
 
-4. **Correct section order**: VIII → IX → X → XI → XII → XIII → XIV → XV → XVI → XVII → XVIII
+4. **Correct section order**: Ⅰ→Ⅱ→Ⅲ→Ⅳ→Ⅴ→Ⅵ→Ⅶ→Ⅷ→Ⅸ
 
 ---
 
@@ -288,12 +288,12 @@ finanalysis calculate output/CHINHIN/2024/fs_index.json \
 
 **Solutions**:
 1. **Review worker assignments**:
-   - Worker 1: I-III
-   - Worker 2: IV-V
-   - Worker 3: VI-VIII
-   - Worker 4: XIV-XV
-   - Worker 5: XII-XIII
-   - Worker 6: IX-XI, XVI-XVIII
+   - Worker 1: I
+   - Worker 2: II-III
+   - Worker 3: IV
+   - Worker 4: VII
+   - Worker 5: V
+   - Worker 6: VI, VIII-IX
    - Worker 7: Executive Summary
 
 2. **Each worker should only see their instruction file**:
@@ -375,33 +375,33 @@ python scripts/assemble_report.py \
 ```
 
 3. **Manually check section order**:
-   - Correct: I-III, IV-V, VI-VIII, IX-XI, XII-XIII, XIV-XV, XVI-XVIII
-   - Common mistake: IX-XI placed after XIV-XV
+   - Correct: I, II-III, IV, V, VI, VII, VIII-IX
+   - Common mistake: Sections placed in wrong order
 
 ---
 
 ### Problem: Quality check shows missing sections
 
-**Symptoms**: Final report has < 18 sections
+**Symptoms**: Final report has < 9 sections
 
 **Solution**: Run comprehensive quality check
 ```bash
-# Check all 18 sections present
-grep -E "^# [Ⅰ-ⅩⅧ]" report.md | wc -l
-# Should equal 18
+# Check all 9 sections present
+grep -E "^# [Ⅰ-Ⅸ]" report.md | wc -l
+# Should equal 9
 
 # List which sections exist
-grep -E "^# [Ⅰ-ⅩⅧ]" report.md
+grep -E "^# [Ⅰ-Ⅸ]" report.md
 ```
 
 **Quality checklist**:
-- [ ] All 18 sections present (Ⅰ-ⅩⅧ)
-- [ ] **CRITICAL**: Sections IX, X, XI exist
+- [ ] All 9 sections present (Ⅰ-Ⅸ)
+- [ ] **CRITICAL**: Section VI exists (Risk Assessment)
 - [ ] Section order correct
 - [ ] Tables formatted correctly
 - [ ] No duplicate content
 - [ ] Consistent metrics across sections
-- [ ] Section IX has enhanced risk matrix
+- [ ] Section VI has enhanced risk matrix
 
 ---
 
@@ -518,8 +518,8 @@ python scripts/extract_worker_bundle.py --all \
 
 1. **Use individual worker bundles** (see above)
 2. **Split Worker 6 into two workers**:
-   - Worker 6A: IX, X, XI (Risk, Items, Expenses)
-   - Worker 6B: XVI, XVII, XVIII (Cash Flow, Assets, Forecast)
+   - Worker 6A: VI (Risk Assessment)
+   - Worker 6B: VIII-IX (Cash Flow, Outlook)
 3. **Compress JSON formatting**:
 ```python
 # Instead of:
@@ -621,7 +621,7 @@ pip install --upgrade git+https://github.com/GuoxinShan/finanalysis.git
 
 | Issue | Frequency | Solution |
 |-------|-----------|----------|
-| Sections IX, X, XI missing | #1 | Verify Worker 6 output has all 6 sections |
+| Section VI missing | #1 | Verify Worker 6 output has all 3 sections |
 | finanalysis CLI not found | #2 | Install: `pip install git+...` |
 | Data bundles contain zeros | #3 | Check fs_index.json has real data |
 | Inconsistent metrics | #4 | Use same data_bundles.json for all workers |

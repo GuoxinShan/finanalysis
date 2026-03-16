@@ -378,6 +378,14 @@ def extract_worker2_performance(fs_index: Dict, prior_fs_index: Optional[Dict] =
             return round((numerator / denominator) * 100, 2)
         return None
 
+    # Expense data (merged from old Worker 6)
+    cost_of_sales_current = get_line_item_value(fs_index, 'cost of sales', 'group_current')
+    cost_of_sales_prior = get_line_item_value(fs_index, 'cost of sales', 'group_prior')
+    finance_costs_current = get_line_item_value(fs_index, 'finance costs', 'group_current')
+    finance_costs_prior = get_line_item_value(fs_index, 'finance costs', 'group_prior')
+    taxation_current = get_line_item_value(fs_index, 'taxation', 'group_current')
+    taxation_prior = get_line_item_value(fs_index, 'taxation', 'group_prior')
+
     result = {
         "_metadata": create_metadata(source_file, extraction_time),
         "metrics": {
@@ -394,6 +402,15 @@ def extract_worker2_performance(fs_index: Dict, prior_fs_index: Optional[Dict] =
                 "change": (gross_profit_current - gross_profit_prior) if (gross_profit_current and gross_profit_prior) else None,
                 "yoy_pct": round(((gross_profit_current - gross_profit_prior) / gross_profit_prior) * 100, 1) if (gross_profit_current and gross_profit_prior and gross_profit_prior != 0) else None,
                 "_source": "fs_index.line_items['gross profit']"
+            },
+            "cost_of_sales": {
+                "current": cost_of_sales_current,
+                "prior": cost_of_sales_prior,
+                "change": (cost_of_sales_current - cost_of_sales_prior) if (cost_of_sales_current and cost_of_sales_prior) else None,
+                "yoy_pct": round(((cost_of_sales_current - cost_of_sales_prior) / cost_of_sales_prior) * 100, 1) if (cost_of_sales_current and cost_of_sales_prior and cost_of_sales_prior != 0) else None,
+                "pct_of_revenue_current": safe_margin(cost_of_sales_current, revenue_current),
+                "pct_of_revenue_prior": safe_margin(cost_of_sales_prior, revenue_prior),
+                "_source": "fs_index.line_items['cost of sales']"
             },
             "pbt": {
                 "current": pbt_current,
@@ -416,6 +433,33 @@ def extract_worker2_performance(fs_index: Dict, prior_fs_index: Optional[Dict] =
                 "yoy_pct": round(((attr_current - attr_prior) / attr_prior) * 100, 1) if (attr_current and attr_prior and attr_prior != 0) else None,
                 "_source": "fs_index.line_items['profit for the financial year attributable to: owners of the parent']"
             }
+        },
+        "expenses": {
+            "administrative_expenses": {
+                "current": admin_current,
+                "prior": admin_prior,
+                "change": (admin_current - admin_prior) if (admin_current and admin_prior) else None,
+                "yoy_pct": round(((admin_current - admin_prior) / admin_prior) * 100, 1) if (admin_current and admin_prior and admin_prior != 0) else None,
+                "pct_of_revenue_current": safe_margin(admin_current, revenue_current),
+                "pct_of_revenue_prior": safe_margin(admin_prior, revenue_prior),
+                "_source": "fs_index.line_items['administrative expenses']"
+            },
+            "finance_costs": {
+                "current": finance_costs_current,
+                "prior": finance_costs_prior,
+                "change": (finance_costs_current - finance_costs_prior) if (finance_costs_current and finance_costs_prior) else None,
+                "yoy_pct": round(((finance_costs_current - finance_costs_prior) / finance_costs_prior) * 100, 1) if (finance_costs_current and finance_costs_prior and finance_costs_prior != 0) else None,
+                "pct_of_revenue_current": safe_margin(finance_costs_current, revenue_current),
+                "pct_of_revenue_prior": safe_margin(finance_costs_prior, revenue_prior),
+                "_source": "fs_index.line_items['finance costs']"
+            },
+            "taxation": {
+                "current": taxation_current,
+                "prior": taxation_prior,
+                "pct_of_pbt_current": safe_margin(taxation_current, pbt_current),
+                "pct_of_pbt_prior": safe_margin(taxation_prior, pbt_prior),
+                "_source": "fs_index.line_items['taxation']"
+            },
         },
         "margins": {
             "gross_margin": {
@@ -882,8 +926,281 @@ def extract_worker6_risk(fs_index: Dict, source_file: str = "") -> Dict:
     }
 
 
-def extract_worker6b_cashflow(fs_index: Dict, source_file: str = "") -> Dict:
-    """Worker 6b: Cash Flow Analysis & Asset Quality (Sections XVI-XVIII)"""
+def extract_worker4_profitability_health(fs_index: Dict, prior_fs_index: Optional[Dict] = None, source_file: str = "") -> Dict:
+    """
+    Worker 4: Profitability & Financial Health (Sections V, VII)
+
+    Merges old Worker 4 (operational health/solvency) and Worker 5 (profitability/growth).
+    Provides: ROE, ROA, DuPont inputs, growth metrics, solvency ratios, working capital.
+    """
+    extraction_time = datetime.now().isoformat()
+
+    # --- Profitability data (from old Worker 5) ---
+    total_equity = get_line_item_value(fs_index, 'total equity', 'group_current')
+    total_equity_prior = get_line_item_value(fs_index, 'total equity', 'group_prior')
+    total_assets = get_line_item_value(fs_index, 'total assets', 'group_current')
+    total_assets_prior = get_line_item_value(fs_index, 'total assets', 'group_prior')
+
+    pat = get_line_item_value(fs_index, 'profit for the financial year', 'group_current')
+    pat_prior = get_line_item_value(fs_index, 'profit for the financial year', 'group_prior')
+
+    import re
+    attr_pat = None
+    attr_pat_prior = None
+    for key in fs_index.get('line_items', {}):
+        if re.search(r'profit.*attributable\s+to:?\s*owners', key, re.IGNORECASE):
+            attr_pat = fs_index['line_items'][key].get('group_current')
+            attr_pat_prior = fs_index['line_items'][key].get('group_prior')
+            break
+
+    revenue = get_line_item_value(fs_index, 'revenue', 'group_current')
+    revenue_prior = get_line_item_value(fs_index, 'revenue', 'group_prior')
+
+    gross_profit = get_line_item_value(fs_index, 'gross profit', 'group_current')
+    gross_profit_prior = get_line_item_value(fs_index, 'gross profit', 'group_prior')
+
+    pbt = get_line_item_value(fs_index, 'profit before tax', 'group_current')
+    pbt_prior = get_line_item_value(fs_index, 'profit before tax', 'group_prior')
+
+    eps_current = get_line_item_value(fs_index, 'basic earnings per share', 'group_current')
+    eps_prior = get_line_item_value(fs_index, 'basic earnings per share', 'group_prior')
+    shares = get_line_item_value(fs_index, 'number of ordinary shares', 'group_current')
+
+    def safe_div(n, d):
+        return round(n / d, 2) if (n and d and d != 0) else None
+
+    def yoy(cur, prev):
+        if cur is not None and prev is not None and prev != 0:
+            return round(((cur - prev) / abs(prev)) * 100, 1)
+        return None
+
+    roe = safe_div(attr_pat, total_equity)
+    roe_prior = safe_div(attr_pat_prior, total_equity_prior)
+    roa = safe_div(pat, total_assets)
+    roa_prior = safe_div(pat_prior, total_assets_prior)
+
+    # --- Financial Health data (from old Worker 4) ---
+    current_assets = get_line_item_value(fs_index, 'current assets', 'group_current')
+    current_assets_prior = get_line_item_value(fs_index, 'current assets', 'group_prior')
+    current_liabilities = get_line_item_value(fs_index, 'current liabilities', 'group_current')
+    current_liabilities_prior = get_line_item_value(fs_index, 'current liabilities', 'group_prior')
+
+    inventory = get_line_item_value(fs_index, 'inventories', 'group_current')
+    inventory_prior = get_line_item_value(fs_index, 'inventories', 'group_prior')
+    receivables = get_line_item_value(fs_index, 'trade receivables', 'group_current')
+    receivables_prior = get_line_item_value(fs_index, 'trade receivables', 'group_prior')
+
+    cash_and_bank = get_line_item_value(fs_index, 'cash and bank balances', 'group_current')
+    cash_and_bank_prior = get_line_item_value(fs_index, 'cash and bank balances', 'group_prior')
+    trade_payables = get_line_item_value(fs_index, 'trade payables', 'group_current')
+    trade_payables_prior = get_line_item_value(fs_index, 'trade payables', 'group_prior')
+    total_liabilities = get_line_item_value(fs_index, 'total liabilities', 'group_current')
+    total_liabilities_prior = get_line_item_value(fs_index, 'total liabilities', 'group_prior')
+    total_non_current_liabilities = get_line_item_value(fs_index, 'total non-current liabilities', 'group_current')
+    total_non_current_liabilities_prior = get_line_item_value(fs_index, 'total non-current liabilities', 'group_prior')
+    bank_borrowings = get_line_item_value(fs_index, 'bank borrowings', 'group_current')
+    bank_borrowings_prior = get_line_item_value(fs_index, 'bank borrowings', 'group_prior')
+    retained_earnings = get_line_item_value(fs_index, 'retained earnings', 'group_current')
+    retained_earnings_prior = get_line_item_value(fs_index, 'retained earnings', 'group_prior')
+    depreciation = get_line_item_value(fs_index, 'depreciation and amortisation', 'group_current')
+    depreciation_prior = get_line_item_value(fs_index, 'depreciation and amortisation', 'group_prior')
+
+    other_borrowings = get_line_item_value(fs_index, 'borrowings', 'group_current')
+
+    # Net debt
+    net_debt_current = (bank_borrowings + (other_borrowings or 0) - (cash_and_bank or 0)) if bank_borrowings is not None else None
+    other_borrowings_prior = get_line_item_value(fs_index, 'borrowings', 'group_prior')
+    net_debt_prior = (bank_borrowings_prior + (other_borrowings_prior or 0) - (cash_and_bank_prior or 0)) if bank_borrowings_prior is not None else None
+
+    # Ratios
+    current_ratio = round(current_assets / current_liabilities, 2) if (current_assets and current_liabilities and current_liabilities != 0) else None
+    current_ratio_prior = round(current_assets_prior / current_liabilities_prior, 2) if (current_assets_prior and current_liabilities_prior and current_liabilities_prior != 0) else None
+    quick_ratio = round((current_assets - (inventory or 0)) / current_liabilities, 2) if (current_assets and current_liabilities and current_liabilities != 0) else None
+    quick_ratio_prior = round((current_assets_prior - (inventory_prior or 0)) / current_liabilities_prior, 2) if (current_assets_prior and current_liabilities_prior and current_liabilities_prior != 0) else None
+
+    debt_to_equity = safe_div(total_liabilities, total_equity)
+    debt_to_assets = safe_div(total_liabilities, total_assets)
+    gearing = safe_div(bank_borrowings, total_equity)
+    asset_turnover = safe_div(revenue, total_assets)
+    asset_turnover_prior = safe_div(revenue_prior, total_assets_prior)
+
+    # Working capital cycle from cash flow
+    change_in_receivables = get_line_item_value(fs_index, 'changes in receivables', 'group_current')
+    change_in_inventories = get_line_item_value(fs_index, 'changes in inventories', 'group_current')
+    change_in_payables = get_line_item_value(fs_index, 'changes in payables', 'group_current')
+
+    return {
+        "_metadata": create_metadata(source_file, extraction_time),
+        "sections": "V (Profitability & Growth), VII (Financial Health)",
+
+        # --- Profitability (Section V) ---
+        "profitability": {
+            "roe": {"current": roe, "prior": roe_prior, "_source": "Calculated: attributable_profit / total_equity"},
+            "roa": {"current": roa, "prior": roa_prior, "_source": "Calculated: pat / total_assets"},
+            "pbt_margin": {"current": safe_div(pbt, revenue), "prior": safe_div(pbt_prior, revenue_prior)},
+            "pat_margin": {"current": safe_div(pat, revenue), "prior": safe_div(pat_prior, revenue_prior)},
+            "gross_margin": {"current": safe_div(gross_profit, revenue), "prior": safe_div(gross_profit_prior, revenue_prior)},
+            "attributable_margin": {"current": safe_div(attr_pat, revenue), "prior": safe_div(attr_pat_prior, revenue_prior)},
+        },
+        "growth": {
+            "revenue_growth": yoy(revenue, revenue_prior),
+            "gross_profit_growth": yoy(gross_profit, gross_profit_prior),
+            "pat_growth": yoy(pat, pat_prior),
+            "eps_growth": yoy(eps_current, eps_prior),
+            "total_assets_growth": yoy(total_assets, total_assets_prior),
+            "equity_growth": yoy(total_equity, total_equity_prior),
+        },
+        "per_share": {
+            "eps_basic": {"current": eps_current, "prior": eps_prior},
+            "bvps": {"current": safe_div(total_equity, shares)},
+            "shares_outstanding": shares,
+        },
+        "raw_values": {
+            "total_equity_current": total_equity,
+            "total_equity_prior": total_equity_prior,
+            "total_assets_current": total_assets,
+            "total_assets_prior": total_assets_prior,
+            "pat_current": pat,
+            "pat_prior": pat_prior,
+            "attributable_profit_current": attr_pat,
+            "attributable_profit_prior": attr_pat_prior,
+            "pbt_current": pbt,
+            "pbt_prior": pbt_prior,
+        },
+
+        # --- Financial Health (Section VII) ---
+        "balance_sheet": {
+            "total_assets": {"current": total_assets, "prior": total_assets_prior, "yoy_pct": yoy(total_assets, total_assets_prior)},
+            "total_liabilities": {"current": total_liabilities, "prior": total_liabilities_prior, "yoy_pct": yoy(total_liabilities, total_liabilities_prior)},
+            "total_equity": {"current": total_equity, "prior": total_equity_prior, "yoy_pct": yoy(total_equity, total_equity_prior)},
+            "current_assets": {"current": current_assets, "prior": current_assets_prior},
+            "current_liabilities": {"current": current_liabilities, "prior": current_liabilities_prior},
+            "cash_and_bank_balances": {"current": cash_and_bank, "prior": cash_and_bank_prior},
+            "trade_receivables": {"current": receivables, "prior": receivables_prior},
+            "inventories": {"current": inventory, "prior": inventory_prior},
+            "trade_payables": {"current": trade_payables, "prior": trade_payables_prior},
+            "bank_borrowings": {"current": bank_borrowings, "prior": bank_borrowings_prior},
+            "retained_earnings": {"current": retained_earnings, "prior": retained_earnings_prior},
+            "depreciation_and_amortisation": {"current": depreciation, "prior": depreciation_prior},
+            "total_non_current_liabilities": {"current": total_non_current_liabilities, "prior": total_non_current_liabilities_prior},
+        },
+        "solvency": {
+            "current_ratio": {"current": current_ratio, "prior": current_ratio_prior},
+            "quick_ratio": {"current": quick_ratio, "prior": quick_ratio_prior},
+            "working_capital": {
+                "current": (current_assets - current_liabilities) if (current_assets and current_liabilities) else None,
+                "prior": (current_assets_prior - current_liabilities_prior) if (current_assets_prior and current_liabilities_prior) else None,
+            },
+            "net_debt": {"current": net_debt_current, "prior": net_debt_prior, "yoy_pct": yoy(net_debt_current, net_debt_prior)},
+            "debt_to_equity": {"current": debt_to_equity},
+            "debt_to_assets": {"current": debt_to_assets},
+            "gearing": {"current": gearing},
+            "asset_turnover": {"current": asset_turnover, "prior": asset_turnover_prior},
+        },
+        "working_capital_cycle": {
+            "change_in_receivables": {"current": change_in_receivables},
+            "change_in_inventories": {"current": change_in_inventories},
+            "change_in_payables": {"current": change_in_payables},
+            "_note": "From cash flow statement. Negative = cash inflow (e.g., collecting receivables).",
+        },
+        "_verification": {
+            "data_quality": "REAL_DATA_EXTRACTED",
+            "source": "fs_index.json (profitability + solvency metrics)",
+        }
+    }
+
+
+def extract_worker5_risk(fs_index: Dict, source_file: str = "") -> Dict:
+    """
+    Worker 5: Risk Assessment (Section VI)
+
+    Extracts risk-relevant data: debt structure, leverage ratios, revenue concentration.
+    """
+    extraction_time = datetime.now().isoformat()
+
+    bank_borrowings = get_line_item_value(fs_index, 'bank borrowings', 'group_current')
+    bank_borrowings_prior = get_line_item_value(fs_index, 'bank borrowings', 'group_prior')
+    total_liabilities = get_line_item_value(fs_index, 'total liabilities', 'group_current')
+    total_equity = get_line_item_value(fs_index, 'total equity', 'group_current')
+    total_assets = get_line_item_value(fs_index, 'total assets', 'group_current')
+
+    def safe_div(n, d):
+        return round(n / d, 2) if (n and d and d != 0) else None
+
+    def yoy(cur, prev):
+        if cur is not None and prev is not None and prev != 0:
+            return round(((cur - prev) / abs(prev)) * 100, 1)
+        return None
+
+    revenue = get_line_item_value(fs_index, 'revenue', 'group_current')
+    revenue_prior = get_line_item_value(fs_index, 'revenue', 'group_prior')
+    other_borrowings = get_line_item_value(fs_index, 'borrowings', 'group_current')
+    lease_obligations = get_line_item_value(fs_index, 'lease liabilities', 'group_current')
+
+    cash_and_bank = get_line_item_value(fs_index, 'cash and bank balances', 'group_current')
+    cash_and_bank_prior = get_line_item_value(fs_index, 'cash and bank balances', 'group_prior')
+
+    net_debt_current = (bank_borrowings + (other_borrowings or 0) - (cash_and_bank or 0)) if bank_borrowings is not None else None
+    other_borrowings_prior = get_line_item_value(fs_index, 'borrowings', 'group_prior')
+    net_debt_prior = (bank_borrowings_prior + (other_borrowings_prior or 0) - (cash_and_bank_prior or 0)) if bank_borrowings_prior is not None else None
+
+    return {
+        "_metadata": create_metadata(source_file, extraction_time),
+        "sections": "VI (Risk Assessment)",
+        "debt_structure": {
+            "bank_borrowings": {"current": bank_borrowings, "prior": bank_borrowings_prior},
+            "other_borrowings": other_borrowings,
+            "lease_obligations": lease_obligations,
+            "net_debt": {"current": net_debt_current, "prior": net_debt_prior, "yoy_pct": yoy(net_debt_current, net_debt_prior)},
+            "total_liabilities": total_liabilities,
+            "total_equity": total_equity,
+            "total_assets": total_assets,
+        },
+        "risk_ratios": {
+            "debt_to_equity": {"current": safe_div(total_liabilities, total_equity)},
+            "debt_to_assets": {"current": safe_div(total_liabilities, total_assets)},
+            "gearing": {"current": safe_div(bank_borrowings, total_equity)},
+        },
+        "revenue_trend": {
+            "current": revenue,
+            "prior": revenue_prior,
+            "yoy_pct": round(((revenue - revenue_prior) / revenue_prior) * 100, 1) if (revenue and revenue_prior and revenue_prior != 0) else None,
+        },
+        "balance_sheet_summary": {
+            "total_assets": make_metric(fs_index, "total assets"),
+            "total_equity": make_metric(fs_index, "total equity"),
+            "total_liabilities": make_metric(fs_index, "total liabilities"),
+            "cash_and_bank_balances": make_metric(fs_index, "cash and bank balances"),
+            "trade_receivables": make_metric(fs_index, "trade receivables"),
+            "inventories": make_metric(fs_index, "inventories"),
+            "retained_earnings": make_metric(fs_index, "retained earnings"),
+        },
+        "income_statement_summary": {
+            "revenue": make_metric(fs_index, "revenue"),
+            "gross_profit": make_metric(fs_index, "gross profit"),
+            "pbt": make_metric(fs_index, "profit before tax"),
+            "pat": make_metric(fs_index, "profit for the financial year"),
+        },
+        "cash_flow_summary": {
+            "operating_cash_flow": make_metric(fs_index, "net cash from operating activities"),
+            "free_cash_flow": {
+                "current": (get_line_item_value(fs_index, 'net cash from operating activities', 'group_current') +
+                            get_line_item_value(fs_index, 'net cash used in investing activities', 'group_current'))
+                            if get_line_item_value(fs_index, 'net cash from operating activities', 'group_current') is not None else None,
+                "prior": (get_line_item_value(fs_index, 'net cash from operating activities', 'group_prior') +
+                         get_line_item_value(fs_index, 'net cash used in investing activities', 'group_prior'))
+                        if get_line_item_value(fs_index, 'net cash from operating activities', 'group_prior') is not None else None,
+            },
+        },
+        "_verification": {
+            "data_quality": "REAL_DATA_EXTRACTED",
+            "source": "fs_index.json risk metrics",
+        }
+    }
+
+
+def extract_worker6_cashflow(fs_index: Dict, source_file: str = "") -> Dict:
+    """Worker 6: Cash Flow & Outlook (Sections VIII-IX)"""
     extraction_time = datetime.now().isoformat()
 
     # Cash flow statement items
@@ -1170,17 +1487,16 @@ def main():
         print(f"   Workers will have limited qualitative data access")
         text_blocks_path = None
 
-    # Create data bundles for all 7 workers
+    # Create data bundles for all 6 workers
     extraction_time = datetime.now().isoformat()
 
     data_bundles = {
         "worker_1": extract_worker1_context(fs_index, company_name, fs_index_path, text_blocks_path),
         "worker_2": extract_worker2_performance(fs_index, prior_fs_index, fs_index_path),
         "worker_3": extract_worker3_business(fs_index, fs_index_path, text_blocks_path),
-        "worker_4": extract_worker4_operational(fs_index, fs_index_path),
-        "worker_5": extract_worker5_profitability(fs_index, prior_fs_index, fs_index_path),
-        "worker_6": extract_worker6_risk(fs_index, fs_index_path),
-        "worker_6b": extract_worker6b_cashflow(fs_index, fs_index_path),
+        "worker_4": extract_worker4_profitability_health(fs_index, prior_fs_index, fs_index_path),
+        "worker_5": extract_worker5_risk(fs_index, fs_index_path),
+        "worker_6": extract_worker6_cashflow(fs_index, fs_index_path),
     }
 
     # Add global verification metadata
@@ -1221,13 +1537,12 @@ def main():
 
     print(f"\n✅ Data bundles created - HYBRID APPROACH")
     print(f"   Output: {output_path}")
-    print(f"\n   Worker 1: Context Setup (text_blocks access + page hints)")
-    print(f"   Worker 2: Core Performance (fs_index financial data)")
-    print(f"   Worker 3: Business Analysis (text_blocks access + page hints)")
-    print(f"   Worker 4: Operational Health (fs_index balance sheet)")
-    print(f"   Worker 5: Profitability & Growth (ROE, ROA, EPS)")
-    print(f"   Worker 6: Risk Assessment (debt structure, leverage)")
-    print(f"   Worker 6b: Cash Flow & Asset Quality (OCF, FCF, asset mix)")
+    print(f"\n   Worker 1: Company Overview (text_blocks access + page hints)")
+    print(f"   Worker 2: Core Performance (P&L + expenses)")
+    print(f"   Worker 3: Business & Strategy (text_blocks access + page hints)")
+    print(f"   Worker 4: Profitability & Health (ROE/ROA + solvency + working capital)")
+    print(f"   Worker 5: Risk Assessment (risk metrics)")
+    print(f"   Worker 6: Cash Flow & Outlook (OCF/FCF + asset quality + forecast)")
     print(f"\n✓ Extraction Strategy:")
     print(f"  - Structured data: fs_index.json (100% accurate)")
     print(f"  - Qualitative data: text_blocks.jsonl (worker extracts)")

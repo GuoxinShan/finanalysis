@@ -83,8 +83,8 @@ def extract_all_bundles(
     """
     all_bundles = {}
 
-    # Worker IDs: 1-6 (int) and 6b (string)
-    worker_ids = [i for i in range(1, 7)] + ["6b"]
+    # Worker IDs: 1-6
+    worker_ids = list(range(1, 7))
 
     for worker_id in worker_ids:
         try:
@@ -104,7 +104,7 @@ def list_available_workers(data_bundles: Dict[str, Any]) -> None:
     print("\nAvailable Workers:")
     print("=" * 60)
 
-    worker_ids = [i for i in range(1, 7)] + ["6b"]
+    worker_ids = list(range(1, 7))
 
     for worker_id in worker_ids:
         worker_key = f"worker_{worker_id}"
@@ -163,7 +163,7 @@ Examples:
     parser.add_argument(
         "--worker",
         type=str,
-        help="Worker ID to extract (1-6 or 6b)"
+        help="Worker ID to extract (1-6)"
     )
 
     parser.add_argument(
@@ -261,11 +261,11 @@ Examples:
 
     # Handle single worker extraction
     if args.worker:
-        # Normalize worker ID: "6b" stays string, "2" becomes int
+        # Normalize worker ID
         try:
             worker_id = int(args.worker)
         except ValueError:
-            worker_id = args.worker  # e.g., "6b"
+            worker_id = args.worker
 
         include_trends = not args.no_trends if args.no_trends else args.include_trends
 

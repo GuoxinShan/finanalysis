@@ -283,7 +283,7 @@ Worker Agents (generate report sections)
     ↓
 worker_N_output.md (section content)
     ↓ (assemble_report.py)
-Final Report (18 sections)
+Final Report (9 sections)
     ↓ (Worker 7)
 Executive Summary (4 sections)
 ```
@@ -420,9 +420,9 @@ jq '._multi_year_trends.years' workspace/data_bundles.json
 # Check all worker outputs exist
 ls -l workspace/worker_*_output.md
 
-# Verify Worker 6 has 6 sections
-grep -c "^# [ⅨⅩⅪⅩⅥⅩⅦⅩⅧ]" workspace/worker_6_output.md
-# Should be 6
+# Verify Worker 6 has 3 sections
+grep -c "^# [ⅥⅧⅨ]" workspace/worker_6_output.md
+# Should be 3
 ```
 
 ---
@@ -440,7 +440,7 @@ grep -c "^# [ⅨⅩⅪⅩⅥⅩⅦⅩⅧ]" workspace/worker_6_output.md
 
 **Output Data**:
 - `worker_N_output.md`: Section content from workers
-- `*-revised.md`: Final 18-section report
+- `*-revised.md`: Final 9-section report
 - `*-summary.md`: Executive summary
 
 **Data Flow**: PDF → fs_index.json → data_bundles.json → workers → final report

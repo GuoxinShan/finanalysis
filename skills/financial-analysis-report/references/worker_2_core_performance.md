@@ -1,6 +1,6 @@
-# Worker 2: Core Performance Analysis (Sections IV-V)
+# Worker 2: Core Performance (Sections II-III)
 
-You write the most critical sections: key conclusions and core financial performance. Keep it tight, analytical, and actionable.
+You write the most critical sections: key conclusions and the comprehensive P&L analysis. Go deep — this is where investors form their first impression.
 
 ## Data Access
 
@@ -10,42 +10,40 @@ Your data is **PRE-LOADED** in your prompt. All financial metrics you need are i
 
 ## Canonical Data Ownership
 
-**You own**: Revenue, gross margin, PBT, PAT, PATMI, attributable margin, EPS.
-**Do NOT restate**: Segment revenue/PBT (Section VI), admin expenses (Section XI), finance costs (Section XI), D/E or gearing (Section XIV), OCF (Section XVI).
-
-Other sections will reference your numbers but should not repeat them. See `references/canonical_data_registry.md` for the full ownership table.
+**You own**: Revenue, gross margin, PBT, PAT, PATMI, attributable margin, EPS, expense structure (admin, finance costs, tax), cost of sales.
+**Do NOT restate**: Segment revenue/PBT (Section IV), leverage ratios (Section VII), OCF (Section VIII), ROE/ROA (Section V).
 
 ---
 
-## Your Task: Write Sections IV-V
+## Your Sections
 
-### Section IV: Core Conclusions (3 bullets)
+### Section II: Core Conclusions (3-5 bullets)
 
-**Purpose**: The 3 most important takeaways — what should investors know immediately?
+**Purpose**: The most important takeaways — what should investors know immediately?
 
 **Structure**:
 ```markdown
-# Ⅳ. Core Conclusions - [Descriptive Title]
+# Ⅱ. Core Conclusions - [Descriptive Title]
 
-- **[Judgment 1]**: [Evidence + interpretation, 1 sentence]
-- **[Judgment 2]**: [Evidence + interpretation, 1 sentence]
-- **[Judgment 3]**: [Evidence + interpretation, 1 sentence]
+- **[Judgment 1]**: [Evidence + interpretation, 1-2 sentences]
+- **[Judgment 2]**: [Evidence + interpretation, 1-2 sentences]
+- **[Judgment 3]**: [Evidence + interpretation, 1-2 sentences]
 ```
 
-**What to cover** (pick the 3 most important):
+**What to cover** (pick the 3-5 most important):
 - Scale expansion (revenue/asset growth)
-- Profitability quality (margin trends, conversion)
-- Cash generation (OCF vs profits)
-- Leverage changes
+- Profitability quality (margin trajectory, conversion)
+- Cash generation (OCF vs profits — reference Section VIII if needed)
+- Leverage changes (reference Section VII)
 - Key watchpoints (risks/opportunities)
 
-**Rules**: No table. No separate insights section. No conclusion paragraph. Just 3 tight bullets.
+**Rules**: No table. No separate insights section. No conclusion paragraph. Just tight bullets.
 
 ---
 
-### Section V: Core Financial Performance
+### Section III: Financial Performance
 
-**Purpose**: Present fundamental performance metrics with analysis.
+**Purpose**: Comprehensive income statement analysis — revenue, margins, expenses, and earnings quality. This is the deepest section in the report.
 
 **Required Tables**:
 ```markdown
@@ -53,7 +51,9 @@ Other sections will reference your numbers but should not repeat them. See `refe
 | Metric | FY2024 | FY2023 | YoY % |
 |--------|--------|--------|-------|
 | Revenue | [X] | [Y] | [+Z%] |
+| Cost of sales | [X] | [Y] | [+Z%] |
 | Gross Profit | [X] | [Y] | [+Z%] |
+| Other income | [X] | [Y] | [+Z%] |
 | PBT | [X] | [Y] | [+Z%] |
 | PAT | [X] | [Y] | [+Z%] |
 | Attributable Profit | [X] | [Y] | [+Z%] |
@@ -66,120 +66,78 @@ Other sections will reference your numbers but should not repeat them. See `refe
 | PBT Margin | [%] | [%] | [Δ] |
 | PAT Margin | [%] | [%] | [Δ] |
 | Attributable Margin | [%] | [%] | [Δ] |
+
+**Table 3: Expense Structure (RM'000)**
+| Expense Item | FY2024 | FY2023 | % of Revenue | YoY |
+|-------------|--------|--------|-------------|-----|
+| Cost of sales | [Value] | [Value] | [%] | [%] |
+| Admin expenses | [Value] | [Value] | [%] | [%] |
+| Finance costs | [Value] | [Value] | [%] | [%] |
+| Taxation | [Value] | [Value] | [% of PBT] | [%] |
 ```
 
-**Analysis** (2 paragraphs):
-1. Top-line vs bottom-line: Why did revenue grow faster/slower than profits?
-2. Margin trajectory + attribution dilution: Is attributable profit keeping pace?
+**Analysis** (3-4 paragraphs — this is where you go deep):
+
+1. **Revenue and gross margin**: Why did revenue grow? Was it volume or price? Did gross margin expand or compress, and why? Connect cost of sales efficiency to margin trends.
+
+2. **Margin waterfall**: Trace the value chain from gross → PBT → PAT → attributable. Where does value leak? Is it operating costs, NCI dilution, or one-time items? This is the most analytical paragraph.
+
+3. **Expense structure**: How did admin costs scale relative to revenue (operating leverage)? Is finance cost growing faster than debt (interest rate risk)? Tax efficiency — any one-time tax items?
+
+4. **Earnings quality**: Are profits backed by cash? (Reference Section VIII for cash flow.) Any unusual other income? Is NCI dilution structural or cyclical?
 
 **What NOT to include**:
-- 3-year trend table (Section XIII handles trend analysis)
-- Separate "Key Findings" or "Insights" section — the 2 paragraphs are the analysis
+- 3-year trend table (Section V handles multi-year trends)
+- ROE/ROA analysis (Section V owns this)
+- Segment breakdown (Section IV owns this)
 - "Comment" column in tables (keep tables clean)
-- Conclusion paragraph (the analysis paragraphs speak for themselves)
 
 ---
 
-## Your Pre-Loaded Data Bundle
+## Multi-Year Trend Data
 
-You receive a JSON object with metrics, margins, and multi-year trends:
+If 3+ years of data are available, you'll receive a `_multi_year_trends` block. Use it to:
 
-```json
-{
-  "metrics": {
-    "revenue": {"current": 3252347, "prior": 2057210, "change": 1195137, "yoy_pct": 58.1},
-    "pbt": {"current": 525602, "prior": 360798, "change": 164804, "yoy_pct": 45.7},
-    ...
-  },
-  "margins": {
-    "operating_margin": {"current": 16.15, "prior": 9.16, "change": 6.99},
-    ...
-  }
-}
-```
+1. Enhance Table 1 with a 3-year view: `| Metric | FY2024 | FY2023 | FY2022 | 2-Yr CAGR |`
+2. Identify patterns: Is growth accelerating or decelerating?
+3. Use CAGR for context: "Revenue grew at 33.6% CAGR over 2 years"
 
-**NEW: Multi-Year Trend Data**
-
-If 3+ years of data are available, you'll also receive:
-```json
-{
-  "_multi_year_trends": {
-    "years": ["2024", "2023", "2022"],
-    "num_years": 3,
-    "trends": {
-      "revenue": {
-        "current": 3252347,
-        "2023": 2057210,
-        "2022": 1820000
-      },
-      "profit before tax": {
-        "current": 525602,
-        "2023": 360798,
-        "2022": 320000
-      }
-    },
-    "cagrs": {
-      "revenue_cagr_2yr": 33.6,
-      "profit before tax_cagr_2yr": 28.1
-    }
-  }
-}
-```
-
-**How to Use Multi-Year Data**:
-
-1. **3-Year Trend Tables**: Enhance Table 1 with 3-year view:
-   ```markdown
-   | Metric | FY2024 | FY2023 | FY2022 | 2-Yr CAGR |
-   |--------|--------|--------|--------|-----------|
-   | Revenue | 3.25b | 2.06b | 1.82b | 33.6% |
-   ```
-
-2. **Trend Analysis**: Identify patterns over time:
-   - Is growth accelerating or decelerating?
-   - Are margins expanding consistently?
-   - Is 2024 an outlier or continuation of trend?
-
-3. **CAGR Context**: Use compound growth rates for:
-   - "Revenue grew at 33.6% CAGR over 2 years"
-   - Compare to industry averages
-   - Assess sustainability
-
-4. **Confidence Levels**: 3 data points > 2 data points:
-   - More reliable trend identification
-   - Better projection basis
-   - Identify cyclical patterns
-```
+---
 
 ## Output Format
 
-Write ONLY markdown for Sections IV-V:
+Write ONLY markdown for Sections II-III:
 
 ```markdown
-# Ⅳ. Core Conclusions - [Descriptive Title]
+# Ⅱ. Core Conclusions - [Descriptive Title]
 
-- **[Judgment 1]**: [Evidence + interpretation]
-- **[Judgment 2]**: [Evidence + interpretation]
-- **[Judgment 3]**: [Evidence + interpretation]
+- **[Judgment]**: [Evidence + interpretation]
+- **[Judgment]**: [Evidence + interpretation]
+- **[Judgment]**: [Evidence + interpretation]
 
-# Ⅴ. Core Financial Performance - [Descriptive Title]
+---
+
+# Ⅲ. Financial Performance - [Descriptive Title]
 
 **Table 1: Income Statement Performance (RM'000)**
-| Metric | FY2024 | FY2023 | YoY % |
-|--------|--------|--------|-------|
-| [Metric] | [Value] | [Value] | [+%] |
+[Data]
 
 **Table 2: Margin Analysis**
-| Margin | FY2024 | FY2023 | Change (bps) |
-|--------|--------|--------|-------------|
-| [Margin] | [%] | [%] | [Δ] |
+[Data]
 
-[2 paragraphs analysis]
+**Table 3: Expense Structure (RM'000)**
+[Data]
+
+**Analysis**
+1. [Revenue and gross margin paragraph]
+2. [Margin waterfall paragraph]
+3. [Expense structure paragraph]
+4. [Earnings quality paragraph]
 ```
 
 ## Task
 
-Write Sections IV-V using the data bundle.
+Write Sections II-III using the data bundle.
 
 **Output file**: `workspace/worker_2_sections.md`
 

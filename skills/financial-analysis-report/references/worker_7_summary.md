@@ -2,13 +2,13 @@
 
 ## Data Access
 
-Your data is **PRE-LOADED** in your prompt (metrics bundle + assembled report from Workers 1-6b).
+Your data is **PRE-LOADED** in your prompt (metrics bundle + assembled report from Workers 1-6).
 
 **Do NOT** read any files (`fs_index.json`, `data_bundles.json`, etc.) — everything is already provided.
 
 ## Your Role
 
-You are **Worker 7**, responsible for generating the **Executive Summary** report from the full 18-section financial analysis report.
+You are **Worker 7**, responsible for generating the **Executive Summary** report from the full 9-section financial analysis report.
 
 ## Task Overview
 
@@ -28,7 +28,7 @@ You will receive your data bundle **directly in your prompt** (not via file path
 
 1. **Precision**: data_bundles.json contains **raw RM'000 values** (e.g., 97078), not rounded display values (e.g., 97.1m)
 2. **No calculation errors**: Calculating from raw values prevents rounding error cascades
-3. **Faster**: No need to parse 18-section report - use structured JSON directly
+3. **Faster**: No need to parse 9-section report - use structured JSON directly
 4. **Consistency**: Same source data that Workers 1-6 used
 
 **Example Rounding Error (when using full report):**
@@ -121,7 +121,7 @@ The key takeaway is that [Period] risk is [controlled/elevated] and dominated by
 
 ### 1. Key Conclusions
 
-**Source**: `data_bundles.worker_2` (Core Performance) + `data_bundles.worker_5` (Profitability)
+**Source**: `data_bundles.worker_2` (Core Performance) + `data_bundles.worker_4` (Profitability)
 
 **What to extract**:
 - Read the pre-calculated growth rates and margins from worker_2 data bundle
@@ -153,10 +153,10 @@ The key takeaway is that [Period] risk is [controlled/elevated] and dominated by
 
 ### 3. Trend Analysis
 
-**Source**: `data_bundles.worker_2`, `data_bundles.worker_5`, `data_bundles.worker_4`
+**Source**: `data_bundles.worker_2`, `data_bundles.worker_4`, `data_bundles.worker_6`
 
 **What to extract**:
-1. **Key trends** (from worker_2 and worker_5 metrics):
+1. **Key trends** (from worker_2 and worker_4 metrics):
    - Margin trends (gross_margin, pbt_margin, pat_margin from worker_2)
    - Balance sheet evolution (from worker_4)
    - Cash generation (from worker_6)
@@ -175,17 +175,17 @@ The key takeaway is that [Period] risk is [controlled/elevated] and dominated by
 
 ### 4. Risk Warning
 
-**Source**: Section Ⅸ (Risk Scan)
+**Source**: Section Ⅵ (Risk Assessment)
 
 **What to extract**:
-1. **Top risks** (from Section Ⅸ risk screening tables):
+1. **Top risks** (from Section Ⅵ risk assessment tables):
    - Financial risks
    - Non-financial risks
    - Select the 4-5 most significant risks
 
 2. **Risk table**:
    - Include: Risk Factor, Evidence (specific data), Relative Level (High/Medium/Low)
-   - Extract from the **Financial Risk Screening** and **Non-Financial Risk Screening** tables in Section Ⅸ
+   - Extract from the **Risk Assessment Matrix** in Section Ⅵ
 
 3. **Key takeaway paragraph**:
    - Summarize overall risk posture
@@ -229,7 +229,7 @@ Write the summary to: `[workspace]/summary.md` (or the path specified in your ta
   - ✅ CORRECT: Extract NCI from source or verify with: NCI% = actual_NCI / actual_PAT
   - Always use raw values (RM'000) from source data for any calculations
   - Round ONLY the final display value, never intermediate calculations
-- **Do NOT add new analysis** - synthesize what's already in the 18 sections
+- **Do NOT add new analysis** - synthesize what's already in the 9 sections
 - **Do NOT change table formats** - follow the exact structure specified
 - **DO maintain consistency** - use the same terminology and numbers as the full report
 
