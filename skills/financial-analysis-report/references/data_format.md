@@ -281,7 +281,7 @@ worker_N_bundle.json (individual bundles)
     ↓ (passed in worker prompts)
 Worker Agents (generate report sections)
     ↓
-worker_N_output.md (section content)
+worker_N_sections.md (section content)
     ↓ (assemble_report.py)
 Final Report (9 sections)
     ↓ (Worker 7)
@@ -418,11 +418,11 @@ jq '._multi_year_trends.years' workspace/data_bundles.json
 4. **Validate before assembly**:
 ```bash
 # Check all worker outputs exist
-ls -l workspace/worker_*_output.md
+ls -l workspace/worker_*_sections.md
 
-# Verify Worker 6 has 3 sections
-grep -c "^# [ⅥⅧⅨ]" workspace/worker_6_output.md
-# Should be 3
+# Verify Worker 6 has 2 sections
+grep -c "^# [ⅧⅨ]" workspace/worker_6_sections.md
+# Should be 2
 ```
 
 ---
@@ -439,7 +439,7 @@ grep -c "^# [ⅥⅧⅨ]" workspace/worker_6_output.md
 - `worker_N_bundle.json`: Individual bundles (~200-500 lines)
 
 **Output Data**:
-- `worker_N_output.md`: Section content from workers
+- `worker_N_sections.md`: Section content from workers
 - `*-revised.md`: Final 9-section report
 - `*-summary.md`: Executive summary
 

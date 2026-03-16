@@ -342,9 +342,9 @@ def assemble_final_report(workspace_dir: str, output_path: str, company_name: st
     # Check for worker output files
     worker_files = []
     for i in range(1, 7):
-        if i == 6:
-            # Worker 6 has two parts
-            for part in ['part1', 'part2']:
+        if i == 4:
+            # Worker 4 outputs two separate files (Section V and Section VII)
+            for part in ['v', 'vii']:
                 path = os.path.join(workspace_dir, f'worker_{i}_sections_{part}.md')
                 if os.path.exists(path):
                     worker_files.append(path)

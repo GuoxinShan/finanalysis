@@ -252,9 +252,9 @@ Then write sections.
 worker_1_instructions = Read("references/worker_1_context_setup.md")
 worker_2_instructions = Read("references/worker_2_core_performance.md")
 worker_3_instructions = Read("references/worker_3_business_analysis.md")
-worker_4_instructions = Read("references/worker_4_operational_health.md")
-worker_5_instructions = Read("references/worker_5_profitability_growth.md")
-worker_6_instructions = Read("references/worker_6_risk_cashflow.md")
+worker_4_instructions = Read("references/worker_4_profitability_health.md")
+worker_5_instructions = Read("references/worker_5_risk.md")
+worker_6_instructions = Read("references/worker_6_cashflow_outlook.md")
 
 # Create worker prompts with pre-loaded data
 workers = [
@@ -264,11 +264,11 @@ workers = [
           prompt=f"{worker_2_instructions}\n\n**Your Pre-Loaded Data**:\n```json\n{json.dumps(worker_bundles[2], indent=2)}\n```"),
     Agent(subagent_type="general-purpose", description="Business analysis",
           prompt=f"{worker_3_instructions}\n\n**Your Pre-Loaded Data**:\n```json\n{json.dumps(worker_bundles[3], indent=2)}\n```"),
-    Agent(subagent_type="general-purpose", description="Operational health",
+    Agent(subagent_type="general-purpose", description="Profitability & health",
           prompt=f"{worker_4_instructions}\n\n**Your Pre-Loaded Data**:\n```json\n{json.dumps(worker_bundles[4], indent=2)}\n```"),
-    Agent(subagent_type="general-purpose", description="Profitability & growth",
+    Agent(subagent_type="general-purpose", description="Risk assessment",
           prompt=f"{worker_5_instructions}\n\n**Your Pre-Loaded Data**:\n```json\n{json.dumps(worker_bundles[5], indent=2)}\n```"),
-    Agent(subagent_type="general-purpose", description="Risk & cash flow",
+    Agent(subagent_type="general-purpose", description="Cash flow & outlook",
           prompt=f"{worker_6_instructions}\n\n**Your Pre-Loaded Data**:\n```json\n{json.dumps(worker_bundles[6], indent=2)}\n```"),
 ]
 
@@ -285,19 +285,20 @@ Each worker returns markdown content for their assigned sections. Collect all ou
 # Wait for all workers to complete
 outputs = [wait_for_agent(w) for w in workers]
 
-# Organize by section
+# Organize by section (note: Worker 4 outputs two files)
 sections = {
-    "I": outputs[0],      # Worker 1
+    "I": outputs[0],       # Worker 1
     "II-III": outputs[1],  # Worker 2
     "IV": outputs[2],      # Worker 3
-    "VII": outputs[3],     # Worker 4
-    "V": outputs[4],       # Worker 5
-    "VI, VIII-IX": outputs[5],  # Worker 6
+    "V": outputs[3],       # Worker 4 (Part 1)
+    "VI": outputs[4],      # Worker 5
+    "VII": outputs[3],     # Worker 4 (Part 2)
+    "VIII-IX": outputs[5], # Worker 6
 }
 
 # Save individual worker outputs
 for i, output in enumerate(outputs, 1):
-    with open(f"workspace/worker_{i}_output.md", "w") as f:
+    with open(f"workspace/worker_{i}_sections.md", "w") as f:
         f.write(output)
 ```
 
@@ -318,9 +319,9 @@ Combine worker outputs in correct section order:
 
 [Worker 3: Section IV]
 
-[Worker 6: Section VI]
+[Worker 4: Section V]
 
-[Worker 5: Section V]
+[Worker 5: Section VI]
 
 [Worker 4: Section VII]
 
@@ -405,14 +406,14 @@ Before delivering, verify the **COMPLETE 9-SECTION REPORT**:
 
 ### Common Issues
 
-1. **Section VI missing**: Worker 6 handles 3 sections (VI, VIII, IX). Verify all 3 are present.
+1. **Section VI missing**: Worker 5 handles risk assessment (Section VI). Verify Worker 5 output exists.
 
 2. **Section order wrong**: The correct order is:
    - I (Worker 1)
    - II-III (Worker 2)
    - IV (Worker 3)
-   - V (Worker 5)
-   - VI (Worker 6)
+   - V (Worker 4)
+   - VI (Worker 5)
    - VII (Worker 4)
    - VIII-IX (Worker 6)
 
@@ -426,13 +427,13 @@ Before delivering, verify the **COMPLETE 9-SECTION REPORT**:
 
 | Worker | Sections | Instruction File | Output File |
 |--------|----------|------------------|-------------|
-| Worker 1 | I (Company Overview) | worker_1_context_setup.md | worker_1_output.md |
-| Worker 2 | II-III (Core Conclusions, Core Performance) | worker_2_core_performance.md | worker_2_output.md |
-| Worker 3 | IV (Business & Strategy) | worker_3_business_analysis.md | worker_3_output.md |
-| Worker 4 | VII (Financial Health) | worker_4_operational_health.md | worker_4_output.md |
-| Worker 5 | V (Profitability & Growth) | worker_5_profitability_growth.md | worker_5_output.md |
-| Worker 6 | VI, VIII-IX (Risk Assessment, Cash Flow, Outlook) | worker_6_risk_cashflow.md | worker_6_output.md |
-| Worker 7 | Executive Summary (4 sections) | worker_7_summary.md | worker_7_output.md |
+| Worker 1 | I (Company Overview) | worker_1_context_setup.md | worker_1_sections.md |
+| Worker 2 | II-III (Core Conclusions, Core Performance) | worker_2_core_performance.md | worker_2_sections.md |
+| Worker 3 | IV (Business & Strategy) | worker_3_business_analysis.md | worker_3_sections.md |
+| Worker 4 | V, VII (Profitability & Growth, Financial Health) | worker_4_profitability_health.md | worker_4_sections_v.md, worker_4_sections_vii.md |
+| Worker 5 | VI (Risk Assessment) | worker_5_risk.md | worker_5_sections.md |
+| Worker 6 | VIII-IX (Cash Flow, Outlook) | worker_6_cashflow_outlook.md | worker_6_sections.md |
+| Worker 7 | Executive Summary (4 sections) | worker_7_summary.md | summary.md |
 
 ---
 
@@ -456,9 +457,9 @@ finanalysis parse report.pdf --company CHINHIN -o output/CHINHIN/2024
 ### Problem: Section VI missing from final report
 
 **Solution**:
-- Worker 6 generates 3 sections total: VI (Risk Assessment), VIII (Cash Flow), IX (Outlook)
-- Verify Worker 6 output file contains all 3 sections before assembly
-- Check that assemble_report.py includes Worker 6 output in correct position
+- Worker 5 handles Section VI (Risk Assessment)
+- Verify Worker 5 output file (worker_5_sections.md) exists before assembly
+- Check that assemble_report.py includes Worker 5 output in correct position (after Worker 4 Section V, before Worker 4 Section VII)
 - The correct order is: Ⅰ→Ⅱ→Ⅲ→Ⅳ→Ⅴ→Ⅵ→Ⅶ→Ⅷ→Ⅸ
 
 ### Problem: Inconsistent metrics across sections
@@ -484,7 +485,7 @@ The manual workflow provides maximum control at the cost of more steps:
 1. **Extract data bundles**: `data_extractor.py` → `data_bundles.json`
 2. **(Optional) Extract individual bundles**: `extract_worker_bundle.py` → `worker_N_bundle.json`
 3. **Launch 6 parallel workers**: Pass pre-loaded data in prompts
-4. **Collect worker outputs**: Save to `worker_N_output.md`
+4. **Collect worker outputs**: Save to `worker_N_sections.md` (Worker 4 saves two files)
 5. **Assemble report**: `assemble_report.py` → final report
 6. **Generate summary**: Worker 7 reads full report → executive summary
 7. **Quality check**: Verify all 9 sections present

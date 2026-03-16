@@ -200,26 +200,26 @@ Output ONLY markdown content.
 
 **Symptoms**: Risk Assessment section absent
 
-**Root Cause**: Worker 6 handles 3 sections (VI, VIII, IX) - sometimes incomplete
+**Root Cause**: Worker 5 handles Section VI (Risk Assessment) - may have incomplete output
 
 **This is the #1 most common issue!**
 
 **Solutions**:
 
-1. **Verify Worker 6 output contains all 3 sections**:
+1. **Verify Worker 5 output exists**:
 ```bash
-# Check worker 6 output
-grep -E "^# [ⅥⅧⅨ]" workspace/worker_6_output.md
-# Should show 3 matches: VI, VIII, IX
+# Check worker 5 output
+grep -E "^# [Ⅵ]" workspace/worker_5_sections.md
+# Should show section VI
 ```
 
-2. **Check worker 6 instruction file**:
+2. **Check worker 5 instruction file**:
 ```bash
-cat references/worker_6_risk_cashflow.md | grep "## Your Task"
-# Should list all 3 sections
+cat references/worker_5_risk.md | grep "## Your Task"
+# Should list risk assessment requirements
 ```
 
-3. **Verify assembly script includes Worker 6 output**:
+3. **Verify assembly script includes Worker 5 output**:
 ```bash
 python scripts/assemble_report.py \
   --workspace workspace \
@@ -291,9 +291,9 @@ finanalysis calculate output/CHINHIN/2024/fs_index.json \
    - Worker 1: I
    - Worker 2: II-III
    - Worker 3: IV
-   - Worker 4: VII
-   - Worker 5: V
-   - Worker 6: VI, VIII-IX
+   - Worker 4: V, VII
+   - Worker 5: VI
+   - Worker 6: VIII-IX
    - Worker 7: Executive Summary
 
 2. **Each worker should only see their instruction file**:
@@ -348,20 +348,26 @@ wc -l references/worker_*.md
 **Diagnosis**:
 ```bash
 # Check worker output files exist
-ls -la workspace/worker_*_output.md
+ls -la workspace/worker_*_sections.md
 
-# Verify all 6 worker files present
+# Verify all worker files present
 ```
+
+**Note**: Worker 4 outputs two files: `worker_4_sections_v.md` and `worker_4_sections_vii.md`.
 
 **Solutions**:
 
 1. **Ensure all worker outputs exist**:
 ```bash
 for i in {1..6}; do
-  if [ ! -f "workspace/worker_${i}_output.md" ]; then
+  if [ ! -f "workspace/worker_${i}_sections.md" ] && [ $i -ne 4 ]; then
     echo "Missing worker $i output"
   fi
 done
+# Worker 4 has two files: worker_4_sections_v.md and worker_4_sections_vii.md
+if [ ! -f "workspace/worker_4_sections_v.md" ] || [ ! -f "workspace/worker_4_sections_vii.md" ]; then
+    echo "Missing Worker 4 output"
+fi
 ```
 
 2. **Run assembly with verbose output**:
@@ -517,9 +523,9 @@ python scripts/extract_worker_bundle.py --all \
 **Solutions**:
 
 1. **Use individual worker bundles** (see above)
-2. **Split Worker 6 into two workers**:
-   - Worker 6A: VI (Risk Assessment)
-   - Worker 6B: VIII-IX (Cash Flow, Outlook)
+2. **Split Worker 4 into two workers** if consistently slow:
+   - Worker 4A: V (Profitability & Growth)
+   - Worker 4B: VII (Financial Health)
 3. **Compress JSON formatting**:
 ```python
 # Instead of:
@@ -621,7 +627,7 @@ pip install --upgrade git+https://github.com/GuoxinShan/finanalysis.git
 
 | Issue | Frequency | Solution |
 |-------|-----------|----------|
-| Section VI missing | #1 | Verify Worker 6 output has all 3 sections |
+| Section VI missing | #1 | Verify Worker 5 output has risk matrix |
 | finanalysis CLI not found | #2 | Install: `pip install git+...` |
 | Data bundles contain zeros | #3 | Check fs_index.json has real data |
 | Inconsistent metrics | #4 | Use same data_bundles.json for all workers |

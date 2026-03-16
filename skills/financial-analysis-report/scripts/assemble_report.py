@@ -4,6 +4,11 @@ Assemble worker outputs into final report in correct section order.
 
 This script reads all worker output files and combines them into the final
 9-section financial analysis report in the correct order.
+
+Section order: I, II-III, IV, V, VI, VII, VIII-IX
+Worker files:  worker_1_sections.md, worker_2_sections.md, worker_3_sections.md,
+             worker_4_sections_v.md, worker_5_sections.md, worker_4_sections_vii.md,
+             worker_6_sections.md
 """
 
 import json
@@ -14,7 +19,7 @@ from typing import Dict, Optional
 
 def assemble_report(workspace_dir: str, output_path: str, company_name: str = "Company", period: str = "FY2024"):
     """
-    Read worker outputs and assemble final report.
+    Read worker outputs and assemble final report in correct section order.
 
     Args:
         workspace_dir: Directory containing worker output files
@@ -24,30 +29,15 @@ def assemble_report(workspace_dir: str, output_path: str, company_name: str = "C
     """
     workspace = Path(workspace_dir)
 
-    # Section order mapping - Worker outputs to final report order
-    # Worker 1: Section I
-    # Worker 2: Sections II-III
-    # Worker 3: Section IV
-    # Worker 4: Sections V, VII
-    # Worker 5: Section VI
-    # Worker 6: Sections VIII-IX
-
-    # Read all worker files
-    worker_files = {}
-    for i in range(1, 7):
-        filename = f'worker_{i}_sections.md'
-        filepath = workspace / filename
-        if filepath.exists():
-            worker_files[i] = filepath.read_text()
-
-    # Build final report in correct section order
-    section_order = [
-        (1, 'I',        'Worker 1'),
-        (2, 'II-III',   'Worker 2'),
-        (3, 'IV',       'Worker 3'),
-        (4, 'V, VII',   'Worker 4'),
-        (5, 'VI',       'Worker 5'),
-        (6, 'VIII-IX',  'Worker 6'),
+    # Build final report in correct section order: I, II-III, IV, V, VI, VII, VIII-IX
+    section_parts = [
+        ('worker_1_sections.md',       'I',        'Worker 1'),
+        ('worker_2_sections.md',       'II-III',   'Worker 2'),
+        ('worker_3_sections.md',       'IV',       'Worker 3'),
+        ('worker_4_sections_v.md',     'V',        'Worker 4 (Part 1)'),
+        ('worker_5_sections.md',       'VI',       'Worker 5'),
+        ('worker_4_sections_vii.md',   'VII',      'Worker 4 (Part 2)'),
+        ('worker_6_sections.md',       'VIII-IX',  'Worker 6'),
     ]
 
     final_report = []
@@ -57,17 +47,18 @@ def assemble_report(workspace_dir: str, output_path: str, company_name: str = "C
     sections_found = []
     sections_missing = []
 
-    for worker_id, sections, description in section_order:
-        content = worker_files.get(worker_id, '')
-        found = worker_id in worker_files
+    for filename, sections, description in section_parts:
+        filepath = workspace / filename
+        if filepath.exists():
+            content = filepath.read_text()
+            if content.strip():
+                final_report.append(content)
+                final_report.append("\n\n---\n\n")
+                sections_found.append(sections)
+                continue
 
-        if found and content.strip():
-            final_report.append(content)
-            final_report.append("\n\n---\n\n")
-            sections_found.append(sections)
-        else:
-            sections_missing.append(sections)
-            print(f"⚠️  Warning: Worker {worker_id} output not found (Sections {sections})")
+        sections_missing.append(sections)
+        print(f"⚠️  Warning: {filename} not found (Sections {sections})")
 
     # Write final report
     output_file = Path(output_path)

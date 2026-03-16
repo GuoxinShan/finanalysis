@@ -34,7 +34,7 @@ def load_data_bundles(input_path: str) -> Dict[str, Any]:
 
 def extract_worker_bundle(
     data_bundles: Dict[str, Any],
-    worker_id,  # int (1-6) or str ("6b")
+    worker_id,  # int (1-6)
     include_trends: bool = True,
     include_global: bool = False
 ) -> Dict[str, Any]:
@@ -43,7 +43,7 @@ def extract_worker_bundle(
 
     Args:
         data_bundles: The combined data bundles dict
-        worker_id: Worker ID (1-6) or "6b"
+        worker_id: Worker ID (1-6)
         include_trends: Whether to include multi-year trends
         include_global: Whether to include global verification metadata
 

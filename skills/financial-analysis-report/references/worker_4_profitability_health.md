@@ -136,6 +136,8 @@ Write ONLY markdown for Sections V and VII:
 
 Write Sections V and VII using the data bundle.
 
-**Output file**: `workspace/worker_4_sections.md`
+**Output files**:
+- Section V → `workspace/worker_4_sections_v.md`
+- Section VII → `workspace/worker_4_sections_vii.md`
 
-Output ONLY markdown for these two sections.
+Write each section to its own file. Output ONLY markdown.

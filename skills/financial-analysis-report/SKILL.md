@@ -144,7 +144,7 @@ python scripts/assemble_report.py \
 
 ```python
 worker_7_instructions = Read("references/worker_7_summary.md")
-worker_7_bundle = Read("workspace/bundles/worker_7_bundle.json")
+worker_7_data = Read("workspace/data_bundles.json")
 
 worker_7 = Agent(
     subagent_type="general-purpose",
@@ -158,7 +158,7 @@ worker_7 = Agent(
 
 **Your Data Bundle** (use for all calculations):
 ```json
-{worker_7_bundle}
+{worker_7_data}
 ```
 
 Write to: CHINHIN-summary.md
