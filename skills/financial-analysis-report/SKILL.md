@@ -61,6 +61,12 @@ Post-generation audit. Checks every number in the report against source data:
 - **UNVERIFIABLE** — number can't be traced to any known data source (possible fabrication)
 - **ROUNDED_DERIVATION** — value may have been computed from rounded intermediates
 
+## Output Convention
+
+Reports must be saved to `reports/<COMPANY>/<YEAR>/analysis_report.md`.
+
+Use the same `<COMPANY>` and `<YEAR>` as the fs_index.json source. If no year is specified, use the `fiscal_year_end` from the data.
+
 ## Anti-Fabrication Rule
 
 Every number in the report must come from a tool call. If you did not query a metric, do not use its value. Missing data is "not disclosed" — never guess.
@@ -68,10 +74,68 @@ Every number in the report must come from a tool call. If you did not query a me
 ## Workflow
 
 1. **Parse PDF** with `finanalysis parse <pdf> --company <NAME> -o output/<NAME>/<YEAR>`
-2. **Explore data** — use tools to understand what's available and what stands out
-3. **Decide structure** — based on data characteristics, choose what to cover and how deep
-4. **Write** — optionally use parallel agents for different sections
-5. **Validate** — run `validate_report.py` to audit all numbers before delivering
+2. **Explore data** — `--list` to see all fields, `--category` to pull a statement, `--text-search` for narrative context. Decide what's noteworthy.
+3. **Plan sections** — split the report into 3-5 independent sections based on what you found. Each section should have a clear analytical angle, not just a data category.
+4. **Write with parallel agents** — dispatch one Agent per section (see below). Each agent independently queries data and writes its section.
+5. **Assemble** — stitch sections together into a coherent report. Add cross-references between sections where metrics relate.
+6. **Validate** — run `validate_report.py` to audit every number before delivering.
+
+## Parallel Agent Strategy
+
+Use the Agent tool to dispatch one subagent per report section. This produces deeper, more focused analysis because each agent dedicates its full context to one topic.
+
+**How to split sections (examples):**
+- Revenue & profitability | Balance sheet strength | Cash flow quality | Risk factors & outlook
+- Segment performance | Capital structure | Working capital efficiency | Growth trajectory
+
+**Each subagent brief must include:**
+1. The fs_index path(s) and available tool commands (copy from Tools section above)
+2. The specific section topic and what to analyze
+3. Instruction to `--text-search` for management commentary on the topic
+4. Reference to [writing_guidelines.md](references/writing_guidelines.md) for tone and units
+
+**Each subagent should:**
+- Query all relevant metrics for its topic (use `--metric`, `--category`, `--search`)
+- Search annual report text for management's explanation (`--text-search`)
+- Calculate relevant ratios (`financial_calculator.py`)
+- Write 2-4 paragraphs of **analytical narrative** — not a data dump
+- Surface risks, trade-offs, and what the numbers imply (not just what they are)
+
+**Example subagent prompt:**
+```
+Write the "Revenue & Profitability" section of a financial analysis report.
+
+Data: /path/to/fs_index.json (current year), /path/to/prior.json (prior year)
+
+Available tools:
+- python scripts/data_extractor.py <fs_index.json> --metric <names>
+- python scripts/data_extractor.py <fs_index.json> --text-search <query>
+- python scripts/financial_calculator.py <fs_index.json> --prior <prior.json>
+
+Instructions:
+1. Query revenue, gross profit, PBT, PAT, EPS and all profitability ratios
+2. Search annual report text for management commentary on revenue drivers ("revenue", "segment", "growth")
+3. Analyze: what drove revenue change, margin trends, profitability quality
+4. Read references/writing_guidelines.md for tone and formatting
+5. Output 2-4 paragraphs of analytical prose. No raw tables — weave numbers into narrative.
+```
+
+## Analysis Depth
+
+Go beyond reporting numbers. For every metric you mention, answer: **so what?**
+
+| Shallow (avoid) | Deep (target) |
+|---|---|
+| "Revenue grew 58% to RM 3.25 billion." | "Revenue grew 58% to RM 3.25 billion, driven by a 72% surge in the construction segment as the Group secured RM 2.1 billion in new contracts during the year. The growth was partially offset by a 12% decline in the trading division, suggesting the Group's strategic pivot toward project-based work is accelerating." |
+| "Gross margin was 15.4%." | "Gross margin compressed 310bps to 15.4%, reflecting cost pressures from rising steel prices and labor shortages in East Malaysia. This is the third consecutive year of margin erosion — the Group will need to either renegotiate contracts or improve procurement efficiency to stabilize profitability." |
+| "Current ratio was 1.67x." | "The current ratio of 1.67x provides adequate short-term liquidity, though this represents a decline from 1.88x in the prior year as trade payables grew 34% faster than current assets — a potential signal of stretched supplier payment terms." |
+
+**Techniques for depth:**
+- **Root cause**: Use `--text-search` to find management's explanation for changes
+- **Trend context**: Use `--prior` to show multi-year trajectory, not just current snapshot
+- **Cross-metric linkage**: Connect balance sheet changes to income statement performance (e.g., receivables growth vs revenue growth = collection risk)
+- **Implication**: What does this mean for future performance, risk, or valuation?
+- **Benchmark**: Is the metric strong or weak relative to its own history?
 
 ## Prerequisites
 

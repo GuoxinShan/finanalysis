@@ -59,6 +59,17 @@ Professional, objective, specific. Explain WHY not just WHAT.
 
 1. **Over-hedging** — One "may/might/could" per paragraph max. Make clear judgments.
 2. **Generic statements** — "The company faces various risks" means nothing. Be specific: "Customer concentration risk: top 3 = 60% of revenue".
-3. **Describing without analyzing** — Don't list numbers. Interpret them.
+3. **Describing without analyzing** — Don't list numbers. Interpret them. Every number should answer "so what?".
 4. **Ignoring negatives** — Balance strengths with concerns for credibility.
 5. **Over-templating** — Customize insights to the specific company, not generic fill.
+6. **Data dumps** — Raw tables without narrative add no value. Weave numbers into analytical prose. If a metric is worth including, it's worth explaining why it matters.
+7. **Missing context** — A single-year snapshot is rarely useful. Always provide YoY comparison, trend direction, or peer context.
+
+## Depth Checklist
+
+Before finalizing any section, verify:
+- [ ] Does it explain **why** the numbers changed, not just **what** changed?
+- [ ] Does it connect related metrics (e.g., revenue growth vs receivables growth)?
+- [ ] Does it identify risks or concerns, not just positives?
+- [ ] Does it use management commentary (`--text-search`) to support analysis?
+- [ ] Would a professional analyst find this section informative, or just a restatement of the financial statements?
