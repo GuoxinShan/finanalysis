@@ -69,6 +69,34 @@ def get_line_item_value(fs_index: Dict, key_pattern: str, field: str = 'group_cu
     return None
 
 
+def make_metric(fs_index: Dict, key: str, label: str = None, denominator_key: str = None, denom_field: str = 'group_current') -> Dict:
+    """
+    Extract current/prior values with YoY% and optional ratio.
+
+    Args:
+        fs_index: The fs_index dictionary
+        key: Key pattern to match in fs_index line_items
+        label: Display label (defaults to key if not provided)
+        denominator_key: Optional key for ratio calculation (e.g. 'revenue' for % of revenue)
+        denom_field: Field for denominator value (default 'group_current')
+
+    Returns:
+        Dict with current, prior, yoy_pct, optional pct_of_denominator, and _source
+    """
+    name = label or key
+    current = get_line_item_value(fs_index, key, 'group_current')
+    prior = get_line_item_value(fs_index, key, 'group_prior')
+    result = {"current": current, "prior": prior}
+    if current is not None and prior is not None and prior != 0:
+        result["yoy_pct"] = round(((current - prior) / abs(prior)) * 100, 1)
+    if denominator_key:
+        denom = get_line_item_value(fs_index, denominator_key, denom_field)
+        if current is not None and denom is not None and denom != 0:
+            result["pct_of_denominator"] = round((current / denom) * 100, 2)
+    result["_source"] = f"fs_index.line_items['{key}']"
+    return result
+
+
 def create_metadata(source_file: str, extraction_time: str) -> Dict:
     """Create standard metadata for verification"""
     return {
@@ -504,40 +532,119 @@ def extract_worker4_operational(fs_index: Dict, source_file: str = "") -> Dict:
     """Worker 4: Operational Health - Extract from fs_index"""
     extraction_time = datetime.now().isoformat()
 
-    # Extract balance sheet items
+    # Extract balance sheet items - CURRENT and PRIOR
     total_assets = get_line_item_value(fs_index, 'total assets', 'group_current')
+    total_assets_prior = get_line_item_value(fs_index, 'total assets', 'group_prior')
     total_liabilities = get_line_item_value(fs_index, 'total liabilities', 'group_current')
+    total_liabilities_prior = get_line_item_value(fs_index, 'total liabilities', 'group_prior')
     total_equity = get_line_item_value(fs_index, 'total equity', 'group_current')
+    total_equity_prior = get_line_item_value(fs_index, 'total equity', 'group_prior')
 
-    current_assets = get_line_item_value(fs_index, 'total current assets', 'group_current')
-    current_liabilities = get_line_item_value(fs_index, 'total current liabilities', 'group_current')
+    current_assets = get_line_item_value(fs_index, 'current assets', 'group_current')
+    current_assets_prior = get_line_item_value(fs_index, 'current assets', 'group_prior')
+    current_liabilities = get_line_item_value(fs_index, 'current liabilities', 'group_current')
+    current_liabilities_prior = get_line_item_value(fs_index, 'current liabilities', 'group_prior')
 
     inventory = get_line_item_value(fs_index, 'inventories', 'group_current')
+    inventory_prior = get_line_item_value(fs_index, 'inventories', 'group_prior')
     receivables = get_line_item_value(fs_index, 'trade receivables', 'group_current')
+    receivables_prior = get_line_item_value(fs_index, 'trade receivables', 'group_prior')
 
-    # Calculate ratios
+    # NEW items
+    cash_and_bank = get_line_item_value(fs_index, 'cash and bank balances', 'group_current')
+    cash_and_bank_prior = get_line_item_value(fs_index, 'cash and bank balances', 'group_prior')
+    trade_payables = get_line_item_value(fs_index, 'trade payables', 'group_current')
+    trade_payables_prior = get_line_item_value(fs_index, 'trade payables', 'group_prior')
+    total_non_current_liabilities = get_line_item_value(fs_index, 'total non-current liabilities', 'group_current')
+    total_non_current_liabilities_prior = get_line_item_value(fs_index, 'total non-current liabilities', 'group_prior')
+    bank_borrowings = get_line_item_value(fs_index, 'bank borrowings', 'group_current')
+    bank_borrowings_prior = get_line_item_value(fs_index, 'bank borrowings', 'group_prior')
+    retained_earnings = get_line_item_value(fs_index, 'retained earnings', 'group_current')
+    retained_earnings_prior = get_line_item_value(fs_index, 'retained earnings', 'group_prior')
+    depreciation = get_line_item_value(fs_index, 'depreciation and amortisation', 'group_current')
+    depreciation_prior = get_line_item_value(fs_index, 'depreciation and amortisation', 'group_prior')
+
+    # Revenue for asset turnover
+    revenue = get_line_item_value(fs_index, 'revenue', 'group_current')
+    revenue_prior = get_line_item_value(fs_index, 'revenue', 'group_prior')
+
+    # Working capital cycle from cash flow statement
+    change_in_receivables = get_line_item_value(fs_index, 'changes in receivables', 'group_current')
+    change_in_inventories = get_line_item_value(fs_index, 'changes in inventories', 'group_current')
+    change_in_payables = get_line_item_value(fs_index, 'changes in payables', 'group_current')
+
+    # Calculate ratios - CURRENT
     current_ratio = round(current_assets / current_liabilities, 2) if (current_assets and current_liabilities and current_liabilities != 0) else None
-    quick_ratio = round((current_assets - inventory) / current_liabilities, 2) if (current_assets and inventory and current_liabilities and current_liabilities != 0) else None
+    quick_ratio = round((current_assets - (inventory or 0)) / current_liabilities, 2) if (current_assets and current_liabilities and current_liabilities != 0) else None
+
+    # Calculate ratios - PRIOR
+    current_ratio_prior = round(current_assets_prior / current_liabilities_prior, 2) if (current_assets_prior and current_liabilities_prior and current_liabilities_prior != 0) else None
+    quick_ratio_prior = round((current_assets_prior - (inventory_prior or 0)) / current_liabilities_prior, 2) if (current_assets_prior and current_liabilities_prior and current_liabilities_prior != 0) else None
+
+    # Liabilities to assets - CURRENT and PRIOR
+    lia_to_assets = round((total_liabilities / total_assets) * 100, 2) if (total_liabilities and total_assets and total_assets != 0) else None
+    lia_to_assets_prior = round((total_liabilities_prior / total_assets_prior) * 100, 2) if (total_liabilities_prior and total_assets_prior and total_assets_prior != 0) else None
+
+    # Asset turnover - CURRENT and PRIOR
+    asset_turnover = round(revenue / total_assets, 2) if (revenue and total_assets and total_assets != 0) else None
+    asset_turnover_prior = round(revenue_prior / total_assets_prior, 2) if (revenue_prior and total_assets_prior and total_assets_prior != 0) else None
+
+    # YoY helper
+    def yoy(cur, prev):
+        if cur is not None and prev is not None and prev != 0:
+            return round(((cur - prev) / abs(prev)) * 100, 1)
+        return None
 
     return {
         "_metadata": create_metadata(source_file, extraction_time),
+        "balance_sheet_items": {
+            "total_assets": {"current": total_assets, "prior": total_assets_prior, "yoy_pct": yoy(total_assets, total_assets_prior)},
+            "total_liabilities": {"current": total_liabilities, "prior": total_liabilities_prior, "yoy_pct": yoy(total_liabilities, total_liabilities_prior)},
+            "total_equity": {"current": total_equity, "prior": total_equity_prior, "yoy_pct": yoy(total_equity, total_equity_prior)},
+            "current_assets": {"current": current_assets, "prior": current_assets_prior, "yoy_pct": yoy(current_assets, current_assets_prior)},
+            "current_liabilities": {"current": current_liabilities, "prior": current_liabilities_prior, "yoy_pct": yoy(current_liabilities, current_liabilities_prior)},
+            "inventory": {"current": inventory, "prior": inventory_prior, "yoy_pct": yoy(inventory, inventory_prior)},
+            "trade_receivables": {"current": receivables, "prior": receivables_prior, "yoy_pct": yoy(receivables, receivables_prior)},
+            "cash_and_bank_balances": {"current": cash_and_bank, "prior": cash_and_bank_prior, "yoy_pct": yoy(cash_and_bank, cash_and_bank_prior)},
+            "trade_payables": {"current": trade_payables, "prior": trade_payables_prior, "yoy_pct": yoy(trade_payables, trade_payables_prior)},
+            "total_non_current_liabilities": {"current": total_non_current_liabilities, "prior": total_non_current_liabilities_prior, "yoy_pct": yoy(total_non_current_liabilities, total_non_current_liabilities_prior)},
+            "bank_borrowings": {"current": bank_borrowings, "prior": bank_borrowings_prior, "yoy_pct": yoy(bank_borrowings, bank_borrowings_prior)},
+            "retained_earnings": {"current": retained_earnings, "prior": retained_earnings_prior, "yoy_pct": yoy(retained_earnings, retained_earnings_prior)},
+            "depreciation_and_amortisation": {"current": depreciation, "prior": depreciation_prior, "yoy_pct": yoy(depreciation, depreciation_prior)},
+            "revenue": {"current": revenue, "prior": revenue_prior, "yoy_pct": yoy(revenue, revenue_prior)},
+        },
         "solvency_ratios": {
             "current_ratio": {
                 "current": current_ratio,
+                "prior": current_ratio_prior,
                 "_source": "Calculated: current_assets / current_liabilities"
             },
             "quick_ratio": {
                 "current": quick_ratio,
+                "prior": quick_ratio_prior,
                 "_source": "Calculated: (current_assets - inventory) / current_liabilities"
             },
             "working_capital": {
                 "current": (current_assets - current_liabilities) if (current_assets and current_liabilities) else None,
+                "prior": (current_assets_prior - current_liabilities_prior) if (current_assets_prior and current_liabilities_prior) else None,
                 "_source": "Calculated: current_assets - current_liabilities"
             },
             "liabilities_to_assets": {
-                "current": round((total_liabilities / total_assets) * 100, 2) if (total_liabilities and total_assets and total_assets != 0) else None,
+                "current": lia_to_assets,
+                "prior": lia_to_assets_prior,
                 "_source": "Calculated: total_liabilities / total_assets * 100"
-            }
+            },
+            "asset_turnover": {
+                "current": asset_turnover,
+                "prior": asset_turnover_prior,
+                "_source": "Calculated: revenue / total_assets"
+            },
+        },
+        "working_capital_cycle": {
+            "change_in_receivables": {"current": change_in_receivables, "_source": "fs_index.line_items['changes in receivables']"},
+            "change_in_inventories": {"current": change_in_inventories, "_source": "fs_index.line_items['changes in inventories']"},
+            "change_in_payables": {"current": change_in_payables, "_source": "fs_index.line_items['changes in payables']"},
+            "_note": "These values from the cash flow statement indicate working capital movements. Negative change_in_receivables = cash inflow from collecting receivables.",
         },
         "_verification": {
             "data_quality": "REAL_DATA_EXTRACTED",
@@ -665,6 +772,84 @@ def extract_worker6_risk(fs_index: Dict, source_file: str = "") -> Dict:
     other_borrowings = get_line_item_value(fs_index, 'borrowings', 'group_current')
     lease_obligations = get_line_item_value(fs_index, 'lease liabilities', 'group_current')
 
+    # --- NEW: Full three-statement summaries ---
+
+    # Balance sheet summary
+    cash_and_bank_balances = get_line_item_value(fs_index, 'cash and bank balances', 'group_current')
+    cash_and_bank_balances_prior = get_line_item_value(fs_index, 'cash and bank balances', 'group_prior')
+
+    net_debt_current = None
+    net_debt_prior = None
+    if bank_borrowings is not None:
+        net_debt_current = bank_borrowings + (other_borrowings or 0) - (cash_and_bank_balances or 0)
+    if bank_borrowings_prior is not None:
+        other_borrowings_prior = get_line_item_value(fs_index, 'borrowings', 'group_prior')
+        net_debt_prior = bank_borrowings_prior + (other_borrowings_prior or 0) - (cash_and_bank_balances_prior or 0)
+
+    def yoy(cur, prev):
+        if cur is not None and prev is not None and prev != 0:
+            return round(((cur - prev) / abs(prev)) * 100, 1)
+        return None
+
+    balance_sheet_summary = {
+        "total_assets": make_metric(fs_index, "total assets"),
+        "total_equity": make_metric(fs_index, "total equity"),
+        "total_liabilities": make_metric(fs_index, "total liabilities"),
+        "net_debt": {
+            "current": net_debt_current,
+            "prior": net_debt_prior,
+            "yoy_pct": yoy(net_debt_current, net_debt_prior),
+            "_source": "Calculated: bank_borrowings + other_borrowings - cash_and_bank_balances",
+        },
+        "current_assets": make_metric(fs_index, "current assets"),
+        "current_liabilities": make_metric(fs_index, "current liabilities"),
+        "non_current_assets": make_metric(fs_index, "non-current assets"),
+        "cash_and_bank_balances": make_metric(fs_index, "cash and bank balances"),
+        "retained_earnings": make_metric(fs_index, "retained earnings"),
+    }
+
+    # Income statement summary
+    income_statement_summary = {
+        "revenue": make_metric(fs_index, "revenue"),
+        "gross_profit": make_metric(fs_index, "gross profit"),
+        "pbt": make_metric(fs_index, "profit before tax"),
+        "pat": make_metric(fs_index, "profit for the financial year"),
+        "other_income": make_metric(fs_index, "other income"),
+    }
+
+    # Cash flow summary
+    ocf = get_line_item_value(fs_index, 'net cash from operating activities', 'group_current')
+    ocf_prior_val = get_line_item_value(fs_index, 'net cash from operating activities', 'group_prior')
+    investing_cf = get_line_item_value(fs_index, 'net cash used in investing activities', 'group_current')
+    investing_cf_prior_val = get_line_item_value(fs_index, 'net cash used in investing activities', 'group_prior')
+    financing_cf = get_line_item_value(fs_index, 'net cash from financing activities', 'group_current')
+    financing_cf_prior_val = get_line_item_value(fs_index, 'net cash from financing activities', 'group_prior')
+    dividends_paid = get_line_item_value(fs_index, 'dividends paid', 'group_current')
+    dividends_paid_prior_val = get_line_item_value(fs_index, 'dividends paid', 'group_prior')
+
+    fcf_current = (ocf + investing_cf) if (ocf is not None and investing_cf is not None) else None
+    fcf_prior_val = (ocf_prior_val + investing_cf_prior_val) if (ocf_prior_val is not None and investing_cf_prior_val is not None) else None
+
+    cash_flow_summary = {
+        "operating_cash_flow": make_metric(fs_index, "net cash from operating activities"),
+        "investing_cash_flow": make_metric(fs_index, "net cash used in investing activities"),
+        "financing_cash_flow": make_metric(fs_index, "net cash from financing activities"),
+        "free_cash_flow": {
+            "current": fcf_current,
+            "prior": fcf_prior_val,
+            "yoy_pct": yoy(fcf_current, fcf_prior_val),
+            "_source": "Calculated: OCF + investing CF (investing is usually negative)",
+        },
+        "dividends_paid": make_metric(fs_index, "dividends paid"),
+    }
+
+    expense_structure = {
+        "cost_of_sales": make_metric(fs_index, "cost of sales", denominator_key="revenue"),
+        "admin_expenses": make_metric(fs_index, "administrative expenses", denominator_key="revenue"),
+        "finance_costs": make_metric(fs_index, "finance costs", denominator_key="revenue"),
+        "taxation": make_metric(fs_index, "taxation", denominator_key="profit before tax"),
+    }
+
     return {
         "_metadata": create_metadata(source_file, extraction_time),
         "debt_structure": {
@@ -685,6 +870,10 @@ def extract_worker6_risk(fs_index: Dict, source_file: str = "") -> Dict:
             "prior": revenue_prior,
             "yoy_pct": round(((revenue - revenue_prior) / revenue_prior) * 100, 1) if (revenue and revenue_prior and revenue_prior != 0) else None,
         },
+        "balance_sheet_summary": balance_sheet_summary,
+        "income_statement_summary": income_statement_summary,
+        "cash_flow_summary": cash_flow_summary,
+        "expense_structure": expense_structure,
         "_verification": {
             "data_quality": "REAL_DATA_EXTRACTED",
             "source": "fs_index.json balance sheet items",
@@ -727,14 +916,53 @@ def extract_worker6b_cashflow(fs_index: Dict, source_file: str = "") -> Dict:
     # Asset quality
     total_assets = get_line_item_value(fs_index, 'total assets', 'group_current')
     total_assets_prior = get_line_item_value(fs_index, 'total assets', 'group_prior')
-    non_current_assets = get_line_item_value(fs_index, 'total non-current assets', 'group_current')
-    current_assets = get_line_item_value(fs_index, 'total current assets', 'group_current')
+    non_current_assets = get_line_item_value(fs_index, 'non-current assets', 'group_current')
+    current_assets = get_line_item_value(fs_index, 'current assets', 'group_current')
 
     # YoY helpers
     def yoy(cur, prev):
         if cur and prev and prev != 0:
             return round(((cur - prev) / abs(prev)) * 100, 1)
         return None
+
+    # --- NEW: Cash flow details ---
+    purchase_of_ppe = get_line_item_value(fs_index, 'purchase of property', 'group_current')
+    purchase_of_ppe_prior = get_line_item_value(fs_index, 'purchase of property', 'group_prior')
+    proceeds_from_disposal = get_line_item_value(fs_index, 'proceeds from disposal', 'group_current')
+    proceeds_from_disposal_prior = get_line_item_value(fs_index, 'proceeds from disposal', 'group_prior')
+
+    # Capex = abs(purchase_of_ppe)
+    capex_current = abs(purchase_of_ppe) if purchase_of_ppe is not None else None
+    capex_prior = abs(purchase_of_ppe_prior) if purchase_of_ppe_prior is not None else None
+
+    # Working capital changes from cash flow
+    wc_change_receivables = get_line_item_value(fs_index, 'changes in receivables', 'group_current')
+    wc_change_receivables_prior = get_line_item_value(fs_index, 'changes in receivables', 'group_prior')
+    wc_change_inventories = get_line_item_value(fs_index, 'changes in inventories', 'group_current')
+    wc_change_inventories_prior = get_line_item_value(fs_index, 'changes in inventories', 'group_prior')
+    wc_change_payables = get_line_item_value(fs_index, 'changes in payables', 'group_current')
+    wc_change_payables_prior = get_line_item_value(fs_index, 'changes in payables', 'group_prior')
+
+    # --- NEW: Expanded asset quality with prior year and % of total assets ---
+    def pct_of_total(value, total):
+        if value is not None and total is not None and total != 0:
+            return round((value / total) * 100, 2)
+        return None
+
+    asset_quality_items = {
+        "cash_and_bank_balances": make_metric(fs_index, "cash and bank balances"),
+        "trade_receivables": make_metric(fs_index, "trade receivables"),
+        "contract_assets": make_metric(fs_index, "contract assets"),
+        "property_plant_equipment": make_metric(fs_index, "property, plant and equipment"),
+        "inventories": make_metric(fs_index, "inventories"),
+        "goodwill_and_intangibles": make_metric(fs_index, "goodwill"),
+        "other_receivables": make_metric(fs_index, "other receivables"),
+    }
+
+    # Add pct_of_total_assets to each item
+    for item_name, item_data in asset_quality_items.items():
+        item_data["pct_of_total_assets"] = pct_of_total(item_data.get("current"), total_assets)
+        item_data["pct_of_total_assets_prior"] = pct_of_total(item_data.get("prior"), total_assets_prior)
 
     return {
         "_metadata": create_metadata(source_file, extraction_time),
@@ -752,6 +980,41 @@ def extract_worker6b_cashflow(fs_index: Dict, source_file: str = "") -> Dict:
         "cash_flow_details": {
             "interest_paid": {"current": interest_paid_current, "prior": interest_paid_prior},
             "dividends_paid": {"current": dividends_paid_current, "prior": dividends_paid_prior},
+            "purchase_of_ppe": {
+                "current": purchase_of_ppe,
+                "prior": purchase_of_ppe_prior,
+                "yoy_pct": yoy(purchase_of_ppe, purchase_of_ppe_prior),
+                "_source": "fs_index.line_items['purchase of property']",
+            },
+            "proceeds_from_disposal_of_ppe": {
+                "current": proceeds_from_disposal,
+                "prior": proceeds_from_disposal_prior,
+                "_source": "fs_index.line_items['proceeds from disposal']",
+            },
+            "capex": {
+                "current": capex_current,
+                "prior": capex_prior,
+                "yoy_pct": yoy(capex_current, capex_prior),
+                "_source": "Calculated: abs(purchase_of_property, plant and equipment)",
+            },
+            "working_capital_changes": {
+                "change_in_receivables": {
+                    "current": wc_change_receivables,
+                    "prior": wc_change_receivables_prior,
+                    "_source": "fs_index.line_items['changes in receivables']",
+                },
+                "change_in_inventories": {
+                    "current": wc_change_inventories,
+                    "prior": wc_change_inventories_prior,
+                    "_source": "fs_index.line_items['changes in inventories']",
+                },
+                "change_in_payables": {
+                    "current": wc_change_payables,
+                    "prior": wc_change_payables_prior,
+                    "_source": "fs_index.line_items['changes in payables']",
+                },
+                "_note": "From operating activities section of cash flow statement. Negative = cash inflow (e.g., collecting receivables).",
+            },
         },
         "asset_quality": {
             "total_assets": {"current": total_assets, "prior": total_assets_prior, "yoy_pct": yoy(total_assets, total_assets_prior)},
@@ -761,6 +1024,7 @@ def extract_worker6b_cashflow(fs_index: Dict, source_file: str = "") -> Dict:
                 "non_current": safe_div(non_current_assets, total_assets),
                 "current": safe_div(current_assets, total_assets),
             },
+            "items": asset_quality_items,
         },
         "_verification": {
             "data_quality": "REAL_DATA_EXTRACTED",

@@ -19,7 +19,7 @@ You are responsible for margin trends, ROE drivers, and growth sustainability. B
 
 ## Your Sections
 
-### Section XII: Profitability Analysis (~120 words)
+### Section XII: Profitability Analysis
 
 **Purpose**: Deep dive into margin trends and ROE — but NOT gross margin (that's Section V).
 
@@ -40,7 +40,7 @@ You are responsible for margin trends, ROE drivers, and growth sustainability. B
 | Approx. ROA | [%] | [%] | [Interpretation] |
 ```
 
-**Analysis** (2 paragraphs, ~80 words):
+**Analysis** (2 paragraphs):
 1. Margin trajectory: PBT/PAT/PATMI trends — is profitability improving at the shareholder level?
 2. ROE drivers: Profit margin vs. asset turnover vs. leverage (DuPont decomposition). NCI dilution impact.
 
@@ -51,7 +51,7 @@ You are responsible for margin trends, ROE drivers, and growth sustainability. B
 
 ---
 
-### Section XIII: Growth Capability Analysis (~120 words)
+### Section XIII: Growth Capability Analysis
 
 **Purpose**: Assess growth trajectory and sustainability.
 
@@ -73,7 +73,7 @@ You are responsible for margin trends, ROE drivers, and growth sustainability. B
 | Operating cash flow | [Value] | [Value] | [Internal funding] |
 ```
 
-**Analysis** (2 paragraphs, ~80 words):
+**Analysis** (2 paragraphs):
 1. Growth breadth: Is revenue → profit → EPS growth consistent? (earnings quality)
 2. Sustainability: Can growth be funded internally? Balance sheet capacity for future growth?
 

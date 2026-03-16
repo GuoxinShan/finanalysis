@@ -31,7 +31,7 @@ See `references/canonical_data_registry.md` for the full ownership table.
 
 ## Your Sections
 
-### Section VI: Analysis of Changes in Core Business (~120 words)
+### Section VI: Analysis of Changes in Core Business
 
 **Purpose**: Segment-level performance and business model evolution.
 
@@ -50,7 +50,7 @@ See `references/canonical_data_registry.md` for the full ownership table.
 | **Total** | **[Value]** | **[Value]** | **[+%]** | **[%]** |
 ```
 
-**Analysis** (1 paragraph, ~80 words): Which segments drove growth? Are margins improving or deteriorating at segment level? Is the mix shifting toward higher-value businesses?
+**Analysis** (1 paragraph): Which segments drove growth? Are margins improving or deteriorating at segment level? Is the mix shifting toward higher-value businesses?
 
 **What NOT to include**:
 - Plant locations, product descriptions, or operational details
@@ -60,7 +60,7 @@ See `references/canonical_data_registry.md` for the full ownership table.
 
 ---
 
-### Section VII: Industry Change Analysis (~80 words)
+### Section VII: Industry Change Analysis
 
 **Purpose**: External factors that materially impacted this company — only what's specific and actionable.
 
@@ -72,7 +72,7 @@ See `references/canonical_data_registry.md` for the full ownership table.
 | [Demand/cost/regulatory factor] | [Specific market signal] | [Specific impact on performance] |
 ```
 
-**Analysis** (2-3 sentences, ~50 words): How did external factors directly affect this company's results?
+**Analysis** (2-3 sentences): How did external factors directly affect this company's results?
 
 **What NOT to include**:
 - Macroeconomic background (GDP growth rates, OPR decisions, broad industry statistics) — these are annual report filler, not analysis
@@ -82,7 +82,7 @@ See `references/canonical_data_registry.md` for the full ownership table.
 
 ---
 
-### Section VIII: Strategic Initiatives (~100 words)
+### Section VIII: Strategic Initiatives
 
 **Purpose**: Assess management's strategic execution and its financial impact.
 
@@ -94,7 +94,7 @@ See `references/canonical_data_registry.md` for the full ownership table.
 | [M&A / Capex / Expansion] | [Specific action + financial impact] | [Effective/Mixed/Concerning] |
 ```
 
-**Analysis** (1 paragraph, ~70 words): Are strategic moves translating to financial outcomes? Is the acquisition pipeline paying off? Is execution disciplined?
+**Analysis** (1 paragraph): Are strategic moves translating to financial outcomes? Is the acquisition pipeline paying off? Is execution disciplined?
 
 **What NOT to include**:
 - Digital transformation bullet lists (BIM, RPA, AI, IoT) without quantified financial impact

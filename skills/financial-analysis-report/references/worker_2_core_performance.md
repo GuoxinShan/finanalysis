@@ -19,7 +19,7 @@ Other sections will reference your numbers but should not repeat them. See `refe
 
 ## Your Task: Write Sections IV-V
 
-### Section IV: Core Conclusions (3 bullets, ~60 words)
+### Section IV: Core Conclusions (3 bullets)
 
 **Purpose**: The 3 most important takeaways — what should investors know immediately?
 
@@ -43,7 +43,7 @@ Other sections will reference your numbers but should not repeat them. See `refe
 
 ---
 
-### Section V: Core Financial Performance (~120 words)
+### Section V: Core Financial Performance
 
 **Purpose**: Present fundamental performance metrics with analysis.
 
@@ -68,7 +68,7 @@ Other sections will reference your numbers but should not repeat them. See `refe
 | Attributable Margin | [%] | [%] | [Δ] |
 ```
 
-**Analysis** (2 paragraphs, ~80 words):
+**Analysis** (2 paragraphs):
 1. Top-line vs bottom-line: Why did revenue grow faster/slower than profits?
 2. Margin trajectory + attribution dilution: Is attributable profit keeping pace?
 

@@ -19,48 +19,58 @@ See `references/canonical_data_registry.md` for the full ownership table.
 
 ## Your Sections
 
-### Section XVI: Cash Flow Analysis (~150 words)
+### Section XVI: Cash Flow Analysis
 
 **Purpose**: Cash generation quality and sustainability.
 
 **Tables**:
 ```markdown
 **Table 1: Cash Flow Summary (RM'000)**
-| Item | FY2024 | FY2023 |
-|------|--------|--------|
-| Operating cash flow | [Value] | [Value] |
-| Investing cash flow | [Value] | [Value] |
-| Financing cash flow | [Value] | [Value] |
+| Item | FY2024 | FY2023 | YoY |
+|------|--------|--------|-----|
+| Operating cash flow | [Value] | [Value] | [%] |
+| Investing cash flow | [Value] | [Value] | — |
+| Free cash flow | [Value] | [Value] | [%] |
+| Financing cash flow | [Value] | [Value] | — |
+| Dividends paid | [Value] | [Value] | [%] |
 
 **Table 2: Cash Flow Quality**
 | Indicator | FY2024 | FY2023 | Status |
 |-----------|--------|--------|--------|
 | OCF/Revenue | [%] | [%] | ✓/⚠ |
-| FCF (OCF - PPE capex) | [Value] | [Value] | ✓/⚠ |
+| OCF/PAT | [%] | [%] | ✓/⚠ |
+| FCF (OCF + Investing CF) | [Value] | [Value] | ✓/⚠ |
+| Capex/Revenue | [%] | [%] | ✓/⚠ |
 ```
 
-**Analysis** (2 paragraphs, ~100 words):
-1. Cash conversion: Is OCF/Revenue improving? Why? What explains OCF vs PAT divergence?
-2. Debt service: Can OCF cover interest? Is the company reliant on external funding?
+**Analysis** (3 paragraphs):
+1. Cash conversion: OCF/Revenue and OCF/PAT trends.
+2. Capital allocation: capex intensity, FCF generation, dividend sustainability.
+3. Funding structure: reliance on external financing, debt service.
 
 ---
 
-### Section XVII: Asset Quality Analysis (~100 words)
+### Section XVII: Asset Quality Analysis
 
 **Purpose**: Asset composition risk and credit quality — NOT a balance sheet re-presentation.
 
 **Table**:
 ```markdown
 **Table: Asset Quality Indicators (RM'000)**
-| Asset Category | FY2024 | % of Total | Quality Signal |
-|----------------|--------|------------|----------------|
-| Cash & bank balances | [Value] | [%] | High liquidity |
-| Trade receivables | [Value] | [%] | Collectability risk |
-| Contract assets | [Value] | [%] | Execution risk |
-| Goodwill & intangibles | [Value] | [%] | Impairment risk |
+| Asset Category | FY2024 | FY2023 | YoY | % of Total | Quality Signal |
+|----------------|--------|--------|-----|------------|----------------|
+| Cash & bank balances | [Value] | [Value] | [%] | [%] | High liquidity |
+| Trade receivables | [Value] | [Value] | [%] | [%] | Collectability risk |
+| Contract assets | [Value] | [Value] | [%] | [%] | Execution risk |
+| Inventories | [Value] | [Value] | [%] | [%] | Obsolescence risk |
+| Property, plant & equipment | [Value] | [Value] | [%] | [%] | Capital intensity |
+| Goodwill & intangibles | [Value] | [Value] | [%] | [%] | Impairment risk |
+| Other receivables | [Value] | [Value] | [%] | [%] | Recovery risk |
 ```
 
-**Analysis** (1 paragraph, ~60 words): Liquidity mix, impairment risk, earnings quality (are profits creating cash-like or paper assets?).
+**Analysis** (2 paragraphs):
+1. Liquidity mix and cash generation quality.
+2. Asset risk concentration — goodwill, receivables, contract assets as % of total.
 
 **What NOT to include**:
 - Full balance sheet re-presentation (Section X already covers this)
@@ -70,7 +80,7 @@ See `references/canonical_data_registry.md` for the full ownership table.
 
 ---
 
-### Section XVIII: Future Forecast (~200 words)
+### Section XVIII: Future Forecast
 
 **Purpose**: Scenario analysis with key assumptions.
 
@@ -86,7 +96,7 @@ See `references/canonical_data_registry.md` for the full ownership table.
 
 **Assumptions** (2-3 bullets per scenario, embedded in the analysis).
 
-**Analysis** (2 paragraphs, ~130 words):
+**Analysis** (2 paragraphs):
 1. Key drivers and base case plausibility
 2. Upside/downside triggers and key uncertainties
 
@@ -102,21 +112,40 @@ Write ONLY markdown for Sections XVI, XVII, XVIII:
 # ⅩⅥ. Cash Flow Analysis - [Descriptive Title]
 
 **Table 1: Cash Flow Summary (RM'000)**
-[Cash flow data]
+| Item | FY2024 | FY2023 | YoY |
+|------|--------|--------|-----|
+| Operating cash flow | [Value] | [Value] | [%] |
+| Investing cash flow | [Value] | [Value] | — |
+| Free cash flow | [Value] | [Value] | [%] |
+| Financing cash flow | [Value] | [Value] | — |
+| Dividends paid | [Value] | [Value] | [%] |
 
 **Table 2: Cash Flow Quality**
-[Quality indicators]
+| Indicator | FY2024 | FY2023 | Status |
+|-----------|--------|--------|--------|
+| OCF/Revenue | [%] | [%] | ✓/⚠ |
+| OCF/PAT | [%] | [%] | ✓/⚠ |
+| FCF (OCF + Investing CF) | [Value] | [Value] | ✓/⚠ |
+| Capex/Revenue | [%] | [%] | ✓/⚠ |
 
-[2 paragraphs analysis]
+[3 paragraphs analysis]
 
 ---
 
 # ⅩⅦ. Asset Quality Analysis - [Descriptive Title]
 
 **Table: Asset Quality Indicators (RM'000)**
-[Asset data]
+| Asset Category | FY2024 | FY2023 | YoY | % of Total | Quality Signal |
+|----------------|--------|--------|-----|------------|----------------|
+| Cash & bank balances | [Value] | [Value] | [%] | [%] | High liquidity |
+| Trade receivables | [Value] | [Value] | [%] | [%] | Collectability risk |
+| Contract assets | [Value] | [Value] | [%] | [%] | Execution risk |
+| Inventories | [Value] | [Value] | [%] | [%] | Obsolescence risk |
+| Property, plant & equipment | [Value] | [Value] | [%] | [%] | Capital intensity |
+| Goodwill & intangibles | [Value] | [Value] | [%] | [%] | Impairment risk |
+| Other receivables | [Value] | [Value] | [%] | [%] | Recovery risk |
 
-[1 paragraph analysis]
+[2 paragraphs analysis]
 
 ---
 

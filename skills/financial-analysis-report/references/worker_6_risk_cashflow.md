@@ -21,7 +21,7 @@ See `references/canonical_data_registry.md` for the full ownership table.
 
 ## Your Sections
 
-### Section IX: Risk Scan (~180 words)
+### Section IX: Risk Scan
 
 **Purpose**: Identify and prioritize material risks with actionable mitigation.
 
@@ -37,7 +37,7 @@ See `references/canonical_data_registry.md` for the full ownership table.
 | [Risk 5] | [Issue with data] | [Critical/High/Medium/Low] | [1-4] | [Specific action] |
 ```
 
-**Analysis** (2 paragraphs, ~120 words):
+**Analysis** (2 paragraphs):
 1. Critical and high-priority risks — what happens if not addressed?
 2. Overall risk profile — conservative/moderate/aggressive, trending direction
 
@@ -49,7 +49,7 @@ See `references/canonical_data_registry.md` for the full ownership table.
 
 ---
 
-### Section X: Major Items in Three Statements (~150 words)
+### Section X: Major Items in Three Statements
 
 **Purpose**: Summarize the three financial statements concisely.
 
@@ -58,16 +58,21 @@ See `references/canonical_data_registry.md` for the full ownership table.
 **Table 1: Balance Sheet (RM'000)**
 | Item | FY2024 | FY2023 | YoY |
 |------|--------|--------|-----|
-| Total assets | [Value] | [Value] | [%] |
+| Total non-current assets | [Value] | [Value] | [%] |
+| Total current assets | [Value] | [Value] | [%] |
+| **Total assets** | **[Value]** | **[Value]** | **[%]** |
 | Total equity | [Value] | [Value] | [%] |
+| Retained earnings | [Value] | [Value] | [%] |
 | Total liabilities | [Value] | [Value] | [%] |
 | Net debt | [Value] | [Value] | Δ |
+| Cash & bank balances | [Value] | [Value] | [%] |
 
 **Table 2: Income Statement (RM'000)**
 | Item | FY2024 | FY2023 | YoY |
 |------|--------|--------|-----|
 | Revenue | [Value] | [Value] | [%] |
 | Gross profit | [Value] | [Value] | [%] |
+| Other income | [Value] | [Value] | [%] |
 | PBT | [Value] | [Value] | [%] |
 | PAT | [Value] | [Value] | [%] |
 
@@ -76,10 +81,14 @@ See `references/canonical_data_registry.md` for the full ownership table.
 |------|--------|--------|
 | Operating cash flow | [Value] | [Value] |
 | Investing cash flow | [Value] | [Value] |
+| Free cash flow | [Value] | [Value] |
 | Financing cash flow | [Value] | [Value] |
+| Dividends paid | [Value] | [Value] |
 ```
 
-**Analysis** (1 paragraph, ~60 words): Are profits backed by cash? Is growth funded sustainably? What's the funding hierarchy?
+**Analysis** (2 paragraphs):
+1. Balance sheet structure: capital allocation, leverage direction, net debt movement
+2. Profit-cash linkage: are profits converting to cash? Is growth funded sustainably? What's the funding hierarchy (OCF → capex → dividends → borrowings)?
 
 **What NOT to include**:
 - Sub-tables for current asset movements (X.1.1) or liability movements (X.1.2) — the main tables already show this
@@ -89,7 +98,7 @@ See `references/canonical_data_registry.md` for the full ownership table.
 
 ---
 
-### Section XI: Expense Analysis (~120 words)
+### Section XI: Expense Analysis
 
 **Purpose**: Cost structure and efficiency.
 
@@ -104,7 +113,7 @@ See `references/canonical_data_registry.md` for the full ownership table.
 | Taxation | [Value] | [Value] | [% of PBT] | [%] |
 ```
 
-**Analysis** (2 paragraphs, ~80 words):
+**Analysis** (2 paragraphs):
 1. Cost control: Are expenses growing slower than revenue? Operating leverage?
 2. Interest burden (this is your canonical section for finance costs) and tax efficiency
 
@@ -129,15 +138,36 @@ Write ONLY markdown for Sections IX, X, XI:
 # Ⅹ. Major Items in Three Statements - [Descriptive Title]
 
 **Table 1: Balance Sheet (RM'000)**
-[Balance sheet data]
+| Item | FY2024 | FY2023 | YoY |
+|------|--------|--------|-----|
+| Total non-current assets | [Value] | [Value] | [%] |
+| Total current assets | [Value] | [Value] | [%] |
+| **Total assets** | **[Value]** | **[Value]** | **[%]** |
+| Total equity | [Value] | [Value] | [%] |
+| Retained earnings | [Value] | [Value] | [%] |
+| Total liabilities | [Value] | [Value] | [%] |
+| Net debt | [Value] | [Value] | Δ |
+| Cash & bank balances | [Value] | [Value] | [%] |
 
 **Table 2: Income Statement (RM'000)**
-[Income statement data]
+| Item | FY2024 | FY2023 | YoY |
+|------|--------|--------|-----|
+| Revenue | [Value] | [Value] | [%] |
+| Gross profit | [Value] | [Value] | [%] |
+| Other income | [Value] | [Value] | [%] |
+| PBT | [Value] | [Value] | [%] |
+| PAT | [Value] | [Value] | [%] |
 
 **Table 3: Cash Flow (RM'000)**
-[Cash flow data]
+| Item | FY2024 | FY2023 |
+|------|--------|--------|
+| Operating cash flow | [Value] | [Value] |
+| Investing cash flow | [Value] | [Value] |
+| Free cash flow | [Value] | [Value] |
+| Financing cash flow | [Value] | [Value] |
+| Dividends paid | [Value] | [Value] |
 
-[1 paragraph synthesis]
+[2 paragraphs synthesis]
 
 ---
 

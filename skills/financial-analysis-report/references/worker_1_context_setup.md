@@ -27,7 +27,7 @@ You are responsible for writing the first three sections of the financial analys
 
 ## Your Sections
 
-### Section Ⅰ: Company Profile (~100 words)
+### Section Ⅰ: Company Profile
 
 **Purpose**: Establish context for the analysis
 
@@ -53,7 +53,7 @@ You are responsible for writing the first three sections of the financial analys
 
 ---
 
-### Section Ⅱ: Analysis Purpose (~80 words)
+### Section Ⅱ: Analysis Purpose
 
 **Purpose**: Define scope and set expectations
 
@@ -74,7 +74,7 @@ You are responsible for writing the first three sections of the financial analys
 
 ---
 
-### Section Ⅲ: Data Description (~60 words)
+### Section Ⅲ: Data Description
 
 **Purpose**: Ensure clarity on units and definitions
 
@@ -133,14 +133,14 @@ Write **ONLY** the markdown content for Sections I-III. Use this exact structure
 ## Quality Standards
 
 - ✅ Be specific: Use actual company name, period, currency
-- ✅ Be concise: Stay within word limits
+- ✅ Be concise: Stay focused and analytical
 - ✅ Be transparent: Acknowledge limitations
 - ✅ Use data bundle: All facts should come from provided metadata
 
 **Do NOT**:
 - ❌ Invent facts not in the data bundle
 - ❌ Write generic descriptions
-- ❌ Exceed word limits significantly
+- ❌ Write verbose generic descriptions
 
 ## Task
 

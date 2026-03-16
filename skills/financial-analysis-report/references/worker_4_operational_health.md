@@ -15,40 +15,49 @@ Other sections will reference your leverage ratios but should not repeat them. S
 
 ---
 
-You are responsible for solvency and operational efficiency. Be concise — each section gets 1 table + 1 paragraph.
+You are responsible for solvency and operational efficiency.
 
 ## Your Sections
 
-### Section XIV: Solvency Analysis (~150 words)
+### Section XIV: Solvency Analysis
 
 **Purpose**: Assess short-term and long-term financial health.
 
 **Tables**:
 ```markdown
 **Table 1: Short-Term Solvency**
-| Indicator | FY2024 | FY2023 | Trend |
-|-----------|--------|--------|-------|
-| Current assets | [Value] | [Value] | [Δ] |
-| Current liabilities | [Value] | [Value] | [Δ] |
+| Indicator | FY2024 | FY2023 | YoY |
+|-----------|--------|--------|-----|
+| Cash & bank balances | [Value] | [Value] | [%] |
+| Inventories | [Value] | [Value] | [%] |
+| Trade receivables | [Value] | [Value] | [%] |
+| Total current assets | [Value] | [Value] | [%] |
+| Trade payables | [Value] | [Value] | [%] |
+| Total current liabilities | [Value] | [Value] | [%] |
 | Current ratio | [X.XXx] | [X.XXx] | [↑/↓] |
-| Cash & equivalents | [Value] | [Value] | [Δ] |
+| Quick ratio | [X.XXx] | [X.XXx] | [↑/↓] |
 
 **Table 2: Long-Term Solvency**
-| Indicator | FY2024 | FY2023 | Trend |
-|-----------|--------|--------|-------|
+| Indicator | FY2024 | FY2023 | YoY |
+|-----------|--------|--------|-----|
+| Bank borrowings | [Value] | [Value] | [%] |
+| Total non-current liabilities | [Value] | [Value] | [%] |
+| Total liabilities | [Value] | [Value] | [%] |
+| Retained earnings | [Value] | [Value] | [%] |
+| Total equity | [Value] | [Value] | [%] |
+| Net debt | [Value] | [Value] | Δ |
 | Debt/asset ratio | [%] | [%] | [↑/↓] |
-| Net debt | [Value] | [Value] | [Δ] |
 | Net debt/equity | [X.XXx] | [X.XXx] | [↑/↓] |
 | Gearing ratio | [%] | [%] | [↑/↓] |
 ```
 
-**Analysis** (2 paragraphs, ~100 words):
+**Analysis** (2 paragraphs):
 1. Liquidity: Can they meet short-term obligations? Working capital quality.
 2. Leverage: Is debt sustainable? Refinancing risk? Debt service capacity?
 
 ---
 
-### Section XV: Operational Capability Analysis (~120 words)
+### Section XV: Operational Capability Analysis
 
 **Purpose**: Working capital efficiency and asset productivity.
 
@@ -58,8 +67,8 @@ You are responsible for solvency and operational efficiency. Be concise — each
 | Indicator | FY2024 | FY2023 | Interpretation |
 |-----------|--------|--------|----------------|
 | Revenue / total assets | [X.XXx] | [X.XXx] | [Better/Worse] |
-| PBT / revenue | [%] | [%] | [Interpretation] |
 | Depreciation & amortisation | [Value] | [Value] | [Interpretation] |
+| Total assets | [Value] | [Value] | [Interpretation] |
 
 **Table 2: Working Capital Quality**
 | Indicator | FY2024 | FY2023 | Interpretation |
@@ -67,9 +76,14 @@ You are responsible for solvency and operational efficiency. Be concise — each
 | Receivables change (CF) | [Value] | [Value] | [Collection signal] |
 | Inventories change (CF) | [Value] | [Value] | [Inventory signal] |
 | Payables change (CF) | [Value] | [Value] | [Supplier signal] |
+| Receivables days | [Days] | [Days] | [Trend] |
+| Payables days | [Days] | [Days] | [Trend] |
+| Inventory days | [Days] | [Days] | [Trend] |
 ```
 
-**Analysis** (1 paragraph, ~60 words): Collection efficiency, inventory management, supplier credit dynamics.
+**Analysis** (2 paragraphs):
+1. Working capital cycle efficiency — collection, inventory, payment dynamics.
+2. Asset utilization — is the company deploying assets effectively?
 
 ---
 
@@ -81,10 +95,29 @@ Write ONLY markdown for Sections XIV-XV:
 # ⅩⅣ. Solvency Analysis - [Descriptive Title]
 
 **Table 1: Short-Term Solvency**
-[Data]
+| Indicator | FY2024 | FY2023 | YoY |
+|-----------|--------|--------|-----|
+| Cash & bank balances | [Value] | [Value] | [%] |
+| Inventories | [Value] | [Value] | [%] |
+| Trade receivables | [Value] | [Value] | [%] |
+| Total current assets | [Value] | [Value] | [%] |
+| Trade payables | [Value] | [Value] | [%] |
+| Total current liabilities | [Value] | [Value] | [%] |
+| Current ratio | [X.XXx] | [X.XXx] | [↑/↓] |
+| Quick ratio | [X.XXx] | [X.XXx] | [↑/↓] |
 
 **Table 2: Long-Term Solvency**
-[Data]
+| Indicator | FY2024 | FY2023 | YoY |
+|-----------|--------|--------|-----|
+| Bank borrowings | [Value] | [Value] | [%] |
+| Total non-current liabilities | [Value] | [Value] | [%] |
+| Total liabilities | [Value] | [Value] | [%] |
+| Retained earnings | [Value] | [Value] | [%] |
+| Total equity | [Value] | [Value] | [%] |
+| Net debt | [Value] | [Value] | Δ |
+| Debt/asset ratio | [%] | [%] | [↑/↓] |
+| Net debt/equity | [X.XXx] | [X.XXx] | [↑/↓] |
+| Gearing ratio | [%] | [%] | [↑/↓] |
 
 [2 paragraphs analysis]
 
@@ -93,12 +126,23 @@ Write ONLY markdown for Sections XIV-XV:
 # ⅩⅤ. Operating Capability Analysis - [Descriptive Title]
 
 **Table 1: Asset Productivity**
-[Data]
+| Indicator | FY2024 | FY2023 | Interpretation |
+|-----------|--------|--------|----------------|
+| Revenue / total assets | [X.XXx] | [X.XXx] | [Better/Worse] |
+| Depreciation & amortisation | [Value] | [Value] | [Interpretation] |
+| Total assets | [Value] | [Value] | [Interpretation] |
 
 **Table 2: Working Capital Quality**
-[Data]
+| Indicator | FY2024 | FY2023 | Interpretation |
+|-----------|--------|--------|----------------|
+| Receivables change (CF) | [Value] | [Value] | [Collection signal] |
+| Inventories change (CF) | [Value] | [Value] | [Inventory signal] |
+| Payables change (CF) | [Value] | [Value] | [Supplier signal] |
+| Receivables days | [Days] | [Days] | [Trend] |
+| Payables days | [Days] | [Days] | [Trend] |
+| Inventory days | [Days] | [Days] | [Trend] |
 
-[1 paragraph analysis]
+[2 paragraphs analysis]
 ```
 
 ## Task
