@@ -606,8 +606,21 @@ Examples:
     if os.path.abspath(data_bundles_path) != os.path.abspath(dest_path):
         shutil.copy(data_bundles_path, dest_path)
 
+    # Extract individual worker bundles from data_bundles.json
+    bundles_dir = os.path.join(args.workspace, 'bundles')
+    os.makedirs(bundles_dir, exist_ok=True)
+
+    from extract_worker_bundle import extract_all_bundles
+    with open(dest_path) as f:
+        all_bundles = extract_all_bundles(json.loads(f.read()), include_trends=True)
+    for worker_key, bundle in all_bundles.items():
+        bundle_path = os.path.join(bundles_dir, f"{worker_key}_bundle.json")
+        with open(bundle_path, 'w') as f:
+            json.dump(bundle, f, indent=2, ensure_ascii=False)
+
     print(f"✓ Worker workspace prepared at {args.workspace}")
     print(f"  Data bundles: {dest_path}")
+    print(f"  Individual bundles: {bundles_dir}/ ({len(all_bundles)} workers)")
     print(f"  Worker outputs will be written to: {args.workspace}/worker_N_sections.md")
 
     # Print final summary
@@ -622,7 +635,7 @@ Examples:
     print(f"📅 Years: {', '.join([f'FY{y}' for y in years])} ({len(years)}-year analysis)")
 
     print("\n💡 NEXT STEPS:")
-    print("   1. Spawn 6 parallel workers (see instructions below)")
+    print("   1. Spawn 7 parallel workers (see instructions below)")
     print("   2. After workers complete, run:")
     print(f"      python scripts/assemble_report.py \\")
     print(f"        --workspace {args.workspace} \\")
@@ -633,15 +646,22 @@ Examples:
     print("\n" + "=" * 80)
     print("WORKER SPAWN INSTRUCTIONS")
     print("=" * 80)
-    print("\nSpawn 6 parallel workers using the Agent tool:")
-    print("\nfor i in {1,2,3,4,5,6}; do")
+    print("\nEach worker's data is pre-extracted in workspace/bundles/. ")
+    print("The coordinator reads each bundle file and embeds it in the worker's prompt:")
+    print("\nfor i in {1,2,3,4,5,6,6b}; do")
+    print("  bundle = Read(f'{args.workspace}/bundles/worker_${{i}}_bundle.json')")
+    print("  instructions = Read(f'references/worker_${{i}}_*.md')")
     print("  Agent(")
     print("    subagent_type='general-purpose',")
-    print("    description=f'Worker {i}: Financial analysis sections',")
+    print("    description=f'Worker ${{i}}: Financial analysis sections',")
     print("    prompt=f\"\"\"")
-    print(f"Read references/worker_{{i}}_*.md for instructions.")
-    print(f"Read {args.workspace}/data_bundles.json and extract worker_{{i}} data.")
-    print(f"Write markdown sections to {args.workspace}/worker_{{i}}_sections.md")
+    print("      {{instructions}}")
+    print("      **Your Pre-Loaded Data Bundle**:")
+    print("      ```json")
+    print("      {{bundle}}")
+    print("      ```")
+    print("      Write your sections using the data above.")
+    print("      Output: {args.workspace}/worker_${{i}}_sections.md")
     print('    """')
     print("  )")
     print("done")

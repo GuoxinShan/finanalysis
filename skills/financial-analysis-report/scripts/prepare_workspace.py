@@ -109,6 +109,20 @@ def main():
     else:
         print(f"✓ Using existing data bundles: {data_bundles_path}")
 
+    # Extract individual worker bundles
+    bundles_dir = os.path.join(args.workspace, 'bundles')
+    os.makedirs(bundles_dir, exist_ok=True)
+
+    from extract_worker_bundle import extract_all_bundles
+    with open(data_bundles_path) as f:
+        data = json.load(f)
+    all_bundles = extract_all_bundles(data, include_trends=True)
+    for worker_key, bundle in all_bundles.items():
+        bundle_path = os.path.join(bundles_dir, f"{worker_key}_bundle.json")
+        with open(bundle_path, 'w') as f:
+            json.dump(bundle, f, indent=2, ensure_ascii=False)
+    print(f"✓ Individual bundles extracted to {bundles_dir}/ ({len(all_bundles)} workers)")
+
     # Print next steps
     print("\n" + "=" * 80)
     print("✅ PHASE 1 COMPLETE - WORKSPACE PREPARED")
@@ -120,18 +134,24 @@ def main():
     print("\n" + "=" * 80)
     print("NEXT: PHASE 2 - SPAWN 6 PARALLEL WORKERS FOR REPORT SECTIONS")
     print("=" * 80)
-    print("\nThe workspace is ready. Now spawn 6 parallel worker agents for report sections:")
+    print("\nThe workspace is ready. Now spawn 7 parallel worker agents for report sections:")
     print("\n┌─────────────────────────────────────────────────────────────────┐")
     print("│ WORKER SPAWN TEMPLATE (for coordinator)                          │")
     print("└─────────────────────────────────────────────────────────────────┘")
-    print("\nfor i in {1,2,3,4,5,6}; do")
+    print("\nfor i in {1,2,3,4,5,6,6b}; do")
+    print("  bundle = Read(f'{args.workspace}/bundles/worker_${{i}}_bundle.json')")
+    print("  instructions = Read(f'references/worker_${{i}}_*.md')")
     print("  Agent(")
     print("    subagent_type='general-purpose',")
-    print("    description=f'Worker {i}: Financial analysis sections',")
+    print("    description=f'Worker ${{i}}: Financial analysis sections',")
     print("    prompt=f\"\"\"")
-    print(f"Read references/worker_{{i}}_*.md for instructions.")
-    print(f"Read {args.workspace}/data_bundles.json and extract worker_{{i}} data.")
-    print(f"Write markdown sections to {args.workspace}/worker_{{i}}_sections.md")
+    print("      {instructions}")
+    print("      **Your Pre-Loaded Data Bundle**:")
+    print("      ```json")
+    print("      {bundle}")
+    print("      ```")
+    print("      Write your sections using the data above.")
+    print("      Output: {args.workspace}/worker_${{i}}_sections.md")
     print('    """')
     print("  )")
     print("done")

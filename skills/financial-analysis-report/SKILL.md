@@ -108,27 +108,46 @@ python scripts/generate_report.py \
 
 Workers receive pre-loaded data bundles (90% of needs) + optional file paths for deep-dive access (10% of needs). Each worker only sees its own bundle — this keeps context focused and avoids confusion.
 
+**Data flow**:
+1. `generate_report.py` creates `workspace/data_bundles.json` (all workers combined)
+2. It automatically extracts individual bundles to `workspace/bundles/worker_N_bundle.json`
+3. The coordinator reads each individual bundle file and embeds it in the worker's prompt
+
 **Launch all 7 workers in a single turn**:
 ```python
-workers = [
-    Agent(subagent_type="general-purpose", description=f"Worker {i}", prompt=prompts[i])
-    for i in [1, 2, 3, 4, 5, 6, "6b"]
-]
+for worker_id in [1, 2, 3, 4, 5, 6, "6b"]:
+    bundle = Read(f"workspace/bundles/worker_{worker_id}_bundle.json")
+    instructions = Read(f"references/worker_{worker_id}_*.md")
+
+    Agent(
+        subagent_type="general-purpose",
+        description=f"Worker {worker_id}",
+        prompt=f"""
+{instructions}
+
+**Your Pre-Loaded Data Bundle**:
+```json
+{bundle}
 ```
 
-**Anti-pattern** (❌ DO NOT DO THIS):
+Write your sections using the data above.
+Output: workspace/worker_{worker_id}_sections.md
+    """,
+        model="sonnet"
+    )
+```
+
+**Anti-pattern** (DO NOT DO THIS):
 ```python
-# ❌ Workers reading files individually
+# Workers reading files individually - they read the WHOLE combined file
 worker_2 = Agent(prompt="Read workspace/data_bundles.json and write sections.")
-# This causes 7 workers to read the same file = 7x slower!
+# This wastes context - worker gets data for ALL workers, not just its own
 ```
 
 **How to build each worker prompt**:
 1. Read the worker's instruction file (e.g., `references/worker_2_core_performance.md`)
 2. Read the worker's pre-extracted bundle (e.g., `workspace/bundles/worker_2_bundle.json`)
 3. Combine: `f"{instructions}\n\n**Your Data Bundle**:\n```json\n{bundle_json}\n```"`
-
-**Important**: Each worker has a "Canonical Data Ownership" section that tells it which metrics to own vs. cross-reference. The coordinator does NOT need to enforce this — the worker instructions handle it.
 
 See [manual_workflow.md](references/manual_workflow.md) for a complete step-by-step example.
 

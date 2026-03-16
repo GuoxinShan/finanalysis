@@ -34,7 +34,7 @@ def load_data_bundles(input_path: str) -> Dict[str, Any]:
 
 def extract_worker_bundle(
     data_bundles: Dict[str, Any],
-    worker_id: int,
+    worker_id,  # int (1-6) or str ("6b")
     include_trends: bool = True,
     include_global: bool = False
 ) -> Dict[str, Any]:
@@ -43,7 +43,7 @@ def extract_worker_bundle(
 
     Args:
         data_bundles: The combined data bundles dict
-        worker_id: Worker ID (1-6)
+        worker_id: Worker ID (1-6) or "6b"
         include_trends: Whether to include multi-year trends
         include_global: Whether to include global verification metadata
 
@@ -83,7 +83,10 @@ def extract_all_bundles(
     """
     all_bundles = {}
 
-    for worker_id in range(1, 7):
+    # Worker IDs: 1-6 (int) and 6b (string)
+    worker_ids = [i for i in range(1, 7)] + ["6b"]
+
+    for worker_id in worker_ids:
         try:
             all_bundles[f"worker_{worker_id}"] = extract_worker_bundle(
                 data_bundles,
@@ -101,8 +104,10 @@ def list_available_workers(data_bundles: Dict[str, Any]) -> None:
     print("\nAvailable Workers:")
     print("=" * 60)
 
-    for i in range(1, 7):
-        worker_key = f"worker_{i}"
+    worker_ids = [i for i in range(1, 7)] + ["6b"]
+
+    for worker_id in worker_ids:
+        worker_key = f"worker_{worker_id}"
         if worker_key in data_bundles:
             worker_data = data_bundles[worker_key]
 
@@ -111,9 +116,9 @@ def list_available_workers(data_bundles: Dict[str, Any]) -> None:
             if "sections" in worker_data:
                 sections_info = f" (Sections: {worker_data['sections']})"
 
-            print(f"  ✓ Worker {i}{sections_info}")
+            print(f"  ✓ Worker {worker_id}{sections_info}")
         else:
-            print(f"  ✗ Worker {i} - Not available")
+            print(f"  ✗ Worker {worker_id} - Not available")
 
     # Check for multi-year trends
     if "_multi_year_trends" in data_bundles:
@@ -157,9 +162,8 @@ Examples:
 
     parser.add_argument(
         "--worker",
-        type=int,
-        choices=range(1, 7),
-        help="Worker ID to extract (1-6)"
+        type=str,
+        help="Worker ID to extract (1-6 or 6b)"
     )
 
     parser.add_argument(
@@ -257,12 +261,18 @@ Examples:
 
     # Handle single worker extraction
     if args.worker:
+        # Normalize worker ID: "6b" stays string, "2" becomes int
+        try:
+            worker_id = int(args.worker)
+        except ValueError:
+            worker_id = args.worker  # e.g., "6b"
+
         include_trends = not args.no_trends if args.no_trends else args.include_trends
 
         try:
             bundle = extract_worker_bundle(
                 data_bundles,
-                args.worker,
+                worker_id,
                 include_trends=include_trends
             )
         except KeyError as e:
