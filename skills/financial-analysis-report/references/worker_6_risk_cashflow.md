@@ -1,38 +1,143 @@
-# Worker 6: Risk & Cash Flow Analysis (Sections IX-XI, XVI-XVIII)
+# Worker 6: Risk Analysis (Sections IX-XI)
 
-You handle 6 sections covering risk, cash flow, and forward forecast. Be thorough but concise - focus on actionable insights.
+**🚫 CRITICAL FILE ACCESS RESTRICTIONS 🚫**
+
+Your data is **PRE-LOADED** in your prompt below. **ABSOLUTELY DO NOT**:
+- ❌ Read `fs_index.json`
+- ❌ Read `data_bundles.json`
+- ❌ Read any `.json` files
+- ❌ Use the Read tool for any data access
+- ❌ Attempt to access the filesystem for metrics
+
+**Why?** Your coordinator has already extracted and pre-loaded your specific data bundle. Reading files wastes time, duplicates work, and can cause errors.
+
+**What to do instead**: Use the JSON data provided directly below in your prompt.
+
+---
+
+### 📂 **Optional: Deep-Dive Access** (10% of cases)
+
+If you need additional context beyond the pre-loaded data, file paths are provided in your bundle under `source_files`:
+
+**When to use**:
+- ✅ Need complete cash flow history (not just current/prior)
+- ✅ Need detailed risk factor breakdown from full MD&A
+- ✅ Need all 236 line items for comprehensive analysis
+- ✅ Need full risk management discussion
+
+**How to access** (ONLY if needed):
+```python
+# 1. Search text_blocks.jsonl for risk management pages
+text_blocks = []
+with open(text_blocks_path, 'r') as f:
+    for line in f:
+        block = json.loads(line)
+        if block.get('page_number') in [50, 51, 52]:  # Risk management section
+            text_blocks.append(block)
+
+# 2. Or read complete fs_index for full breakdown
+with open(fs_index_path, 'r') as f:
+    fs_index = json.load(f)
+    all_line_items = fs_index['line_items']
+```
+
+**Note**: 90% of the time, the pre-loaded data is sufficient. Only access files when absolutely necessary.
+
+---
+
+You handle 3 sections covering risk identification, three-statement analysis, and expense structure. Be thorough but concise - focus on actionable insights.
 
 ## Your Sections
 
-### Section IX: Risk Scan (250 words)
+### Section IX: Risk Scan - Enhanced Risk Matrix (300 words)
 
-**Purpose**: Identify and assess key risks
+**Purpose**: Identify, assess, and prioritize risks with actionable mitigation strategies
 
-**Required Tables**:
+**CRITICAL**: Use the enhanced risk matrix format below. This transforms risk analysis from descriptive to actionable, enabling users to prioritize mitigation efforts.
+
+**Required Table**:
 ```markdown
-**Table 1: Financial Risks**
-| Risk Area | Current Level | Threshold | Severity |
-|-----------|---------------|-----------|----------|
-| Leverage | Liabilities/Assets: 65% | Covenant: 70% | Medium |
-| Liquidity | Current Ratio: 1.32x | Min: 1.0x | Low |
-| Margin | Attributable: 3.5% | Breakeven: 2% | Medium |
+**Table: Risk Assessment Matrix**
 
-**Table 2: Non-Financial Risks**
-| Risk Type | Description | Probability | Impact |
-|-----------|-------------|-------------|--------|
-| Execution | East Malaysia receivables | High | Medium |
-| Market | Steel price volatility | Medium | High |
-| Regulatory | Environmental compliance | Low | High |
+| Risk Category | Specific Risk | Severity | Probability | Impact | Priority | Mitigation Timeline |
+|---------------|--------------|----------|-------------|--------|----------|---------------------|
+| **Liquidity Risk** | [Specific issue, e.g., Negative OCF (-RM60m) despite PAT of RM215m] | **Critical** | High | Covenant breach, funding gap | 1 - Immediate | 0-6 months |
+| **Credit Risk** | [Specific issue, e.g., Contract assets +133% to RM495m] | **High** | Medium | Collection risk, write-downs | 2 - High | 6-12 months |
+| **Leverage Risk** | [Specific issue, e.g., Debt/Equity at 211% (from 151%)] | **High** | High | Interest burden, refinancing risk | 2 - High | 6-12 months |
+| **Integration Risk** | [Specific issue, e.g., Admin expenses +152% YoY] | **Medium** | High | Margin compression, cost overrun | 3 - Medium | 12-18 months |
+| **Execution Risk** | [Specific issue, e.g., Working capital lockup RM2.09b] | **Medium** | Medium | Cash flow drag, opportunity cost | 3 - Medium | Ongoing |
+| **Market Risk** | [Specific issue, e.g., Property sector slowdown] | **Medium** | Medium | Revenue decline, pricing pressure | 3 - Medium | Ongoing |
+| **Operational Risk** | [Specific issue, e.g., Customer concentration (top 10 = 24.5%)] | **Low** | Low | Revenue volatility | 4 - Low | Monitor |
+
+**Severity Scale**:
+- **Critical**: Immediate action required, threatens business viability
+- **High**: Urgent attention needed, significant financial impact
+- **Medium**: Planned intervention, manageable with monitoring
+- **Low**: Monitoring only, minimal immediate impact
+
+**Risk Mitigation Actions by Priority**:
+
+**Priority 1 - Critical (Immediate, 0-6 months)**:
+- **Action 1**: [Specific mitigation with KPI, e.g., Cash Flow Management: Weekly monitoring and forecasting]
+- **Action 2**: [e.g., Working Capital Optimization: Target 60% conversion of contract assets to cash within 12 months]
+- **Action 3**: [e.g., Short-term Financing: Secure revolving credit facility for liquidity buffer]
+
+**Priority 2 - High (6-12 months)**:
+- **Action 1**: [e.g., Debt Restructuring: Refinance short-term debt (RM1,042m) to longer tenors]
+- **Action 2**: [e.g., Cost Rationalization: Reduce admin expenses from 8.5% to 7.0% of revenue]
+- **Action 3**: [e.g., Collection Process: Implement stricter credit terms and collection procedures]
+
+**Priority 3 - Medium (12-18 months)**:
+- **Action 1**: [e.g., Integration Synergies: Complete acquisition integration, target RM50m annual cost savings]
+- **Action 2**: [e.g., Margin Recovery: Renegotiate supplier contracts, improve gross margin to 18%+]
+- **Action 3**: [e.g., Segment Diversification: Expand commercial/industrial segments to reduce property dependency]
+
+**Priority 4 - Low (Ongoing Monitoring)**:
+- **Action 1**: [e.g., Customer Diversification: Monitor customer concentration, target top 10 <20% of revenue]
+```
+
+**Risk Scoring Guidance**:
+
+Use data-driven thresholds to assess severity:
+
+```python
+# Liquidity Risk
+if OCF < 0 and PAT > 0: Severity = "Critical"  # Profits not converting to cash
+elif OCF < 0: Severity = "High"
+elif OCF/PAT < 0.5: Severity = "Medium"
+else: Severity = "Low"
+
+# Leverage Risk
+if Debt/Equity > 200%: Severity = "High"
+elif Debt/Equity > 150%: Severity = "Medium"
+else: Severity = "Low"
+
+# Credit Risk
+if Contract_Assets_YoY > 100%: Severity = "High"  # Rapid expansion signals collection risk
+elif Contract_Assets_YoY > 50%: Severity = "Medium"
+else: Severity = "Low"
+
+# Integration Risk
+if Admin_Expenses_YoY > Revenue_Growth * 1.5: Severity = "High"  # Costs outpacing growth
+elif Admin_Expenses_YoY > Revenue_Growth: Severity = "Medium"
+else: Severity = "Low"
 ```
 
 **Analysis** (3-4 paragraphs):
-- Top 3-5 risks by severity and controllability
-- Internal (execution, credit) vs external (macro, commodity)
-- Mitigation measures and early warning indicators
-- Overall risk profile (conservative/moderate/aggressive)
+1. **Critical Risks** (Priority 1): Immediate attention required, what happens if not addressed?
+2. **High Risks** (Priority 2): What are the triggers and early warning indicators?
+3. **Medium/Low Risks** (Priority 3-4): Monitoring approach and escalation criteria
+4. **Overall Risk Profile**: Conservative/Moderate/Aggressive, trending direction, risk vs reward balance
 
 **Good Example**:
-> Leverage (65% vs 70% covenant) and margin compression (3.5% attributable) are the most severe risks. While liquidity appears adequate (1.32x current ratio), receivables quality in new markets is the early warning indicator - DSO increased from 45 to 72 days in East Malaysia.
+> **Critical Risk**: Negative OCF (-RM60m) despite PAT of RM215m signals severe cash conversion issues. If unaddressed within 6 months, this could trigger covenant breaches and force emergency asset sales. Mitigation requires aggressive working capital optimization (target: release RM290m cash) and securing a revolving credit facility (RM150m buffer).
+
+**Why This Matters**:
+The enhanced risk matrix transforms risk analysis from passive identification to active prioritization. Users can immediately see:
+- Which risks require **immediate action** vs monitoring
+- **Quantified impact** and probability
+- **Time-bound mitigation** strategies
+- **Resource allocation** guidance (focus on Priority 1-2 first)
 
 ---
 
@@ -104,85 +209,6 @@ You handle 6 sections covering risk, cash flow, and forward forecast. Be thoroug
 
 ---
 
-### Section XVI: Cash Flow Analysis (250 words)
-
-**Purpose**: Assess cash generation quality
-
-**Required Table**:
-```markdown
-| Indicator | Current | Prior | Benchmark | Status |
-|-----------|---------|-------|-----------|--------|
-| OCF/Revenue | X% | Y% | >10% | ✓/⚠ |
-| Free Cash Flow (RM'000) | X | Y | >0 | ✓/⚠ |
-| OCF Interest Coverage | X.xXx | Y.yYy | >3.0x | ✓/⚠ |
-| OCF/Debt | X% | Y% | >20% | ✓/⚠ |
-```
-
-**Analysis** (3-4 paragraphs):
-1. **Cash conversion**: Is OCF/Revenue improving?
-2. **Internal financing**: Can FCF fund capex?
-3. **Debt service buffer**: Can OCF cover interest + principal?
-4. **Cash vs profits divergence**: Why is OCF different from PAT?
-
-**Good Example**:
-> OCF/Revenue deteriorated (15% → -2%) due to working capital drag: +RM95m receivables, +RM40m inventory, -RM20m payables compression. FCF of -RM240m after growth capex signals reliance on debt funding.
-
----
-
-### Section XVII: Asset Quality Analysis (200 words)
-
-**Purpose**: Assess asset composition and impairment risk
-
-**Required Table**:
-```markdown
-| Asset Category | Amount (RM'000) | % of Total | Quality |
-|----------------|-----------------|------------|---------|
-| Cash & Bank Balances | X | Y% | High liquidity |
-| Trade Receivables | X | Y% | Collectability risk |
-| Inventories | X | Y% | Realizability risk |
-| Contract Assets | X | Y% | Execution risk |
-| Goodwill & Intangibles | X | Y% | Impairment risk |
-| **Total Assets** | **X** | **100%** | - |
-```
-
-**Analysis** (3-4 paragraphs):
-1. **Liquidity mix**: What % is quickly convertible to cash?
-2. **Impairment risk**: Goodwill, intangibles, contract assets
-3. **Earnings backing**: Profits creating high-quality (cash) or low-quality (receivables) assets?
-4. **Age analysis**: Receivables aging, inventory turnover
-
-**Conclusion**: Asset quality and risk assessment
-
----
-
-### Section XVIII: Future Forecast (300 words)
-
-**Purpose**: Forward-looking assessment with scenarios
-
-**Required Table**:
-```markdown
-**Scenario Analysis**
-| Scenario | Revenue (RM'000) | PBT (RM'000) | Attributable (RM'000) | Probability |
-|----------|------------------|--------------|-----------------------|-------------|
-| Optimistic | X | Y | Z | 25% |
-| Base Case | X | Y | Z | 50% |
-| Cautious | X | Y | Z | 25% |
-
-**Key Assumptions**:
-- **Optimistic**: [Assumptions for upside case]
-- **Base Case**: [Most likely outcome]
-- **Cautious**: [Downside scenario assumptions]
-```
-
-**Analysis** (3-4 paragraphs):
-1. **Key drivers**: Revenue growth, margin trajectory, working capital
-2. **Base case**: Most likely outcome given current trends
-3. **Upside/downside**: What needs to go right/wrong?
-4. **Key uncertainties**: Dominant variables and probability weighting
-
-**Final View**: 2-3 sentence investment thesis
-
----
 
 ## Your Data Bundle
 
@@ -197,50 +223,87 @@ You receive a JSON object with:
   "income_statement": {...},
   "cash_flow_statement": {...},
   "expenses": {...},
-  "cash_flow_metrics": {...},
-  "asset_composition": {...},
-  "forecast_data": {
-    "scenarios": [...],
-    "key_assumptions": [...]
+  "source_files": {
+    "text_blocks_path": "...",
+    "fs_index_path": "..."
   }
 }
 ```
 
+**Enhanced Multi-Year Data** (if 3+ years available):
+
+You may also receive `_multi_year_trends`:
+```json
+{
+  "_multi_year_trends": {
+    "years": ["2024", "2023", "2022"],
+    "trends": {
+      "net cash from operating activities": {
+        "current": 60200,
+        "2023": 45000,
+        "2022": 38000
+      },
+      "revenue": {
+        "current": 3.25b,
+        "2023": 2.06b,
+        "2022": 1.82b
+      }
+    },
+    "cagrs": {
+      "revenue_cagr_2yr": 33.6,
+      "net cash from operating activities_cagr_2yr": 25.9
+    }
+  }
+}
+```
+
+**How to Use Multi-Year Data for Risk Analysis**:
+
+1. **Risk Pattern Recognition (Section IX)**:
+   - Is leverage increasing over 3 years? (trend risk)
+   - Are margins compressing consistently? (structural risk)
+   - Is working capital expanding faster than revenue? (execution risk)
+
+**Example Risk Assessment**:
+> "Leverage has increased consistently: Debt/Equity rose from 0.8x (FY2022) to 1.2x (FY2023) to 1.5x (FY2024). This 3-year trend indicates structural reliance on debt financing, raising refinancing risk if credit conditions tighten."
+
 ## Output Format
 
-Write ONLY markdown for Sections IX, X, XI, XVI, XVII, XVIII in that order. Use this exact structure:
+Write ONLY markdown for Sections IX, X, XI in that order. Use this exact structure:
 
 ```markdown
 # Ⅸ. Risk Scan - [Descriptive Title]
 
-## Financial Risk Screening
+**Table: Risk Assessment Matrix**
+| Risk Category | Specific Risk | Severity | Probability | Impact | Priority | Mitigation Timeline |
+|---|---|---|---|---|---|---|
+| [Risk 1] | [Specific issue with data] | [Critical/High/Medium/Low] | [High/Medium/Low] | [Specific impact] | [1-4] | [Timeline] |
+| [Risk 2] | [Specific issue with data] | [Critical/High/Medium/Low] | [High/Medium/Low] | [Specific impact] | [1-4] | [Timeline] |
 
-**Table 1: Financial Risk Screening**
-| Risk Category | FY2024 Disclosure Signal | Risk Implication |
-|---|---|---|
-| [Risk 1] | [Signal] | [Implication] |
-| [Risk 2] | [Signal] | [Implication] |
+**Risk Mitigation Actions by Priority**:
+
+**Priority 1 - Critical (Immediate, 0-6 months)**:
+- [Action 1 with specific KPI]
+- [Action 2 with specific KPI]
+- [Action 3 with specific KPI]
+
+**Priority 2 - High (6-12 months)**:
+- [Action 1 with specific KPI]
+- [Action 2 with specific KPI]
+
+**Priority 3 - Medium (12-18 months)**:
+- [Action 1 with specific KPI]
+
+**Priority 4 - Low (Ongoing Monitoring)**:
+- [Monitoring approach]
 
 **Insights**
-1. [First insight on most severe financial risks]
-2. [Second insight on liquidity and leverage]
-3. [Third insight on sensitivity factors]
-4. [Fourth insight on mitigation effectiveness]
+1. [First insight on critical risks requiring immediate attention]
+2. [Second insight on high-priority risks and early warning indicators]
+3. [Third insight on overall risk profile and trend]
+4. [Fourth insight on risk-return balance and strategic implications]
 
-## Non-Financial / Operating Risk Screening
-
-**Table 2: Non-Financial and Operating Risk Screening**
-| Risk Category | FY2024 Disclosure Signal | Risk Implication |
-|---|---|---|
-| [Risk 1] | [Signal] | [Implication] |
-| [Risk 2] | [Signal] | [Implication] |
-
-**Insights**
-1. [First insight on operational risks]
-2. [Second insight on concentration and execution]
-3. [Third insight on regulatory factors]
-
-**Conclusion**: [One paragraph on overall risk profile]
+**Conclusion**: [One paragraph on risk management strategy]
 
 # Ⅹ. Analysis of Major Items in the Three Statements - [Descriptive Title]
 
@@ -303,104 +366,20 @@ Write ONLY markdown for Sections IX, X, XI, XVI, XVII, XVIII in that order. Use 
 4. [Fourth insight on fixed vs. variable mix]
 
 **Conclusion**: [One paragraph on expense management quality]
-
-# ⅩⅥ. Cash Flow Analysis - [Descriptive Title]
-
-**Table 1: Cash Flow Indicators**
-| Indicator (RM million) | FY2024 | FY2023 | YoY |
-|---|---:|---:|---:|
-| Operating cash flow | [Value] | [Value] | [+%] |
-| Investing cash flow | [Value] | [Value] | [Direction] |
-| Financing cash flow | [Value] | [Value] | [Direction] |
-
-**Insights**
-1. [First insight on operating cash generation]
-2. [Second insight on investment funding]
-3. [Third insight on financing reliance]
-
-**Table 2: Cash Flow Quality Indicators**
-| Indicator | FY2024 | FY2023 | Interpretation |
-|---|---:|---:|---|
-| OCF / revenue | [%] | [%] | [Interpretation] |
-| FCF (OCF - PPE capex) | [Value] | [Value] | [Interpretation] |
-| Interest paid | [Value] | [Value] | [Interpretation] |
-
-**Insights**
-1. [First insight on cash conversion quality]
-2. [Second insight on internal funding capacity]
-3. [Third insight on debt service capability]
-
-**Conclusion**: [One paragraph on cash flow health]
-
-# ⅩⅦ. Asset Quality Analysis - [Descriptive Title]
-
-**Table 1: Asset Base Quality Indicators**
-| Asset Item | FY2024 | FY2023 | Trend |
-|---|---:|---:|---|
-| Property, plant and equipment | [Value] | [Value] | [+%] |
-| Intangible assets | [Value] | [Value] | [+%] |
-| Contract assets | [Value] | [Value] | [+%] |
-
-**Insights**
-1. [First insight on asset composition]
-2. [Second insight on productive vs. financial assets]
-3. [Third insight on asset durability]
-
-**Table 2: Credit Quality Indicators**
-| Indicator | FY2024 | FY2023 | Trend |
-|---|---:|---:|---|
-| Total loss allowance | [Value] | [Value] | [Increased/Decreased] |
-| Trade receivables allowance | [Value] | [Value] | [Increased/Decreased] |
-
-**Insights**
-1. [First insight on provisioning adequacy]
-2. [Second insight on receivable quality]
-3. [Third insight on collection risk]
-
-**Conclusion**: [One paragraph on asset quality]
-
-# ⅩⅧ. Future Forecast - [Descriptive Title]
-
-[Opening paragraph explaining scenario approach]
-
-Assumptions:
-- **Optimistic**: [Assumptions]
-- **Base case**: [Assumptions]
-- **Conservative**: [Assumptions]
-
-**Table 1: Scenario Forecast (FY2025E-FY2027E)**
-| Scenario | Metric | FY2024 Base | FY2025E | FY2026E | FY2027E |
-|---|---|---:|---:|---:|---:|
-| Optimistic | Revenue (RM million) | [Value] | [Value] | [Value] | [Value] |
-| Optimistic | PATMI (RM million) | [Value] | [Value] | [Value] | [Value] |
-| Base case | Revenue (RM million) | [Value] | [Value] | [Value] | [Value] |
-| Base case | PATMI (RM million) | [Value] | [Value] | [Value] | [Value] |
-| Conservative | Revenue (RM million) | [Value] | [Value] | [Value] | [Value] |
-| Conservative | PATMI (RM million) | [Value] | [Value] | [Value] | [Value] |
-
-**Insights**
-1. [First insight on scenario spread and sensitivity]
-2. [Second insight on base case plausibility]
-3. [Third insight on optimistic case requirements]
-4. [Fourth insight on key monitoring triggers]
-
-**Conclusion**: [One paragraph on forward-looking assessment]
 ```
 
 ## Quality Checklist
 
-✅ Comprehensive risk assessment
-✅ Connect cash flow to profitability
-✅ Develop realistic scenarios
-✅ Be forward-looking
+✅ Comprehensive risk assessment with data-driven severity ratings
+✅ Connect three-statement analysis to business performance
+✅ Be specific: use actual numbers, not generic descriptions
 
 ❌ Don't: Ignore negative risks
-❌ Don't: Make unsupported forecasts
-❌ Don't: Just list numbers
+❌ Don't: Just list numbers without interpretation
 
 ## Task
 
-Write all six sections using the data bundle.
+Write all three sections (IX, X, XI) using the data bundle.
 
 **Output file**: `workspace/worker_6_sections.md`
 

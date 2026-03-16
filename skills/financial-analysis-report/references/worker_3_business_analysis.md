@@ -1,5 +1,58 @@
 # Worker 3: Business Analysis (Sections VI-VIII)
 
+**🚫 CRITICAL FILE ACCESS RESTRICTIONS 🚫**
+
+Your data is **PRE-LOADED** in your prompt below. **ABSOLUTELY DO NOT**:
+- ❌ Read `fs_index.json`
+- ❌ Read `data_bundles.json`
+- ❌ Read any `.json` files
+- ❌ Use the Read tool for any data access
+- ❌ Attempt to access the filesystem for metrics
+
+**Why?** Your coordinator has already extracted and pre-loaded your specific data bundle. Reading files wastes time, duplicates work, and can cause errors.
+
+**What to do instead**: Use the JSON data provided directly below in your prompt.
+
+---
+
+### 📂 **Optional: Deep-Dive Access** (10% of cases)
+
+If you need additional context beyond the pre-loaded data, file paths are provided in your bundle under `source_files`:
+
+```json
+{
+  "source_files": {
+    "text_blocks_path": "output/CHINHIN/2024/text_blocks.jsonl",
+    "fs_index_path": "output/CHINHIN/2024/fs_index.json"
+  }
+}
+```
+
+**When to use**:
+- ✅ Need full MD&A discussion (not just summary)
+- ✅ Need complete segment details (not just excerpts)
+- ✅ Need all 236 line items from fs_index.json
+
+**How to use** (ONLY if needed):
+```python
+# 1. Search text_blocks.jsonl for specific pages
+text_blocks = []
+with open(text_blocks_path, 'r') as f:
+    for line in f:
+        block = json.loads(line)
+        if block.get('page_number') in [45, 46]:  # MD&A pages
+            text_blocks.append(block)
+
+# 2. Or read complete fs_index
+with open(fs_index_path, 'r') as f:
+    fs_index = json.load(f)
+    all_line_items = fs_index['line_items']
+```
+
+**Note**: 90% of the time, the pre-loaded data is sufficient. Only access files when absolutely necessary.
+
+---
+
 You are responsible for analyzing the company's business model, industry context, and strategic execution.
 
 ## Your Sections

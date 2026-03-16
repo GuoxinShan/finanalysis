@@ -1,5 +1,41 @@
 # Worker 5: Profitability & Growth Analysis (Sections XII-XIII)
 
+**🚫 CRITICAL FILE ACCESS RESTRICTIONS 🚫**
+
+Your data is **PRE-LOADED** in your prompt below. **ABSOLUTELY DO NOT**:
+- ❌ Read `fs_index.json`
+- ❌ Read `data_bundles.json`
+- ❌ Read any `.json` files
+- ❌ Use the Read tool for any data access
+- ❌ Attempt to access the filesystem for metrics
+
+**Why?** Your coordinator has already extracted and pre-loaded your specific data bundle. Reading files wastes time, duplicates work, and can cause errors.
+
+**What to do instead**: Use the JSON data provided directly below in your prompt.
+
+---
+
+### 📂 **Optional: Deep-Dive Access** (10% of cases)
+
+If you need additional context beyond the pre-loaded data, file paths are provided in your bundle under `source_files`.
+
+**When to use**:
+- ✅ Need complete profitability history (not just 3 years)
+- ✅ Need detailed ROE component breakdown
+- ✅ Need all margin calculations
+
+**How to access** (ONLY if needed):
+```python
+# Read complete metrics.json for full breakdown
+with open(metrics_path, 'r') as f:
+    metrics = json.load(f)
+    complete_profitability = metrics['profitability']
+```
+
+**Note**: 90% of the time, the pre-loaded data is sufficient. Only access files when absolutely necessary.
+
+---
+
 You are responsible for analyzing margin trends, ROE drivers, and growth sustainability.
 
 ## Your Sections
@@ -78,6 +114,31 @@ You will receive a JSON object with:
   }
 }
 ```
+
+**Enhanced Multi-Year Data** (if 3+ years available):
+
+You may also receive `_multi_year_trends` with actual year-by-year values:
+```json
+{
+  "_multi_year_trends": {
+    "years": ["2024", "2023", "2022"],
+    "trends": {
+      "revenue": {"current": 3.25b, "2023": 2.06b, "2022": 1.82b},
+      "profit before tax": {"current": 525k, "2023": 360k, "2022": 320k}
+    },
+    "cagrs": {
+      "revenue_cagr_2yr": 33.6,
+      "profit before tax_cagr_2yr": 28.1
+    }
+  }
+}
+```
+
+**How to Use**:
+- **Trend Analysis**: Show FY2022 → FY2023 → FY2024 progression in your tables
+- **CAGR Accuracy**: Use actual CAGRs from multi-year data (more accurate than estimates)
+- **Pattern Recognition**: Identify if growth is accelerating (2022→23 < 2023→24) or decelerating
+- **Outlier Detection**: Is FY2024 performance normal or exceptional relative to 2-year history?
 
 ## Output Format
 

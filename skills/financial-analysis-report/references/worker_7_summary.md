@@ -1,5 +1,18 @@
 # Worker 7: Executive Summary Generation
 
+**🚫 CRITICAL FILE ACCESS RESTRICTIONS 🚫**
+
+Your data is **PRE-LOADED** in your prompt below. **ABSOLUTELY DO NOT**:
+- ❌ Read `fs_index.json`
+- ❌ Read `data_bundles.json`
+- ❌ Read any `.json` files
+- ❌ Use the Read tool for any data access
+- ❌ Attempt to access the filesystem for metrics
+
+**Why?** Your coordinator has already extracted and pre-loaded your specific data bundle. Reading files wastes time, duplicates work, and can cause errors.
+
+**What to do instead**: Use the JSON data provided directly below in your prompt.
+
 ## Your Role
 
 You are **Worker 7**, responsible for generating the **Executive Summary** report from the full 18-section financial analysis report.
@@ -8,13 +21,13 @@ You are **Worker 7**, responsible for generating the **Executive Summary** repor
 
 Create a 4-section executive summary that synthesizes key insights from the full report. The summary should be **2-3 pages** and suitable for quick stakeholder updates.
 
-## Input
+## Input (Pre-Loaded in Your Prompt)
 
-You will receive:
-1. **Data bundles path**: Path to data_bundles.json (contains all pre-calculated metrics from fs_index.json)
+You will receive your data bundle **directly in your prompt** (not via file paths):
+1. **Data bundle**: Pre-loaded JSON with all pre-calculated metrics from fs_index.json
 2. **Company name**: Company name for the title
 3. **Period**: Fiscal period (e.g., FY2024)
-4. **Worker outputs** (optional): Paths to worker output files for qualitative context
+4. **Worker outputs** (optional): Pre-loaded qualitative context from Workers 1-6
 
 ## Why Data Bundles (Not Full Report)?
 
@@ -211,17 +224,13 @@ Before outputting, verify:
 - [ ] Currency and period information is correct
 - [ ] Risk levels (High/Medium/Low) are justified by evidence
 
-## Example from Sample
-
-See `/Users/guoxinshan/dev/finanalysis/sample-report/4677-summary.md` for the reference format.
-
 ## Output Location
 
 Write the summary to: `[workspace]/summary.md` (or the path specified in your task prompt)
 
 ## Important Notes
 
-- **Do NOT recalculate metrics** - extract directly from the full report
+- **Use raw bundle values for all calculations** — do NOT derive numbers from the assembled report's rounded display values, as this causes rounding error cascades
 - **Do NOT derive values from rounded numbers** - this causes rounding error cascades
   - ❌ WRONG: NCI = PAT_rounded - PATMI_rounded (e.g., 215.5 - 114.8 = 100.7)
   - ✅ CORRECT: Extract NCI from source or verify with: NCI% = actual_NCI / actual_PAT

@@ -2,67 +2,140 @@
 name: financial-analysis-report
 description: >
   Create professional 18-section financial analysis reports and executive summaries using parallel agents for context efficiency.
-  Spawns 7 specialized workers: Context Setup, Core Performance, Business Analysis, Operational Health,
-  Profitability & Growth, Risk & Cash Flow analysis, and Executive Summary generation. Each worker handles 2-3 sections with focused context.
+  Spawns 8 specialized workers: Context Setup, Core Performance, Business Analysis, Operational Health,
+  Profitability & Growth, Risk Analysis (IX-XI), Cash Flow & Forecast (XVI-XVIII), and Executive Summary. Each worker handles 2-3 sections with focused context.
 
   ALWAYS use this skill when the user wants to: create financial analysis reports, analyze company performance,
   generate investment research, compare financials across years, assess risk profile, write research reports,
   analyze financial statements, or produce professional financial analysis documents. Triggers on:
   "analyze this company", "create financial report", "generate analysis report", "analyze financial performance",
   "write research report", "assess financial health", "compare financial statements", or when user provides
-  financial data and asks for analysis.
+  financial data (PDFs, fs_index.json files) and asks for analysis.
 ---
 
 # Financial Analysis Report - Parallel Agent Architecture
 
-This skill generates professional 18-section financial analysis reports using a **coordinator + parallel workers** pattern to avoid context limits and enable scalable report generation.
+Generate professional 18-section financial analysis reports using a **coordinator + parallel workers** pattern to avoid context limits.
 
-## Architecture Overview
+## Architecture
 
 ```
 Coordinator Agent (you)
     ↓
-    1. Parse fs_index.json and extract metrics
-    2. Prepare focused data bundles for each worker
-    3. Launch 6 parallel worker agents for report sections
-    4. Collect and assemble worker outputs into full report
-    5. Launch worker 7 for executive summary generation
-    6. Generate final report files
+    1. Parse PDFs → Extract financial data (automated)
+    2. Generate worker-specific data bundles
+    3. Launch 8 parallel workers
+    4. Assemble worker outputs into final report
     ↓
-7 Parallel Workers (spawned via Agent tool)
-    - Worker 1: Context Setup (Sections I-III)
-    - Worker 2: Core Performance (Sections IV-V)
-    - Worker 3: Business Analysis (Sections VI-VIII)
-    - Worker 4: Operational Health (Sections XIV-XV)
-    - Worker 5: Profitability & Growth (Sections XII-XIII)
-    - Worker 6: Risk & Cash Flow (Sections IX-XI, XVI-XVIII)
-    - Worker 7: Executive Summary (4-section summary from full report)
+8 Parallel Workers
+    ├─ Worker 1:  Context Setup (Sections I-III)
+    ├─ Worker 2:  Core Performance (Sections IV-V)
+    ├─ Worker 3:  Business Analysis (Sections VI-VIII)
+    ├─ Worker 4:  Operational Health (Sections XIV-XV)
+    ├─ Worker 5:  Profitability & Growth (Sections XII-XIII)
+    ├─ Worker 6:  Risk Analysis (Sections IX-XI)
+    ├─ Worker 6b: Cash Flow & Forecast (Sections XVI-XVIII)
+    └─ Worker 7:  Executive Summary (4 sections)
 ```
+
+---
 
 ## Quick Start
 
-The fastest way to generate a complete report:
+### End-to-End Automation (Recommended)
 
-**Phase 1: Preparation** (automated by script):
 ```bash
 python scripts/generate_report.py \
-  --pdf-2024 testdata/CHINHIN_Annual_Report_2024.pdf \
-  --pdf-2023 testdata/CHINHIN_Annual_Report_2023.pdf \
   --company CHINHIN \
+  --pdfs 2024:annual_2024.pdf 2023:annual_2023.pdf 2022:annual_2022.pdf \
   --output-dir output/CHINHIN \
   --workspace workspace
 ```
 
-This single command:
+**This single command**:
 1. Parses PDFs with finanalysis CLI (auto-detects installation)
 2. Calculates derived metrics
 3. Generates data bundles for workers
-4. Prepares workspace for parallel workers
+4. Prepares workspace
 
-**Phase 2: Worker Execution** (spawn workers):
-After preparation completes, spawn 6 parallel workers to generate report sections.
+**After preparation**, spawn 7 workers (1-6 and 6b) in parallel, assemble report, then spawn Worker 7 for executive summary.
 
-**Phase 3: Assembly**:
+**For detailed examples** (2-year, single-year, manual workflow, skip flags), see [quick_start_examples.md](references/quick_start_examples.md)
+
+---
+
+## Prerequisites
+
+### 1. Install finanalysis CLI
+
+```bash
+pip install git+https://github.com/GuoxinShan/finanalysis.git
+```
+
+Verify: `finanalysis --version`
+
+### 2. Prepare Financial Data
+
+- **fs_index.json** from finanalysis CLI (parsed PDF)
+- **Prior year fs_index.json** for YoY comparison (optional but recommended)
+- **Understanding of the company's business model** (for qualitative analysis)
+
+---
+
+## Coordinator Workflow
+
+### Phase 1: Preparation (Automated)
+
+```bash
+python scripts/generate_report.py \
+  --company <NAME> \
+  --pdfs 2024:path/to/2024.pdf 2023:path/to/2023.pdf \
+  --output-dir output/<NAME> \
+  --workspace workspace
+```
+
+**What this does**:
+- Multi-year PDF parsing (supports 1-3 years)
+- Metrics calculation (profitability, solvency, growth, cash flow)
+- Data bundle generation with multi-year trends
+- Worker workspace preparation
+
+**Output**: `workspace/data_bundles.json` (pre-calculated data for all workers)
+
+---
+
+### Phase 2: Launch Workers 1-6b (Parallel)
+
+Workers receive pre-loaded data bundles (90% of needs) + optional file paths for deep-dive access (10% of needs). Each worker only sees its own bundle — this keeps context focused and avoids confusion.
+
+**Launch all 7 workers in a single turn**:
+```python
+workers = [
+    Agent(subagent_type="general-purpose", description=f"Worker {i}", prompt=prompts[i])
+    for i in [1, 2, 3, 4, 5, 6, "6b"]
+]
+```
+
+**Anti-pattern** (❌ DO NOT DO THIS):
+```python
+# ❌ Workers reading files individually
+worker_2 = Agent(prompt="Read workspace/data_bundles.json and write sections.")
+# This causes 7 workers to read the same file = 7x slower!
+```
+
+**How to build each worker prompt**:
+1. Read the worker's instruction file (e.g., `references/worker_2_core_performance.md`)
+2. Read the worker's pre-extracted bundle (e.g., `workspace/bundles/worker_2_bundle.json`)
+3. Combine: `f"{instructions}\n\n**Your Data Bundle**:\n```json\n{bundle_json}\n```"`
+
+See [manual_workflow.md](references/manual_workflow.md) for a complete step-by-step example.
+
+---
+
+### Phase 3: Assemble Report
+
+After all workers complete, assemble the final report:
+
 ```bash
 python scripts/assemble_report.py \
   --workspace workspace \
@@ -71,22 +144,50 @@ python scripts/assemble_report.py \
   --period FY2024
 ```
 
-**Phase 4: Summary Generation** (LLM-based):
-Spawn worker 7 to generate executive summary from the full report.
+This combines worker outputs in correct section order: I-III, IV-V, VI-VIII, IX-XI, XII-XIII, XIV-XV, XVI-XVIII
 
-This produces two files:
-- **Full report**: `CHINHIN-2024-revised.md` (all 18 sections, ~8-12 pages)
-- **Summary report**: `CHINHIN-summary.md` (4 sections, ~2-3 pages, LLM-generated)
+**Output**: `<TICKER>-<PERIOD>-revised.md` (full 18-section report)
+
+---
+
+### Phase 4: Generate Executive Summary (Worker 7)
+
+Spawn Worker 7 with the pre-extracted data bundle (same source Workers 1-6b used). Worker 7 synthesizes the full report into a 4-section executive summary — it reads the assembled report for qualitative context but uses raw bundle values for all calculations to avoid rounding errors.
+
+```python
+worker_7_instructions = Read("references/worker_7_summary.md")
+worker_7_bundle = Read("workspace/bundles/worker_7_bundle.json")  # or relevant workers' bundles
+
+worker_7 = Agent(
+    subagent_type="general-purpose",
+    description="Executive summary generation",
+    prompt=f"""
+{worker_7_instructions}
+
+**Company**: CHINHIN
+**Period**: FY2024
+**Assembled Report**: CHINHIN-2024-revised.md
+
+**Your Data Bundle** (use for all calculations — do NOT derive values from the report's rounded numbers):
+```json
+{worker_7_bundle}
+```
+
+Write to: CHINHIN-summary.md
+    """,
+    model="sonnet"
+)
+```
+
+**Output**: `<TICKER>-<PERIOD>-summary.md` (4-section executive summary)
+
+---
 
 ## Output Format
 
 ### Full Report Structure (18 Sections)
 
-The full report uses Roman numerals (Ⅰ-ⅩⅧ) and follows this pattern:
-
 ```
-# [Company] [Period] Financial Analysis Report
-
 Ⅰ. Company Profile
 Ⅱ. Analysis Purpose
 Ⅲ. Data Description
@@ -95,359 +196,67 @@ The full report uses Roman numerals (Ⅰ-ⅩⅧ) and follows this pattern:
 Ⅵ. Analysis of Changes in Core Business - [Descriptive Title]
 Ⅶ. Industry Change Analysis - [Descriptive Title]
 Ⅷ. Strategic Initiatives Analysis - [Descriptive Title]
-Ⅸ. Risk Scan - [Descriptive Title]
-Ⅹ. Analysis of Major Items in the Three Statements - [Descriptive Title]
-Ⅺ. Expense Analysis - [Descriptive Title]
-Ⅻ. Profitability Analysis - [Descriptive Title]
-ⅩⅢ. Growth Capability Analysis - [Descriptive Title]
-ⅩⅣ. Solvency Analysis - [Descriptive Title]
-ⅩⅤ. Operating Capability Analysis - [Descriptive Title]
-ⅩⅥ. Cash Flow Analysis - [Descriptive Title]
-ⅩⅦ. Asset Quality Analysis - [Descriptive Title]
-ⅩⅧ. Future Forecast - [Descriptive Title]
+Ⅸ. Risk Scan - [Descriptive Title] (Enhanced with Risk Matrix)
+Ⅹ. Analysis of Major Items in the Three Statements
+Ⅺ. Expense Analysis
+Ⅻ. Profitability Analysis
+ⅩⅢ. Growth Capability Analysis
+ⅩⅣ. Solvency Analysis
+ⅩⅤ. Operating Capability Analysis
+ⅩⅥ. Cash Flow Analysis
+ⅩⅦ. Asset Quality Analysis
+ⅩⅧ. Future Forecast
 ```
 
-**Section format** (sample pattern):
-```markdown
-# [Roman Numeral]. [Section Title] - [Descriptive Subtitle]
+**Section format**: Tables + insights + conclusion
 
-**Table N: [Table Title]**
-| Column | FY2024 | FY2023 | YoY | Comment |
+**Example**:
+```markdown
+# Ⅳ. Core Conclusions - Scale Expansion with Margin Pressure
+
+**Table 1: Key Performance Indicators**
+| Metric | FY2024 | FY2023 | YoY | Comment |
 |---|---:|---:|---:|---|
-| [Item] | [Value] | [Value] | [+%] | [Note] |
+| Revenue | 3,252,347 | 2,057,210 | +58.1% | Construction recovery |
 
 **Insights**
-1. [First key insight with evidence]
+1. [First insight with evidence]
 2. [Second insight connecting data points]
-3. [Third insight on implications]
 
 **Conclusion**: [Summary paragraph]
 ```
 
-### Summary Report Structure (4 Sections)
+**For complete format specification**, see [output_format_specification.md](references/output_format_specification.md)
 
-The executive summary extracts key highlights:
+### Executive Summary (4 Sections)
 
 ```
-# [Company] [Period] Financial Analysis Summary
-
-1. Key Conclusions
-   - Extracted from Section Ⅳ (Core Conclusions table)
-
-2. Data Parsing
-   - Core metrics from Section Ⅴ
-   - Profitability from Section Ⅻ
-   - Solvency from Section ⅩⅣ
-
-3. Trend Analysis
-   - Synthesized from Sections Ⅴ, Ⅻ, ⅩⅣ
-   - Revenue, margin, and solvency trajectories
-
-4. Risk Warning
-   - Extracted from Section Ⅸ (Risk Scan)
-   - Top risks and mitigants
+1. Key Conclusions - From Section IV
+2. Data Parsing - Core metrics and profitability
+3. Trend Analysis - Revenue, margin, solvency trajectories
+4. Risk Warning - Top risks from Section IX
 ```
 
-## Summary Report Generation
-
-The summary report is **generated by Worker 7 (LLM-based)** from the full report with 4 key sections:
-
-1. **Key Conclusions** - Extracted from Section Ⅳ (Core Conclusions)
-2. **Data Parsing** - Extracted from Section Ⅲ (Data Description) + Section Ⅴ (Core Performance table)
-3. **Trend Analysis** - Synthesized from Sections Ⅴ, Ⅻ, ⅩⅣ
-4. **Risk Warning** - Extracted from Section Ⅸ (Risk Scan)
-
-**Generation process**:
-After assembling the full report, spawn Worker 7 with:
-- Full report path
-- Company name
-- Period
-- Worker 7 instructions (from `references/worker_7_summary.md`)
-
-Worker 7 reads the full report and synthesizes the executive summary following the 4-section format specified in the sample report (`sample-report/4677-summary.md`).
-
-**Why LLM-based?** The summary requires interpretation and synthesis across multiple sections, not just extraction. An LLM can identify the most important insights and maintain narrative coherence better than a script.
-
-The summary provides a 2-3 page executive overview suitable for quick stakeholder updates.
-
-## Prerequisites
-
-### 1. Install the finanalysis CLI
-
-**Option A: Install from GitHub (Recommended)**
-```bash
-pip install git+https://github.com/GuoxinShan/finanalysis.git
-```
-
-**Option B: Install from PyPI (if published)**
-```bash
-pip install finanalysis
-```
-
-**Option C: Install from source (for development)**
-```bash
-git clone https://github.com/GuoxinShan/finanalysis.git
-cd finanalysis
-pip install -e .
-```
-
-Verify installation:
-```bash
-finanalysis --version
-finanalysis --help
-```
-
-**Note**: The `generate_report.py` script will auto-detect the CLI installation location, including virtual environments.
-
-### 2. Prepare Financial Data
-
-- **fs_index.json** from finanalysis CLI (parsed annual/quarterly report)
-- **Prior year fs_index.json** for YoY comparison (optional but recommended)
-- Understanding of the company's business model
-
-If fs_index.json doesn't exist, use `generate_report.py` to parse PDFs automatically.
-
-## Coordinator Workflow
-
-### Method 1: End-to-End Automation (Recommended)
-
-Use `scripts/generate_report.py` to automate the entire pipeline:
-
-```bash
-python scripts/generate_report.py \
-  --pdf-2024 <path/to/2024.pdf> \
-  --pdf-2023 <path/to/2023.pdf> \
-  --company <NAME> \
-  --output-dir output/<NAME> \
-  --workspace workspace
-```
-
-**What it does**:
-1. **PDF Parsing**: Auto-detects and runs finanalysis CLI to parse PDFs
-2. **Metrics Calculation**: Runs `finanalysis calculate` to derive financial ratios
-3. **Data Bundle Generation**: Creates worker-specific data bundles
-4. **Worker Preparation**: Sets up workspace with instructions
-
-**After running workers** (see Step 2 below), assemble the final report:
-
-```bash
-python scripts/assemble_report.py \
-  --workspace workspace \
-  --output <TICKER>-<PERIOD>-revised.md \
-  --company <NAME> \
-  --period <PERIOD>
-```
-
-This assembles worker outputs in correct section order.
+**Length**: 2-3 pages
 
 ---
 
-### Method 2: Manual Step-by-Step (For Control)
+## Worker Assignments
 
-#### Step 1: Extract and Prepare Data Bundles
-
-If you already have fs_index.json and text_blocks.jsonl files:
-
-```bash
-python scripts/data_extractor.py output/2024/fs_index.json \
-  --company CHINHIN \
-  --prior output/2023/fs_index.json \
-  --text-blocks output/2024/text_blocks.jsonl \
-  --output workspace/data_bundles.json
-```
-
-**Hybrid Extraction (v3.0)**:
-- **Structured data**: fs_index.json (100% accurate financial metrics)
-- **Qualitative data**: text_blocks.jsonl (workers extract with LLM intelligence)
-- **Page hints**: Automatically identifies likely pages for MD&A, segments, strategy
-- **No fragile regex**: Workers use LLM to extract industry, segments, geography
-
-**Robust CLI Detection**: The script automatically finds finanalysis CLI in:
-- System PATH
-- Common virtual environment locations (`../finanalysis/.venv`, `./venv`, etc.)
-- Python module imports
-
-**Real Data Extraction**: Extracts actual values from fs_index.json line_items - no placeholders:
-- Revenue, gross profit, PBT, PAT, attributable profit
-- Operating margins, PBT margins, PAT margins
-- Balance sheet items: assets, liabilities, equity
-- Current ratio, quick ratio, working capital
-
-#### Step 2: Launch Parallel Workers (Workers 1-6)
-
-Spawn 6 worker agents in parallel using the Agent tool. Each worker receives:
-- **Focused context**: Only the sections they need to write (~100-300 lines)
-- **Data bundle**: Pre-calculated metrics, ratios, and trends
-- **Worker instructions**: Clear guidance from `references/worker_N_*.md`
-
-**Example for Worker 2 (Core Performance)**:
-```python
-# Read worker instructions
-worker_2_instructions = Read("references/worker_2_core_performance.md")
-
-# Read data bundle
-data_bundles = Read("workspace/data_bundles.json")
-
-# Spawn worker
-worker_2 = Agent(
-    subagent_type="general-purpose",
-    description="Core performance analysis",
-    prompt=f"""
-{worker_2_instructions}
-
-**Your Data Bundle**:
-{data_bundles['worker_2']}
-
-**Task**: Write Sections IV and V following the instructions above.
-Output ONLY the markdown content for these two sections.
-    """,
-    model="sonnet"  # Use sonnet for quality
-)
-```
-
-**Launch all 6 workers in a single turn**:
-```python
-workers = [
-    Agent(subagent_type="general-purpose", description="Context setup", prompt=worker_1_prompt),
-    Agent(subagent_type="general-purpose", description="Core performance", prompt=worker_2_prompt),
-    Agent(subagent_type="general-purpose", description="Business analysis", prompt=worker_3_prompt),
-    Agent(subagent_type="general-purpose", description="Operational health", prompt=worker_4_prompt),
-    Agent(subagent_type="general-purpose", description="Profitability & growth", prompt=worker_5_prompt),
-    Agent(subagent_type="general-purpose", description="Risk & cash flow", prompt=worker_6_prompt),
-]
-```
-
-#### Step 3: Collect Worker Outputs
-
-Each worker returns markdown content for their assigned sections. Collect all outputs:
-
-```python
-# Wait for all workers to complete
-outputs = [wait_for_agent(w) for w in workers]
-
-# Organize by section
-sections = {
-    "I-III": outputs[0],
-    "IV-V": outputs[1],
-    "VI-VIII": outputs[2],
-    "XIV-XV": outputs[3],
-    "XII-XIII": outputs[4],
-    "IX-XI-XVI-XVIII": outputs[5],
-}
-```
-
-#### Step 4: Assemble Full Report
-
-Combine worker outputs in correct order:
-
-```markdown
-# Financial Analysis Report: [Company Name] - [Period]
-
-[Worker 1: Sections I-III]
-
-[Worker 2: Sections IV-V]
-
-[Worker 3: Sections VI-VIII]
-
-[Worker 6: Sections IX, X, XI]
-
-[Worker 5: Sections XII-XIII]
-
-[Worker 4: Sections XIV-XV]
-
-[Worker 6: Sections XVI-XVIII]
-```
-
-Write to: `<TICKER>-<PERIOD>-revised.md` (full 18-section report)
-
-#### Step 5: Generate Executive Summary (Worker 7)
-
-Spawn Worker 7 to generate the executive summary from the full report:
-
-```python
-# Read worker 7 instructions
-worker_7_instructions = Read("references/worker_7_summary.md")
-
-# Spawn worker 7
-worker_7 = Agent(
-    subagent_type="general-purpose",
-    description="Executive summary generation",
-    prompt=f"""
-{worker_7_instructions}
-
-**Full Report Path**: CHINHIN-2024-revised.md
-**Company**: CHINHIN
-**Period**: FY2024
-
-**Task**: Read the full report and generate a 4-section executive summary following the instructions.
-Write the summary to: CHINHIN-summary.md
-    """,
-    model="sonnet"  # Use sonnet for quality
-)
-```
-
-Worker 7 produces: `<TICKER>-<PERIOD>-summary.md` (4-section executive summary)
-
-#### Step 6: Quality Check
-
-Before delivering, verify:
-- [ ] All 18 sections present and in correct order
-- [ ] Tables formatted correctly
-- [ ] No duplicate or missing content
-- [ ] Consistent terminology across sections
-- [ ] All metrics referenced in data bundles appear in report
-
-## Worker Instruction Files
-
-Each worker has dedicated instructions in `references/`:
-
-- `worker_1_context_setup.md` - Sections I-III (Company Profile, Purpose, Data Description)
-- `worker_2_core_performance.md` - Sections IV-V (Core Conclusions, Core Financial Performance)
-- `worker_3_business_analysis.md` - Sections VI-VIII (Segment Analysis, Industry, Strategy)
-- `worker_4_operational_health.md` - Sections XIV-XV (Solvency, Operational Capability)
-- `worker_5_profitability_growth.md` - Sections XII-XIII (Profitability, Growth Capability)
-- `worker_6_risk_cashflow.md` - Sections IX-XI, XVI-XVIII (Risk, Expenses, Major Items, Cash Flow, Asset Quality, Forecast)
-- `worker_7_summary.md` - Executive Summary (4-section summary from full report)
+| Worker | Sections | Topics | Instruction File |
+|--------|----------|--------|------------------|
+| 1 | I-III | Company Profile, Purpose, Data Description | worker_1_context_setup.md |
+| 2 | IV-V | Core Conclusions, Core Performance | worker_2_core_performance.md |
+| 3 | VI-VIII | Segment Analysis, Industry, Strategy | worker_3_business_analysis.md |
+| 4 | XIV-XV | Solvency, Operational Capability | worker_4_operational_health.md |
+| 5 | XII-XIII | Profitability, Growth Capability | worker_5_profitability_growth.md |
+| 6 | IX-XI | Risk Scan, Major Items, Expense Analysis | worker_6_risk_cashflow.md |
+| 6b | XVI-XVIII | Cash Flow, Asset Quality, Future Forecast | worker_6b_cashflow_forecast.md |
+| 7 | Summary | Executive Summary (4 sections) | worker_7_summary.md |
 
 **Important**: Workers only see their assigned instruction file, keeping context focused.
 
-## Data Bundle Structure
-
-Each worker receives a JSON data bundle with:
-
-```json
-{
-  "worker_N": {
-    "metadata": {
-      "company_name": "...",
-      "period": "...",
-      "currency": "...",
-      "fiscal_year_end": "..."
-    },
-    "metrics": {
-      "revenue": 3252347,
-      "pbt": 525602,
-      ...
-    },
-    "ratios": {
-      "operating_margin": 16.15,
-      "current_ratio": 1.32,
-      ...
-    },
-    "yoy_changes": {
-      "revenue_growth": 58.1,
-      "margin_change": 6.99,
-      ...
-    },
-    "benchmarks": {
-      "operating_margin_benchmark": 15.0,
-      ...
-    }
-  }
-}
-```
-
-The `data_extractor.py` script calculates all metrics, ratios, and comparisons upfront so workers can focus on interpretation.
+---
 
 ## Quality Standards
 
@@ -458,13 +267,13 @@ Each worker must follow these principles:
 3. **Connect the dots** - Link insights within your sections
 4. **Be forward-looking** - Assess implications and risks
 5. **Write for the user** - Professional but accessible
-6. **Calculate precisely** - Never derive from rounded values (see Precision Standards below)
+6. **Calculate precisely** - Never derive from rounded values
 
 ### Precision Standards
 
 **CRITICAL**: Calculate from source data BEFORE rounding. Never use rounded values as calculation inputs.
 
-**The Rounding Error Pattern:**
+**The Rounding Error Pattern**:
 ```
 ❌ WRONG: Round → Calculate
    PAT: 215.5m, PATMI: 114.8m
@@ -475,144 +284,91 @@ Each worker must follow these principles:
    Display: 97.1m (97,078 / 1000)
 ```
 
-**Why This Matters:**
-- Rounding errors compound through subtraction/addition
-- A 0.5m rounding error in each input becomes 3.6m error in output
-- Always use raw RM'000 values from fs_index.json for calculations
-- Round ONLY the final display value
+See [writing_standards.md](references/writing_standards.md) for detailed examples.
 
-See `references/writing_standards.md` section 7 for detailed examples.
+---
 
-## Tools and Scripts
+## Quality Check
 
-### `scripts/generate_report.py` ⭐ **NEW**
-End-to-end automation script that orchestrates the entire workflow:
-- Auto-detects and runs finanalysis CLI for PDF parsing
-- Calculates derived metrics using `finanalysis calculate`
-- Generates data bundles for workers
-- Prepares workspace with instructions
-- **Usage**: `python scripts/generate_report.py --pdf-2024 <path> --company <NAME> ...`
+Before delivering, verify the **COMPLETE 18-SECTION REPORT**:
 
-**Key Features**:
-- **Robust CLI Finding**: Searches PATH, common venv locations, and Python modules
-- **Skip Flags**: `--skip-pdf-parsing`, `--skip-metrics`, `--skip-bundles` for incremental runs
-- **Error Handling**: Clear error messages with actionable steps
+- [ ] **All 18 sections present** in correct Roman numeral order (Ⅰ-ⅩⅤⅢ)
+- [ ] **CRITICAL**: Sections IX, X, XI exist (Risk Scan, Major Items, Expense Analysis) - **most frequently missed**
+- [ ] **Section order**: Ⅰ→Ⅱ→Ⅲ→Ⅳ→Ⅴ→Ⅵ→Ⅶ→Ⅷ→Ⅸ→Ⅹ→Ⅺ→Ⅻ→ⅩⅢ→ⅩⅣ→ⅩⅤ→ⅩⅥ→ⅩⅦ→ⅩⅧ
+- [ ] Tables formatted correctly
+- [ ] No duplicate or missing content
+- [ ] Consistent metrics across sections
+- [ ] **Section IX**: Enhanced risk matrix with severity ratings (Critical/High/Medium/Low), probability, impact, priority (1-4), and mitigation actions
 
-### `scripts/assemble_report.py` ⭐ **NEW**
-Assembles worker outputs into final report in correct section order:
-- Reads worker output files from workspace
-- Combines in proper section order (I-III, IV-V, VI-VIII, IX-XI, XII-XIII, XIV-XV, XVI-XVIII)
-- Adds report header with company name and period
-- **Usage**: `python scripts/assemble_report.py --workspace <dir> --output <file> --company <NAME> --period <PERIOD>`
+---
 
-### `scripts/data_extractor.py`
-Extracts metrics and prepares data bundles for workers:
-- Parses fs_index.json line_items to extract real values
-- Calculates all ratios and metrics (no placeholders)
-- Computes YoY changes and trends
-- Compares against benchmarks
-- Outputs structured JSON for workers
-- **Enhanced**: Now extracts real data with verification metadata
+## Troubleshooting
 
-### `scripts/financial_calculator.py`
-Standalone ratio calculator (can be used independently):
-```bash
-python scripts/financial_calculator.py output/2024/fs_index.json \
-  --prior output/2023/fs_index.json \
-  --benchmark \
-  --format markdown
-```
+### Top 3 Issues
 
-## Example Usage
+1. **finanalysis CLI not found**
+   - Install: `pip install git+https://github.com/GuoxinShan/finanalysis.git`
+   - Or use `--skip-pdf-parsing` if fs_index.json exists
 
-**User says**: "Analyze Chin Hin Group's 2024 financial performance"
+2. **Sections IX, X, XI missing**
+   - Worker 6 handles sections IX, X, XI
+   - Verify Worker 6 output contains all 3 sections
 
-**Your process (Automated)**:
-1. Run `python scripts/generate_report.py --pdf-2024 CHINHIN_2024.pdf --pdf-2023 CHINHIN_2023.pdf --company CHINHIN --output-dir output/CHINHIN`
-2. Script parses PDFs, calculates metrics, prepares data bundles
-3. Spawn 6 parallel workers with focused instructions (see Step 2 above)
-4. Collect worker outputs as they complete
-5. Run `python scripts/assemble_report.py --workspace workspace --output CHINHIN-2024-revised.md --company CHINHIN --period FY2024`
-6. Spawn worker 7 to generate executive summary from the full report
-7. Deliver `<TICKER>-<PERIOD>-revised.md` and `-summary.md` to user
+3. **Worker output incomplete**
+   - Verify worker instructions list section headers
+   - Check data bundle contains required metrics
 
-**Your process (Manual - if fs_index.json already exists)**:
-1. Check for fs_index.json at `output/CHINHIN/2024/fs_index.json`
-2. Extract data bundles: `python scripts/data_extractor.py ...`
-3. Spawn 6 parallel workers with focused instructions
-4. Collect worker outputs as they complete
-5. Assemble full report using `assemble_report.py`
-6. Spawn worker 7 to generate executive summary
-7. Deliver to user
+**For comprehensive troubleshooting**, see [troubleshooting.md](references/troubleshooting.md)
+
+---
+
+## Manual Workflow
+
+For users who need fine-grained control, see [manual_workflow.md](references/manual_workflow.md) for:
+- Step-by-step data extraction
+- Manual worker spawning
+- Custom data bundle preparation
+- Detailed troubleshooting for manual workflow
+
+---
+
+## Data Formats
+
+**For complete data format specification**, see [data_format.md](references/data_format.md)
+
+**Quick Reference**:
+- **fs_index.json**: Structured financial data (236 line items, 100% accurate)
+- **metrics.json**: Pre-calculated ratios (profitability, solvency, growth, cash flow)
+- **text_blocks.jsonl**: Extracted text (optional, for qualitative analysis)
+- **data_bundles.json**: Pre-calculated data for all workers (~2000-3000 lines)
+- **worker_N_bundle.json**: Individual worker bundles (~200-500 lines each)
+
+---
 
 ## Benefits of Parallel Architecture
 
 ✅ **Context Efficiency**: Each worker sees ~100-300 lines, not the full skill
 ✅ **Scalability**: Can add more sections without hitting context limits
-✅ **Parallel Execution**: 7 workers run efficiently (6 for sections + 1 for summary)
+✅ **Parallel Execution**: 8 workers run efficiently
 ✅ **Focused Expertise**: Each worker specializes in specific sections
 ✅ **Consistent Data**: All workers use same pre-calculated metrics
-✅ **LLM-Based Summary**: Worker 7 provides intelligent synthesis, not just extraction
+✅ **Enhanced Risk Analysis**: Severity-rated risk matrix with mitigation timelines
 
-## Troubleshooting
-
-**Problem**: `generate_report.py` cannot find finanalysis CLI
-**Solution**: The script searches multiple locations automatically. If still not found:
-- **Option 1**: Install it: `pip install git+https://github.com/GuoxinShan/finanalysis.git`
-- **Option 2**: Activate venv: `source ../finanalysis/.venv/bin/activate`
-- **Option 3**: Use `--skip-pdf-parsing` if fs_index.json already exists
-
-**Problem**: Worker output missing required sections
-**Solution**:
-- Verify worker instructions explicitly list section headers
-- Check that data bundle contains all required metrics
-- Ensure worker prompt includes output format template
-
-**Problem**: Inconsistent metrics across sections
-**Solution**:
-- Ensure all workers use the same data_bundles.json (no recalculation)
-- Verify data_extractor.py extracted real values (check `_verification` metadata)
-- Run `finanalysis calculate` once and reuse the metrics.json
-
-**Problem**: Duplicate content between workers
-**Solution**:
-- Review worker assignments for overlapping responsibilities
-- Each worker should only see their assigned instruction file
-- Workers should output ONLY their assigned sections
-
-**Problem**: Context still too large for worker
-**Solution**:
-- Worker instructions have been streamlined for efficiency
-- Each worker sees ~100-300 lines of instructions
-- If still too large, further simplify data bundle format
-
-**Problem**: Worker completion times vary widely
-**Solution**:
-- Worker 2 (Core Performance) has most complex analysis - expected to take longer
-- Simplified instructions now reduce variance
-- Use `sonnet` model for quality (not `haiku`)
-
-**Problem**: Data bundles contain zeros or placeholders
-**Solution**:
-- Verify fs_index.json has actual data (not empty line_items)
-- Check data_extractor.py output for `_verification.data_quality: "REAL_DATA_EXTRACTED"`
-- Ensure finanalysis CLI successfully parsed the PDF
-
-**Problem**: Manual assembly required - no automation
-**Solution**:
-- Use `scripts/assemble_report.py` to automate combining worker outputs
-- Run after all workers complete: `python scripts/assemble_report.py --workspace workspace --output report.md --company NAME --period FY2024`
+---
 
 ## Summary
 
 This skill uses parallel agents to generate comprehensive financial analysis reports without context overflow. As the coordinator, you:
 
-1. Extract data once using `data_extractor.py`
-2. Launch 6 specialized workers in parallel (for report sections)
-3. Collect and assemble their outputs
-4. Launch worker 7 to generate executive summary
-5. Deliver a professional 18-section report + executive summary
+1. **Prepare data** using `generate_report.py` (or manual extraction)
+2. **Launch 7 workers** (1-6 and 6b) in parallel with pre-loaded data
+3. **Collect outputs** and assemble with `assemble_report.py`
+4. **Generate summary** (Worker 7)
+5. **Deliver** a professional 18-section report + executive summary
 
-The parallel architecture ensures each worker has focused context, enabling deep analysis without hitting token limits.
+**Next Steps**:
+- See [quick_start_examples.md](references/quick_start_examples.md) for usage examples
+- See [output_format_specification.md](references/output_format_specification.md) for report structure
+- See [troubleshooting.md](references/troubleshooting.md) if issues arise
 
 Now go create insightful financial reports! 🎯

@@ -2,6 +2,40 @@
 
 You write the most critical sections: executive summary and core financial performance. Keep it concise, analytical, and actionable.
 
+**🚫 CRITICAL FILE ACCESS RESTRICTIONS 🚫**
+
+Your data is **PRE-LOADED** in your prompt below. **ABSOLUTELY DO NOT**:
+- ❌ Read `fs_index.json`
+- ❌ Read `data_bundles.json`
+- ❌ Read any `.json` files
+- ❌ Use the Read tool for any data access
+- ❌ Attempt to access the filesystem for metrics
+
+**Why?** Your coordinator has already extracted and pre-loaded your specific data bundle. Reading files wastes time, duplicates work, and can cause errors.
+
+**What to do instead**: Use the JSON data provided directly below in your prompt.
+
+---
+
+### 📂 **Optional: Deep-Dive Access** (10% of cases)
+
+If you need additional context beyond the pre-loaded data, file paths are provided in your bundle under `source_files`:
+
+**When to use**:
+- ✅ Need complete margin trajectory (not just current/prior)
+- ✅ Need all 236 line items for detailed analysis
+- ✅ Need full breakdown of specific metric
+
+**How to access** (ONLY if needed):
+```python
+# Read complete fs_index
+with open(fs_index_path, 'r') as f:
+    fs_index = json.load(f)
+    all_line_items = fs_index['line_items']
+```
+
+**Note**: 90% of the time, the pre-loaded data is sufficient. Only access files when absolutely necessary.
+
 ## Your Task: Write Sections IV-V
 
 ### Section IV: Core Conclusions (150 words, 3-5 bullets)
@@ -82,9 +116,11 @@ You write the most critical sections: executive summary and core financial perfo
 
 ---
 
-## Your Data Bundle
+## Your Pre-Loaded Data Bundle
 
-You receive a JSON object with metrics and margins:
+**CRITICAL**: Your data is PRE-LOADED in your prompt. DO NOT read any files or attempt to access data_bundles.json. All data you need is provided below in your prompt.
+
+You receive a JSON object with metrics, margins, and multi-year trends:
 
 ```json
 {
@@ -98,6 +134,59 @@ You receive a JSON object with metrics and margins:
     ...
   }
 }
+```
+
+**NEW: Multi-Year Trend Data**
+
+If 3+ years of data are available, you'll also receive:
+```json
+{
+  "_multi_year_trends": {
+    "years": ["2024", "2023", "2022"],
+    "num_years": 3,
+    "trends": {
+      "revenue": {
+        "current": 3252347,
+        "2023": 2057210,
+        "2022": 1820000
+      },
+      "profit before tax": {
+        "current": 525602,
+        "2023": 360798,
+        "2022": 320000
+      }
+    },
+    "cagrs": {
+      "revenue_cagr_2yr": 33.6,
+      "profit before tax_cagr_2yr": 28.1
+    }
+  }
+}
+```
+
+**How to Use Multi-Year Data**:
+
+1. **3-Year Trend Tables**: Enhance Table 1 with 3-year view:
+   ```markdown
+   | Metric | FY2024 | FY2023 | FY2022 | 2-Yr CAGR |
+   |--------|--------|--------|--------|-----------|
+   | Revenue | 3.25b | 2.06b | 1.82b | 33.6% |
+   ```
+
+2. **Trend Analysis**: Identify patterns over time:
+   - Is growth accelerating or decelerating?
+   - Are margins expanding consistently?
+   - Is 2024 an outlier or continuation of trend?
+
+3. **CAGR Context**: Use compound growth rates for:
+   - "Revenue grew at 33.6% CAGR over 2 years"
+   - Compare to industry averages
+   - Assess sustainability
+
+4. **Confidence Levels**: 3 data points > 2 data points:
+   - More reliable trend identification
+   - Better projection basis
+   - Identify cyclical patterns
 ```
 
 ## Output Format
