@@ -128,6 +128,8 @@ worker_2 = Agent(prompt="Read workspace/data_bundles.json and write sections.")
 2. Read the worker's pre-extracted bundle (e.g., `workspace/bundles/worker_2_bundle.json`)
 3. Combine: `f"{instructions}\n\n**Your Data Bundle**:\n```json\n{bundle_json}\n```"`
 
+**Important**: Each worker has a "Canonical Data Ownership" section that tells it which metrics to own vs. cross-reference. The coordinator does NOT need to enforce this — the worker instructions handle it.
+
 See [manual_workflow.md](references/manual_workflow.md) for a complete step-by-step example.
 
 ---
@@ -268,6 +270,51 @@ Each worker must follow these principles:
 4. **Be forward-looking** - Assess implications and risks
 5. **Write for the user** - Professional but accessible
 6. **Calculate precisely** - Never derive from rounded values
+7. **Respect data ownership** - Do NOT restate metrics owned by other sections (see [canonical_data_registry.md](references/canonical_data_registry.md))
+
+### Anti-Redundancy Rules
+
+Each key metric has exactly one "owner" section. Other sections must cross-reference, not restate:
+
+| Metric | Owner | Do NOT repeat in |
+|--------|-------|-----------------|
+| Revenue, growth % | V | IV, VI, XII, XIII, XIV, XVI |
+| Gross margin | V | IV, X, XI, XII |
+| PBT, PAT, PATMI | V | IV, XII, XIII |
+| Admin expenses, finance costs | XI | IV, V, VI, IX, XIV, XVI |
+| D/E, gearing, current ratio | XIV | IV, IX, XVII |
+| Bank borrowings | XIV | IX, X, XVI, XVII |
+| OCF, FCF | XVI | IV, IX, XV |
+| Segment revenue/PBT | VI | V |
+| NCI % of PAT, ROE | XII | V, XVII |
+
+See [canonical_data_registry.md](references/canonical_data_registry.md) for the full table.
+
+### Line Budget
+
+Each section should produce output within these targets (excluding blank lines and table separators):
+
+| Section | Content | Target Lines |
+|---------|---------|-------------|
+| I-III | Company Profile, Purpose, Data | ~15 |
+| IV | Core Conclusions (3 bullets) | ~12 |
+| V | Core Performance (2 tables + 2 paragraphs) | ~45 |
+| VI | Business Analysis (2 segment tables + 1 paragraph) | ~35 |
+| VII | Industry Change (1 table + 2-3 sentences) | ~20 |
+| VIII | Strategic Initiatives (1 table + 1 paragraph) | ~25 |
+| IX | Risk Scan (1 matrix + 2 paragraphs) | ~50 |
+| X | Major Items (3 tables + 1 paragraph) | ~40 |
+| XI | Expense Analysis (1 table + 2 paragraphs) | ~30 |
+| XII | Profitability (2 tables + 2 paragraphs) | ~30 |
+| XIII | Growth (2 tables + 2 paragraphs) | ~30 |
+| XIV | Solvency (2 tables + 2 paragraphs) | ~40 |
+| XV | Operating Capability (2 tables + 1 paragraph) | ~30 |
+| XVI | Cash Flow (2 tables + 2 paragraphs) | ~35 |
+| XVII | Asset Quality (1 table + 1 paragraph) | ~25 |
+| XVIII | Future Forecast (1 table + 2 paragraphs) | ~45 |
+| **Total** | | **~507** |
+
+With table formatting, markdown headers, and spacing, the full report should land at **700-900 lines**. If a section exceeds its target significantly, trim redundant analysis or tables.
 
 ### Precision Standards
 
@@ -295,10 +342,13 @@ Before delivering, verify the **COMPLETE 18-SECTION REPORT**:
 - [ ] **All 18 sections present** in correct Roman numeral order (Ⅰ-ⅩⅤⅢ)
 - [ ] **CRITICAL**: Sections IX, X, XI exist (Risk Scan, Major Items, Expense Analysis) - **most frequently missed**
 - [ ] **Section order**: Ⅰ→Ⅱ→Ⅲ→Ⅳ→Ⅴ→Ⅵ→Ⅶ→Ⅷ→Ⅸ→Ⅹ→Ⅺ→Ⅻ→ⅩⅢ→ⅩⅣ→ⅩⅤ→ⅩⅥ→ⅩⅦ→ⅩⅧ
+- [ ] **No redundancy**: Key metrics appear only in their owner section (check [canonical_data_registry.md](references/canonical_data_registry.md))
+- [ ] **No macro filler**: Section VII has no GDP/OPR/industry statistics, Section VIII has no digital/ESG bullet lists
+- [ ] **No balance sheet re-presentation**: Section XVII focuses on asset quality, not full balance sheet
+- [ ] **Report length**: Total should be 700-900 lines (if significantly over, check for repeated data points)
 - [ ] Tables formatted correctly
-- [ ] No duplicate or missing content
 - [ ] Consistent metrics across sections
-- [ ] **Section IX**: Enhanced risk matrix with severity ratings (Critical/High/Medium/Low), probability, impact, priority (1-4), and mitigation actions
+- [ ] **Section IX**: Risk matrix with severity ratings (Critical/High/Medium/Low)
 
 ---
 

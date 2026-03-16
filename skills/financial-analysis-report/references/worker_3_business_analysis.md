@@ -12,227 +12,156 @@ text_blocks = []
 with open(text_blocks_path, 'r') as f:
     for line in f:
         text_blocks.append(json.loads(line))
-
-# Search by page hints from your bundle
-for block in text_blocks:
-    if block.get('page_number') in your_page_hints:
-        print(block['text'][:300])
 ```
 
 **Do NOT** read `fs_index.json`, `data_bundles.json`, or any other `.json` files — your metrics are already provided.
 
 ---
 
-You are responsible for analyzing the company's business model, industry context, and strategic execution.
+You are responsible for segment performance, industry impact, and strategic execution.
+
+## Canonical Data Ownership
+
+**You own**: Segment revenue/PBT, order book, geographic mix.
+**Do NOT restate**: Revenue totals, gross margin, profit figures — those belong to Section V. Reference Section V if needed.
+
+See `references/canonical_data_registry.md` for the full ownership table.
+
+---
 
 ## Your Sections
 
-### Section Ⅵ: Analysis of Changes in Core Business (~250 words)
+### Section VI: Analysis of Changes in Core Business (~120 words)
 
-**Purpose**: Understand segment-level performance and business model evolution
+**Purpose**: Segment-level performance and business model evolution.
 
-**Tables to include** (if segment data available):
+**Tables** (if segment data available):
 ```markdown
-**Table 1: Segment Revenue**
-| Segment | Current | Prior | YoY % | Mix % |
-|---------|---------|-------|-------|-------|
-| Segment A | X | Y | +Z% | M% |
-| Segment B | X | Y | +Z% | M% |
-| **Total** | **X** | **Y** | **+Z%** | **100%** |
+**Table 1: Segment Revenue (RM million)**
+| Segment | FY2024 | FY2023 | YoY % | Share |
+|---------|--------|--------|-------|-------|
+| [Segment] | [Value] | [Value] | [+%] | [%] |
+| **Total** | **[Value]** | **[Value]** | **[+%]** | **100%** |
 
-**Table 2: Segment PBT**
-| Segment | Current | Prior | YoY % | Margin % |
-|---------|---------|-------|-------|----------|
-| Segment A | X | Y | +Z% | M% |
-| Segment B | X | Y | +Z% | M% |
-| **Total** | **X** | **Y** | **+Z%** | **M%** |
+**Table 2: Segment PBT (RM million)**
+| Segment | FY2024 | FY2023 | YoY % | Margin |
+|---------|--------|--------|-------|--------|
+| [Segment] | [Value] | [Value] | [+%] | [%] |
+| **Total** | **[Value]** | **[Value]** | **[+%]** | **[%]** |
 ```
 
-**Insights to develop**:
-1. **Growth drivers**: Which segments contributed most to growth?
-2. **Profit mix shifts**: Are higher-margin segments growing faster or slower?
-3. **Segment-level margin changes**: Which segments improved/deteriorated?
-4. **Diversification vs concentration**: Is revenue becoming more or less concentrated?
+**Analysis** (1 paragraph, ~80 words): Which segments drove growth? Are margins improving or deteriorating at segment level? Is the mix shifting toward higher-value businesses?
 
-**Conclusion**: Assess business model evolution - is the mix shifting toward better or worse businesses?
-
-**Note**: If segment data is not available in your data bundle, acknowledge limitation and focus on geographic or customer-level analysis if possible.
+**What NOT to include**:
+- Plant locations, product descriptions, or operational details
+- Lists of individual projects (keep order book aggregate only)
+- Sub-sub-sections per subsidiary (VI.3.1, VI.3.2, etc.)
+- Sub-segment detail beyond what the tables show (2-3 sentences max per segment in the analysis paragraph)
 
 ---
 
-### Section Ⅶ: Industry Change Analysis (~200 words)
+### Section VII: Industry Change Analysis (~80 words)
 
-**Purpose**: Understand external environment impacts
+**Purpose**: External factors that materially impacted this company — only what's specific and actionable.
 
-**What to include**:
-- **Demand environment**: GDP growth, construction activity, property market trends
-- **Cost environment**: Raw material prices (steel, cement, labor), input cost trends
-- **Regulatory/tax changes**: New regulations, tax changes, policy impacts
-- **Competitive dynamics**: Pricing pressure, market share shifts, new entrants
-
-**How to write it**:
-- Use macro data from your data bundle's industry_context section
-- Connect external factors to company performance
-- Be specific about industry context, not generic macro commentary
-
-**Example**:
-> The Malaysian construction sector grew 8% in 2024 (vs. 3% in 2023), driven by:
-> - **Public infrastructure**: MRT3 rollout, Pan Borneo Highway acceleration
-> - **Property recovery**: Residential launches up 15% as interest rates stabilized
->
-> However, steel prices surged 20% in H2 due to China supply disruptions, compressing industry margins. Chin Hin's backward integration (own steel mill) provided partial hedge but insufficient to fully offset. Industry pricing power remains limited due to competitive tendering, especially in public contracts.
-
----
-
-### Section Ⅷ: Strategic Initiatives Analysis (~200 words)
-
-**Purpose**: Assess management's strategic execution
-
-**What to include**:
-- **Capex priorities**: Where are they investing? (capacity, automation, M&A)
-- **Expansion strategy**: New markets, new segments, vertical integration
-- **Operational improvements**: Efficiency initiatives, digital transformation
-- **Medium-term visibility**: Clear strategic roadmap? Execution track record?
-
-**How to write it**:
-- Use information from strategic_initiatives section in your data bundle
-- Link strategic moves to financial outcomes
-- Assess whether strategy makes sense given industry position
-
-**Example**:
-> Management's strategic focus in 2024 was East Malaysia expansion:
-> - **Capex**: RM180m invested in Sabah manufacturing plant (completed Q3 2024)
-> - **Capacity**: Steel pipe capacity +40%, roofing materials +25%
-> - **Rationale**: Capture Sabah/Sarawak infrastructure boom (Pan Borneo Highway)
->
-> **Execution assessment**: Revenue growth validates market entry (+58% YoY), but margin dilution (operating margin -2pp in new markets) and receivables stress (days +20 days) suggest aggressive pricing and credit terms to gain share. Medium-term profitability hinges on normalizing terms as market position strengthens.
-
----
-
-## Your Data Bundle
-
-You will receive a JSON object with:
-
-```json
-{
-  "segment_data": {
-    "segments": [
-      {
-        "name": "Manufacturing",
-        "revenue_current": 1500000,
-        "revenue_prior": 1000000,
-        "pbt_current": 240000,
-        "pbt_prior": 150000
-      }
-    ]
-  },
-  "industry_context": {
-    "gdp_growth": "8%",
-    "key_drivers": ["Public infrastructure", "Property recovery"],
-    "cost_trends": "Steel prices +20% H2",
-    "competitive_dynamics": "Intense pricing pressure in public contracts"
-  },
-  "strategic_initiatives": {
-    "capex": "RM180m in Sabah plant",
-    "expansion": "East Malaysia market entry",
-    "capacity_additions": "Steel pipe +40%, roofing +25%",
-    "strategic_rationale": "Capture Pan Borneo Highway boom"
-  }
-}
+**Table**:
+```markdown
+**Table: Industry Impact Assessment**
+| Factor | Signal | Impact on Company |
+|--------|--------|-------------------|
+| [Demand/cost/regulatory factor] | [Specific market signal] | [Specific impact on performance] |
 ```
+
+**Analysis** (2-3 sentences, ~50 words): How did external factors directly affect this company's results?
+
+**What NOT to include**:
+- Macroeconomic background (GDP growth rates, OPR decisions, broad industry statistics) — these are annual report filler, not analysis
+- Generic industry commentary that doesn't connect to company-specific performance
+- Climate risk / TCFD assessments (not financial analysis at this level)
+- Multiple sub-sections (VII.1, VII.2, etc.) — one table + 2-3 sentences is enough
+
+---
+
+### Section VIII: Strategic Initiatives (~100 words)
+
+**Purpose**: Assess management's strategic execution and its financial impact.
+
+**Table**:
+```markdown
+**Table: Strategic Initiatives Scorecard**
+| Initiative | Evidence | Assessment |
+|------------|----------|------------|
+| [M&A / Capex / Expansion] | [Specific action + financial impact] | [Effective/Mixed/Concerning] |
+```
+
+**Analysis** (1 paragraph, ~70 words): Are strategic moves translating to financial outcomes? Is the acquisition pipeline paying off? Is execution disciplined?
+
+**What NOT to include**:
+- Digital transformation bullet lists (BIM, RPA, AI, IoT) without quantified financial impact
+- Sustainability / ESG initiatives without financial materiality
+- Detailed acquisition histories for minor deals (keep only major M&A)
+- Plant-by-plant capacity tables (operational detail, not financial analysis)
+- Sub-sections for each initiative category (VIII.1, VIII.2, etc.) — one table suffices
+
+---
 
 ## Output Format
 
-Write **ONLY** the markdown content for Sections VI-VIII. Use this exact structure:
+Write **ONLY** markdown for Sections VI-VIII:
 
 ```markdown
 # Ⅵ. Analysis of Changes in Core Business - [Descriptive Title]
 
-**Table 1: External Revenue by Segment (RM million)**
-| Segment | FY2024 | FY2023 | YoY | Share of FY2024 Revenue |
+**Table 1: Segment Revenue (RM million)**
+| Segment | FY2024 | FY2023 | YoY | Share |
 |---|---:|---:|---:|---:|
-| [Segment] | [Value] | [Value] | [+%] | [%] |
-| [Segment] | [Value] | [Value] | [+%] | [%] |
-| **Total** | **[Value]** | **[Value]** | **[+%]** | **100.00%** |
+| [Data] | [Data] | [Data] | [%] | [%] |
 
-**Insights**
-1. [First insight on segment performance]
-2. [Second insight on growth drivers]
-3. [Third insight on mix shifts]
+**Table 2: Segment PBT (RM million)**
+| Segment | FY2024 | FY2023 | YoY | Margin |
+|---|---:|---:|---:|---:|
+| [Data] | [Data] | [Data] | [%] | [%] |
+
+[1 paragraph analysis]
 
 ---
 
-**Table 2: Segment Profit Before Tax (RM million)**
-| Segment | FY2024 | FY2023 | YoY |
-|---|---:|---:|---:|
-| [Segment] | [Value] | [Value] | [+%] |
-| **Total PBT** | **[Value]** | **[Value]** | **[+%]** |
-
-**Insights**
-1. [First insight on profit contribution]
-2. [Second insight on margin changes]
-3. [Third insight on diversification quality]
-
-**Conclusion**: [One paragraph on business model evolution]
-
 # Ⅶ. Industry Change Analysis - [Descriptive Title]
 
-**Table 1: Geographic Revenue Mix**
-| Region | FY2024 Revenue (RM million) | FY2023 Revenue (RM million) | YoY | FY2024 Share |
-|---|---:|---:|---:|---:|
-| [Region] | [Value] | [Value] | [+%] | [%] |
-| **Total** | **[Value]** | **[Value]** | **[+%]** | **100.00%** |
-
-**Insights**
-1. [First insight on geographic shifts]
-2. [Second insight on regional dynamics]
-3. [Third insight on concentration risks]
-
-**Table 2: External Industry and Macro Context (FY2024)**
-| External Context | Market Signal | Relevance to Company |
+**Table: Industry Impact Assessment**
+| Factor | Signal | Impact on Company |
 |---|---|---|
-| [Context] | [Signal] | [Relevance] |
+| [Factor] | [Signal] | [Impact] |
 
-**Insights**
-1. [First insight on external environment]
-2. [Second insight on supportive vs. headwind factors]
-3. [Third insight on forward-looking implications]
+[2-3 sentences]
 
-**Conclusion**: [One paragraph on industry environment impact]
+---
 
-# Ⅷ. Strategic Initiatives Analysis - [Descriptive Title]
+# Ⅷ. Strategic Initiatives - [Descriptive Title]
 
-**Table 1: Strategic Initiatives Scorecard**
-| Strategic Axis | FY2024 Evidence | Assessment |
+**Table: Strategic Scorecard**
+| Initiative | Evidence | Assessment |
 |---|---|---|
-| [Axis 1] | [Evidence] | [Assessment] |
-| [Axis 2] | [Evidence] | [Assessment] |
-| [Axis 3] | [Evidence] | [Assessment] |
+| [Initiative] | [Evidence] | [Assessment] |
 
-**Insights**
-1. [First insight on strategy execution]
-2. [Second insight on capex deployment]
-3. [Third insight on balance between growth and discipline]
-
-**Conclusion**: [One paragraph on strategic effectiveness]
+[1 paragraph analysis]
 ```
 
 ## Quality Standards
 
-- ✅ Use actual segment data if available
-- ✅ Connect industry trends to company performance
-- ✅ Assess strategic execution critically
-- ✅ Acknowledge data limitations
+- Use actual segment data if available
+- Connect industry trends to company-specific performance
+- Assess strategic execution critically — not a press release
 
 **Do NOT**:
-- ❌ Invent segment data if not provided
-- ❌ Write generic industry commentary
-- ❌ Ignore execution challenges
+- Invent segment data if not provided
+- Write generic macro commentary
+- Include operational filler (plant lists, product catalogs, project lists)
 
 ## Task
 
-Using the data bundle provided, write Sections VI-VIII following the guidelines above.
+Write Sections VI-VIII using the data bundle.
 
 **Output file**: `workspace/worker_3_sections.md`
 
-Output ONLY the markdown for these three sections.
+Output ONLY markdown for these three sections.
