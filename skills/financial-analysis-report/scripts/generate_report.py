@@ -121,10 +121,10 @@ def extract_year_from_fs_index(fs_index_path: str) -> str:
     with open(fs_index_path, 'r') as f:
         fs_index = json.load(f)
 
-    fiscal_year_end = fs_index.get('fiscal_year_end', '')
-    if fiscal_year_end:
+    fiscal_year_end = fs_index.get('fiscal_year_end') or ''
+    if fiscal_year_end and fiscal_year_end[:4].isdigit():
         return fiscal_year_end[:4]  # Extract year from "YYYY-MM-DD"
-    return 'unknown'
+    raise ValueError(f"Cannot determine fiscal year from {fs_index_path} — fiscal_year_end is missing or null")
 
 
 def validate_periods(fs_index_paths: Dict[str, str]) -> None:

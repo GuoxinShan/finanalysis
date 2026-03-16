@@ -290,13 +290,14 @@ class FSIndex:
                 found_fs = True
                 consecutive_miss = 0
 
-                # Detect metadata from first FS page found
-                if not hasattr(index, '_metadata_detected'):
-                    index.currency = _detect_currency(text)
-                    fy = _detect_fiscal_year_end(text)
-                    if fy:
-                        index.fiscal_year_end = fy
-                    index._metadata_detected = True
+                # Detect metadata from FS pages (scan until found)
+                if index.currency == "USD" or not index.fiscal_year_end:
+                    if index.currency == "USD":
+                        index.currency = _detect_currency(text)
+                    if not index.fiscal_year_end:
+                        fy = _detect_fiscal_year_end(text)
+                        if fy:
+                            index.fiscal_year_end = fy
 
                 stmt_type = _detect_statement_type(text.upper())
                 has_company = bool(re.search(r'\bCompany\b', text))
